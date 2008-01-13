@@ -7,13 +7,11 @@ open Robot
 (* Le robot va tout droit; s'il touche un obstacle, il s'arrête. *)
 class run_push conn =
   let () = Sensor.set conn `S1 `Switch `Bool in
-  let sensorTouch port conn =
-    let switch = Sensor.get conn port in
-    switch.Sensor.scaled in
+  let sensorTouch port conn = (Sensor.get conn port).Sensor.scaled in
   let st1 = (sensorTouch `S1) in
   let sta = (fun conn -> 0) in
 object (self)
-  inherit [int, int, int, int] event_loop st1  sta sta sta conn
+  inherit  [int, int, int, int] event_loop st1  sta sta sta conn
     as event_loop (*argument en option?*)
 
   method stop _ =
@@ -21,7 +19,7 @@ object (self)
     Motor.set conn Motor.c (Motor.speed 0)
 
   method go_straight =
-  event_loop#addS1 (fun a -> if(a=1) then true else false) self#stop;
+  event_loop#addS1 (fun a -> a=1) self#stop;
     Motor.set conn Motor.b (Motor.speed 30);
     Motor.set conn Motor.c (Motor.speed 30)
 

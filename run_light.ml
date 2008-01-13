@@ -9,52 +9,39 @@ open Robot
    S'il voit de la couleur noire, il fait un quart de tour à droite et continue
    de suivre la ligne verte *)
 class run_light conn =
-  let () =  Mindstorm.Sensor.set conn `S2 `Light_active `Pct_full_scale in
-  let sensorLight conn = let data = Mindstorm.Sensor.get conn `S2 in
-                      data.Mindstorm.Sensor.scaled in
+  let () = Mindstorm.Sensor.set conn `S2 `Light_active `Pct_full_scale in
+  let sensorLight conn = (Sensor.get conn `S2).Sensor.scaled in
   let st1 = sensorLight in
-  let st2 conn = let (state,_,_,_) =
-    Motor.get conn Motor.b in if state.Motor.run_state = `Idle then 1 else 0 in
+  let st2 conn =
+    let (state,_,_,_) = Motor.get conn Motor.b in
+    if state.Motor.run_state = `Idle then 1 else 0 in
   let sta = (fun conn -> 0) in
-object (self)
+object(self)
   inherit [int, int, int, int] event_loop st1  st2 sta sta conn
     as event_loop (*argument en option?*)
 
   method turn tl sp  _ =
-    event_loop#addS1 (fun a -> if(a<47 && a>35) then true else false)
-      self#go_straight;
-    event_loop#addS2 (fun v -> if(v = 1) then true else false)
-      (self#turn (tl*2) (-sp));
+    event_loop#addS1 (fun a -> a < 47 && a > 35) self#go_straight;
+    event_loop#addS2 (fun v -> v = 1) (self#turn (tl*2) (-sp));
     Motor.set conn Motor.b (Motor.speed ~tach_limit:tl (-sp));
     Motor.set conn Motor.c (Motor.speed ~tach_limit:tl sp)
 
   method turn45deg tl sp  _ =
-    event_loop#addS2 (fun v -> if(v = 1) then true else false)
-      self#go_straight;
+    event_loop#addS2 (fun v -> v = 1)  self#go_straight;
     Motor.set conn Motor.b (Motor.speed ~tach_limit:tl (-sp));
     Motor.set conn Motor.c (Motor.speed ~tach_limit:tl sp)
 
   method go_straight _ =
-    if Random.bool () then
-      event_loop#addS1 (fun a -> if a>50 then true else false)
-        (self#turn 40 15)
-    else
-      event_loop#addS1 (fun a -> if a>50 then true else false)
-        (self#turn 40(-15));
-    event_loop#addS1 (fun a -> if(a<35) then true else false)
-      self#go_straightBeforeTurn45;
+    let sp = if Random.bool() then 15 else -15 in
+    event_loop#addS1 (fun a -> a>50) (self#turn 40 sp);
+    event_loop#addS1 (fun a -> a<35) self#go_straightBeforeTurn45;
     Motor.set conn Motor.b (Motor.speed (-25));
     Motor.set conn Motor.c (Motor.speed (-25))
 
   method go_straightBeforeTurn45 _ =
-    if Random.bool () then
-      event_loop#addS1 (fun a -> if a>50 then true else false)
-        (self#turn 40 15)
-    else
-      event_loop#addS1 (fun a -> if a>50 then true else false)
-        (self#turn 40(-15));
-    event_loop#addS2 (fun v -> if(v=1) then true else false)
-      (self#turn45deg 200 15);
+    let sp = if Random.bool () then 15 else -15 in
+    event_loop#addS1 (fun a -> a>50) (self#turn 40 sp);
+    event_loop#addS2 (fun v -> v=1) (self#turn45deg 200 15);
     Motor.set conn Motor.b (Motor.speed ~tach_limit:120 (-25));
     Motor.set conn Motor.c (Motor.speed ~tach_limit:120 (-25))
 

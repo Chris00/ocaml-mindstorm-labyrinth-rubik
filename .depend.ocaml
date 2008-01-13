@@ -1,6 +1,8 @@
-run_light.cmo: robot.cmo 
+robot.cmo: robot.cmi 
+robot.cmx: robot.cmi 
+run_light.cmo: robot.cmi 
 run_light.cmx: robot.cmx 
-run_push.cmo: robot.cmo 
+run_push.cmo: robot.cmi 
 run_push.cmx: robot.cmx 
-run_turn.cmo: robot.cmo 
+run_turn.cmo: robot.cmi 
 run_turn.cmx: robot.cmx 

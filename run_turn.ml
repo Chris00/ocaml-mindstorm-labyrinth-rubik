@@ -6,8 +6,8 @@ open Robot
 
 (* Le robot roule et s'il voit un mur, il ralentit, et il tourne *)
 class run_turn conn =
-  let ultra = Mindstorm.Sensor.Ultrasonic.make conn `S1 in
-  let () = Mindstorm.Sensor.Ultrasonic.set ultra `Meas_cont in
+  let ultra = Sensor.Ultrasonic.make conn `S1 in
+  let () = Sensor.Ultrasonic.set ultra `Meas_cont in
   let sensorUltra _ = Mindstorm.Sensor.Ultrasonic.get ultra `Byte0 in
   let st1 = sensorUltra in
   let sta = (fun conn -> 0) in
@@ -16,13 +16,13 @@ object (self)
     as event_loop (*argument en option?*)
 
   method turn _ =
-    event_loop#addS1 (fun a -> if(a>50) then true else false) self#go_straight;
+    event_loop#addS1 (fun a -> a > 50) self#go_straight;
     Motor.set conn Motor.b (Motor.speed (-30));
     Motor.set conn Motor.c (Motor.speed 30)
 
   method go_straight s =
-    event_loop#addS1 (fun a -> if(a<40) then true else false) self#turn;
-    event_loop#addS1 (fun a -> if(a<70) then true else false) self#go_straight;
+    event_loop#addS1 (fun a -> a < 40) self#turn;
+    event_loop#addS1 (fun a -> a < 70) self#go_straight;
     Motor.set conn Motor.b (Motor.speed (s/2));
     Motor.set conn Motor.c (Motor.speed (s/2))
 
