@@ -1,35 +1,37 @@
 open Printf
-open Mindstorm
 module Sensor = Mindstorm.Sensor
 module Motor = Mindstorm.Motor
-open Robot
 
-(* Le robot roule et s'il voit un mur, il ralentit, et il tourne *)
-class run_turn conn =
-  let ultra = Sensor.Ultrasonic.make conn `S1 in
-  let () = Sensor.Ultrasonic.set ultra `Meas_cont in
-  let sensorUltra _ = Mindstorm.Sensor.Ultrasonic.get ultra `Byte0 in
-  let st1 = sensorUltra in
-  let sta = (fun conn -> 0) in
-object (self)
-  inherit [int, int, int, int] event_loop st1  sta sta sta conn
-    as event_loop (*argument en option?*)
+module Run(C: sig val conn : Mindstorm.bluetooth Mindstorm.conn end) =
+struct
+  (* Le robot roule et s'il voit un mur, il ralentit, et il tourne.
+     S1 : ultrasonic sensor
+     B : left motor
+     C : right motor
+  *)
 
-  method turn _ =
-    event_loop#addS1 (fun a -> a > 50) self#go_straight;
-    Motor.set conn Motor.b (Motor.speed (-30));
-    Motor.set conn Motor.c (Motor.speed 30)
+  let r = Robot.make()
 
-  method go_straight s =
-    event_loop#addS1 (fun a -> a < 40) self#turn;
-    event_loop#addS1 (fun a -> a < 70) self#go_straight;
-    Motor.set conn Motor.b (Motor.speed (s/2));
-    Motor.set conn Motor.c (Motor.speed (s/2))
+  (* Initialize and create a measure for the ultrasonic sensor. *)
+  let ultra =
+    let u = Sensor.Ultrasonic.make C.conn `S1 in
+    Sensor.Ultrasonic.set u `Meas_cont;
+    Robot.meas r (fun _ -> Mindstorm.Sensor.Ultrasonic.get u `Byte0)
 
-  (* @override *)
-  method run() =
-    self#go_straight 90;
-    event_loop#run()
+  let rec turn _ =
+    Robot.event ultra (fun a -> a > 50) go_straight;
+    Motor.set C.conn Motor.b (Motor.speed (-30));
+    Motor.set C.conn Motor.c (Motor.speed 30)
+
+  and go_straight s =
+    Robot.event ultra (fun a -> a < 40) turn;
+    Robot.event ultra (fun a -> a < 70) go_straight;
+    Motor.set C.conn Motor.b (Motor.speed (s/2));
+    Motor.set C.conn Motor.c (Motor.speed (s/2))
+
+  let run() =
+    go_straight 90;
+    Robot.run r
 end;;
 
 let () =
@@ -39,7 +41,8 @@ let () =
       exit 1;
     )
     else Sys.argv.(1) in
-  let conn = Mindstorm.connect_bluetooth bt in
-  let rp = new run_turn conn in
+  let module R = Run(struct
+                       let conn = Mindstorm.connect_bluetooth bt
+                     end) in
   printf "Press the button on the robot to stop.\n%!";
-  rp#run()
+  R.run()

@@ -15,64 +15,64 @@
    MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the file
    LICENSE for more details. *)
 
-type conn = Mindstorm.bluetooth Mindstorm.conn
+type t = {
+  mutable get_meas : (bool ref * (unit -> unit)) list;
+  (* The [bool ref] tels whether the value is needed, thus must be
+     fetched.  This can change at each cycle. *)
+  mutable events : (unit -> bool) list;
+}
 
-(* The first argument of each constructor is a condition and the
-   second one is a callback *)
-type ('a1, 'a2, 'a3, 'a4) cond =
-  | S1 of ('a1 -> bool) * ('a1 -> unit)
-  | S2 of ('a2 -> bool) * ('a2 -> unit)
-  | S3 of ('a3 -> bool) * ('a3 -> unit)
-  | S4 of ('a4 -> bool) * ('a4 -> unit)
+let make () = { get_meas = [];  events = [] }
 
-let some = function Some v -> v | None -> assert false
+let remove_events r =
+  List.iter (fun (is_needed,_) -> is_needed := false) r.get_meas;
+  r.events <- []
 
 
-class ['a1, 'a2, 'a3, 'a4] event_loop
-  (cs1: conn -> 'a1) (cs2: conn -> 'a2) (cs3: conn -> 'a3) (cs4: conn -> 'a4)
-  conn =
-object(self)
-  val conn = conn
-  val mutable check_s1 = false (* S1 in [ccb] *)
-  val mutable check_s2 = false
-  val mutable check_s3 = false
-  val mutable check_s4 = false
-  val mutable ccb = ([] : ('a1, 'a2, 'a3, 'a4) cond list)
+type 'a meas = {
+  robot : t; (* robot to which the measure is associated *)
+  mutable value : 'a option; (* The fetched value, if any *)
+  is_bound : bool ref; (* iff >= 1 event is bound *)
+}
 
-  method addS1 cond cb = ccb <- S1(cond,cb) :: ccb; check_s1 <- true
-  method addS2 cond cb = ccb <- S2(cond,cb) :: ccb; check_s2 <- true
-  method addS3 cond cb = ccb <- S3(cond,cb) :: ccb; check_s3 <- true
-  method addS4 cond cb = ccb <- S4(cond,cb) :: ccb; check_s4 <- true
+let meas r get =
+  let meas = { robot = r;
+               value = None; (* no value yet *)
+               is_bound = ref false } in
+  let update() = meas.value <- Some(get()) in
+  r.get_meas <- (meas.is_bound, update) :: r.get_meas;
+  meas
 
-  method private reset =
-    check_s1 <- false; check_s2 <- false;
-    check_s3 <- false; check_s4 <- false;
-    ccb <- []
+let event meas cond f =
+  meas.is_bound := true;
+  (* [exec] returns [true] if the condition succeeded and executes the
+     associated callback.  It returns [false] if the contition falied. *)
+  let exec () =
+    (* fetch then value once, so can be updated (by a different
+       thread) without harm during the exec of this callback. *)
+    let v = match meas.value with Some v -> v | None -> assert false  in
+    if cond v then (
+      remove_events meas.robot;
+      f v;
+      true)
+    else false in
+  meas.robot.events <- exec :: meas.robot.events
+;;
 
-  method run() =
-    let rec exec_cond v1 v2 v3 v4 l = match l with
-      | [] -> () (* no condition true *)
-      | S1(c,f) :: tl ->
-          let v = some v1 in
-          if c v then (self#reset; f v) else exec_cond v1 v2 v3 v4 tl
-      | S2(c,f) :: tl ->
-          let v = some v2 in
-          if c v then (self#reset; f v) else exec_cond v1 v2 v3 v4 tl
-      | S3(c,f) :: tl ->
-          let v = some v3 in
-          if c v then (self#reset; f v) else exec_cond v1 v2 v3 v4 tl
-      | S4(c,f) :: tl ->
-          let v = some v4 in
-          if c v then (self#reset; f v) else exec_cond v1 v2 v3 v4 tl
-    in
-    while true do
-      if ccb = [] then failwith "No conditions, would loop indefinitely";
-      let v1 = if check_s1 then Some(cs1 conn) else None
-      and v2 = if check_s2 then Some(cs2 conn) else None
-      and v3 = if check_s3 then Some(cs3 conn) else None
-      and v4 = if check_s4 then Some(cs4 conn) else None in
-      exec_cond v1 v2 v3 v4 (List.rev ccb)
-    done
+let rec exec_first = function
+  | [] -> ()
+  | e :: tl -> if not(e()) then exec_first tl
 
-end
+let run r =
+  while true do
+    List.iter (fun (need, get) -> if !need then get()) r.get_meas;
+    if r.events = [] then
+      failwith "Robot.run: no events (this would loop indefinitely)";
+    exec_first(List.rev r.events)
+  done
 
+
+
+(* Local Variables: *)
+(* compile-command: "make -k robot.cmo" *)
+(* End: *)

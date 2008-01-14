@@ -1,33 +1,32 @@
 open Printf
-open Mindstorm
 module Sensor = Mindstorm.Sensor
 module Motor = Mindstorm.Motor
-open Robot
 
-(* Le robot va tout droit; s'il touche un obstacle, il s'arrête. *)
-class run_push conn =
-  let () = Sensor.set conn `S1 `Switch `Bool in
-  let sensorTouch port conn = (Sensor.get conn port).Sensor.scaled in
-  let st1 = (sensorTouch `S1) in
-  let sta = (fun conn -> 0) in
-object (self)
-  inherit  [int, int, int, int] event_loop st1  sta sta sta conn
-    as event_loop (*argument en option?*)
+module Run(C: sig val conn : Mindstorm.bluetooth Mindstorm.conn end) =
+struct
+  (* Le robot va tout droit; s'il touche un obstacle, il s'arrête. *)
 
-  method stop _ =
-    Motor.set conn Motor.b (Motor.speed 0);
-    Motor.set conn Motor.c (Motor.speed 0)
+  (* Initialisation, at functor instantiation *)
+  let () =
+    Sensor.set C.conn `S1 `Switch `Bool;
+  ;;
 
-  method go_straight =
-  event_loop#addS1 (fun a -> a=1) self#stop;
-    Motor.set conn Motor.b (Motor.speed 30);
-    Motor.set conn Motor.c (Motor.speed 30)
+  let r = Robot.make()
+  let touch = Robot.meas r (fun _ -> (Sensor.get C.conn `S1).Sensor.scaled = 1)
 
-  (* @override *)
-  method run() =
-    self#go_straight;
-    event_loop#run()
-end;;
+
+  let rec stop _ =
+    Motor.set C.conn Motor.all (Motor.speed 0)
+
+  and go_straight() =
+    Robot.event touch (fun a -> a) stop;
+    Motor.set C.conn Motor.b (Motor.speed 30);
+    Motor.set C.conn Motor.c (Motor.speed 30)
+
+  let run() =
+    go_straight();
+    Robot.run r
+end
 
 let () =
   let bt =
@@ -36,7 +35,8 @@ let () =
       exit 1;
     )
     else Sys.argv.(1) in
-  let conn = Mindstorm.connect_bluetooth bt in
-  let rp = new run_push conn in
+  let module R = Run(struct
+                       let conn = Mindstorm.connect_bluetooth bt
+                     end) in
   printf "Press the button on the robot to stop.\n%!";
-  rp#run()
+  R.run()

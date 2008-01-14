@@ -15,16 +15,22 @@
    MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the file
    LICENSE for more details. *)
 
-type conn = Mindstorm.bluetooth Mindstorm.conn
+type t
+  (** Mutable robot state to be used in an event loop. *)
 
-class ['a, 'b, 'c, 'd] event_loop :
-  (conn -> 'a) -> (conn -> 'b) -> (conn -> 'c) -> (conn -> 'd) -> conn ->
-object
-  method addS1 : ('a -> bool) -> ('a -> unit) -> unit
-  method addS2 : ('b -> bool) -> ('b -> unit) -> unit
-  method addS3 : ('c -> bool) -> ('c -> unit) -> unit
-  method addS4 : ('d -> bool) -> ('d -> unit) -> unit
-  method run : unit -> unit
+val make : unit -> t
+  (** Make a new robot (with its own event loop). *)
 
-  method private reset : unit
-end
+val run : t -> unit
+  (** [run r] runs the robot [r]. *)
+
+type 'a meas
+  (** Holds a measure of type ['a] from the robot. *)
+
+val meas : t -> (unit -> 'a) -> 'a meas
+  (** [meas r get] define a new measure for the robot [r], [get()]
+      being executed when this measure is needed by [r]. *)
+
+val event : 'a meas -> ('a -> bool) -> ('a -> unit) -> unit
+  (** [event m cond f] schedules the [f v] to be executed when the
+      value [v] of the measure [m] satisfies [cond v]. *)
