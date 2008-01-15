@@ -21,7 +21,7 @@ struct
   ;;
 
   let speed motor ?tach_limit sp =
-    Motor.set C.conn motor (Motor.speed ?tach_limit sp)
+    Motor.set C.conn motor (Motor.speed ?tach_limit (-sp))
 
   let r = Robot.make()
   let light = Robot.meas r (fun () -> (Sensor.get C.conn `S2).Sensor.scaled)
@@ -29,30 +29,33 @@ struct
                              let (state,_,_,_) = Motor.get C.conn Motor.b in
                              state.Motor.run_state = `Idle)
 
-  let rec turn tl sp =
-    Robot.event light (fun a -> a < 47 && a > 35) (fun _ -> go_straight());
-    Robot.event idle (fun v -> v) (fun _ -> turn (tl*2) (-sp));
-    speed Motor.b ~tach_limit:tl (-sp);
-    speed Motor.c ~tach_limit:tl sp
+  let black a = a < 28
+  let green a = (a < 45 && a > 33)
+  let white a = a > 45
 
-  and turn45deg tl sp _ =
-    Robot.event idle (fun v -> v) (fun _ -> go_straight());
-    speed Motor.b ~tach_limit:tl (-sp);
-    speed Motor.c ~tach_limit:tl sp
+  let rec turn tl sp =
+    Robot.event light (fun a -> (green a)) (fun _ -> go_straight());
+    Robot.event light (fun a -> (black a)) go_straightBeforeTurn90;
+    Robot.event idle (fun v -> v) (fun _ -> turn (tl*2) (-sp));
+    speed Motor.b ~tach_limit:tl sp;
+    speed Motor.c ~tach_limit:tl (-sp)
 
   and go_straight () =
-    let sp = if Random.bool() then 15 else -15 in
-    Robot.event light (fun a -> a > 50) (fun _ -> turn 40 sp);
-    Robot.event light (fun a -> a < 35) go_straightBeforeTurn45;
-    speed Motor.b (-25);
-    speed Motor.c (-25)
+    let sp = if Random.bool() then 20 else -20 in
+    Robot.event light (fun a -> (white a)) (fun _ -> turn 40 sp);
+    Robot.event light (fun a -> (black a)) go_straightBeforeTurn90;
+    speed Motor.b 50;
+    speed Motor.c 50
 
-  and go_straightBeforeTurn45 _ =
-    let sp = if Random.bool () then 15 else -15 in
-    Robot.event light (fun a -> a > 50) (fun _ -> turn 40 sp);
-    Robot.event idle (fun v -> v) (turn45deg 200 15);
-    speed Motor.b ~tach_limit:120 (-25);
-    speed Motor.c ~tach_limit:120 (-25)
+  and go_straightBeforeTurn90 _ =
+    Robot.event idle (fun v -> v) (turn90deg 200 20);
+    speed Motor.b ~tach_limit:130 25;
+    speed Motor.c ~tach_limit:130 25
+
+  and turn90deg tl sp _ =
+    Robot.event idle (fun v -> v) (fun _ -> go_straight());
+    speed Motor.b ~tach_limit:tl sp;
+    speed Motor.c ~tach_limit:tl (-sp)
 
   let run() =
     go_straight ();

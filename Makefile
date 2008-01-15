@@ -16,6 +16,7 @@ native: $(TESTS:.ml=.com)
 run_light.exe: robot.cmo
 run_push.exe: robot.cmo
 run_turn.exe: robot.cmo
+run_look.exe: robot.cmo
 
 
 # General "event" library

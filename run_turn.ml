@@ -26,8 +26,8 @@ struct
   and go_straight s =
     Robot.event ultra (fun a -> a < 40) turn;
     Robot.event ultra (fun a -> a < 70) go_straight;
-    Motor.set C.conn Motor.b (Motor.speed (s/2));
-    Motor.set C.conn Motor.c (Motor.speed (s/2))
+    Motor.set C.conn Motor.b (Motor.speed ((-s)/2));
+    Motor.set C.conn Motor.c (Motor.speed ((-s)/2))
 
   let run() =
     go_straight 90;

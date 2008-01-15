@@ -65,11 +65,14 @@ let rec exec_first = function
 
 let run r =
   while true do
-    List.iter (fun (need, get) -> if !need then get()) r.get_meas;
-    if r.events = [] then
-      failwith "Robot.run: no events (this would loop indefinitely)";
-    exec_first(List.rev r.events)
+    try
+      List.iter (fun (need, get) -> if !need then get()) r.get_meas;
+      if r.events = [] then
+        failwith "Robot.run: no events (this would loop indefinitely)";
+      exec_first(List.rev r.events)
+    with _ -> ()
   done
+    
 
 
 
