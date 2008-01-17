@@ -22,7 +22,7 @@ val make : unit -> t
   (** Make a new robot (with its own event loop). *)
 
 val run : t -> unit
-  (** [run r] runs the robot [r]. *)
+  (** [run r] runs the robot [r] (i.e. starts its event loop). *)
 
 type 'a meas
   (** Holds a measure of type ['a] from the robot. *)

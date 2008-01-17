@@ -70,9 +70,10 @@ let run r =
       if r.events = [] then
         failwith "Robot.run: no events (this would loop indefinitely)";
       exec_first(List.rev r.events)
-    with _ -> ()
+    with e ->
+      Printf.eprintf "Uncaught exception: %s\n%!" (Printexc.to_string e)
   done
-    
+
 
 
 
