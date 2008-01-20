@@ -5,7 +5,7 @@ MINDSTORM_PATH = ../mindstorm
 OCAMLC_FLAGS = -thread -g -dtypes -dllpath .. -custom -I $(MINDSTORM_PATH)
 OCAMLOPT_FLAGS = -thread -dtypes -I $(MINDSTORM_PATH)
 
-TESTS=$(wildcard run_*.ml)
+TESTS=$(wildcard *-*.ml)
 LIBS_CMA=unix.cma mindstorm.cma threads.cma
 LIBS_CMXA=$(LIBS_CMA:.cma=.cmxa) robot.cmx
 
@@ -13,11 +13,11 @@ LIBS_CMXA=$(LIBS_CMA:.cma=.cmxa) robot.cmx
 byte: $(TESTS:.ml=.exe)
 native: $(TESTS:.ml=.com)
 
-run_light.exe: robot.cmo
-run_push.exe: robot.cmo
-run_turn.exe: robot.cmo
-run_look.exe: robot.cmo
-
+run-light.exe: robot.cmo
+run-push.exe: robot.cmo
+run-turn.exe: robot.cmo
+run-look.exe: robot.cmo
+run-follow-line.exe: robot.cmo
 
 # General "event" library
 robot.cma: robot.cmo

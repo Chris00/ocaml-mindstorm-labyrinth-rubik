@@ -15,65 +15,122 @@
    MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the file
    LICENSE for more details. *)
 
-type t = {
-  mutable get_meas : (bool ref * (unit -> unit)) list;
-  (* The [bool ref] tels whether the value is needed, thus must be
-     fetched.  This can change at each cycle. *)
+type meas_common = {
+  robot : t; (* robot to which the measure is associated *)
+  get_value : unit -> unit; (* how to get a new value *)
+  mutable is_needed : bool; (* iff is bound to >= 1 event (for the
+                               current loop).  if [true], the value
+                               must be fetched by the event loop. *)
+  mutable is_up_to_date : bool; (* updated by the latest event loop
+                                   reading or by "read". *)
+  is_constant : bool; (* the measure is constant ; thus also executing a
+                         callback bound to it does NOT erase events. *)
+}
+and t = {
+  mutable meas : meas_common list;
+  (* Measure functions (that need updating) associated to the robot. *)
   mutable events : (unit -> bool) list;
+  (* conditions-callbacks to execute (see [event] below). *)
 }
 
-let make () = { get_meas = [];  events = [] }
+(* The value has to be cached in [meas] because the robot (of type
+   [t]) needs a uniform access to all data fetching. *)
+type 'a meas = {
+  common : meas_common;
+  mutable value : 'a option; (* The fetched value, if any *)
+}
+
+
+let make () = { meas = [];  events = [] }
 
 let remove_events r =
-  List.iter (fun (is_needed,_) -> is_needed := false) r.get_meas;
+  List.iter (fun m -> m.is_needed <- false) r.meas;
   r.events <- []
 
 
-type 'a meas = {
-  robot : t; (* robot to which the measure is associated *)
-  mutable value : 'a option; (* The fetched value, if any *)
-  is_bound : bool ref; (* iff >= 1 event is bound *)
-}
-
 let meas r get =
-  let meas = { robot = r;
-               value = None; (* no value yet *)
-               is_bound = ref false } in
-  let update() = meas.value <- Some(get()) in
-  r.get_meas <- (meas.is_bound, update) :: r.get_meas;
+  let rec meas = { value = None; (* no value yet *)
+                   common = meas_common }
+  and meas_common = { robot = r;
+                      get_value = get_value;
+                      is_needed = false;
+                      is_up_to_date = false;
+                      is_constant = false;
+                    }
+  and get_value() =
+    meas.value <- Some(get());
+    meas_common.is_up_to_date <- true in
+  r.meas <- meas_common :: r.meas;
   meas
 
-let event meas cond f =
-  meas.is_bound := true;
-  (* [exec] returns [true] if the condition succeeded and executes the
-     associated callback.  It returns [false] if the contition falied. *)
-  let exec () =
-    (* fetch then value once, so can be updated (by a different
-       thread) without harm during the exec of this callback. *)
-    let v = match meas.value with Some v -> v | None -> assert false  in
-    if cond v then (
-      remove_events meas.robot;
-      f v;
-      true)
-    else false in
-  meas.robot.events <- exec :: meas.robot.events
+(* This measure always returns [true]. *)
+let always r =
+  { value = Some true;
+    common = { robot = r;
+               get_value = (fun () -> ());
+               is_needed = false; (* does not matter *)
+               is_up_to_date = true; (* => do not add it to [r.meas] *)
+               is_constant = true;
+             }
+  }
+
+let read m =
+  let c = m.common in
+  if not c.is_up_to_date then c.get_value(); (* => up to date *)
+  match m.value with Some v -> v | None -> assert false
 ;;
+
+let event meas cond f =
+  let c = meas.common in
+  c.is_needed <- true;
+  (* [exec] returns [true] if the condition succeeded and executes the
+     associated callback.  It returns [false] if the contition failed. *)
+  let exec =
+    if c.is_constant then
+      (* Fetch the value once only and do not erase other events --
+         thus return [false] to allow the execution of subsequent events. *)
+      let v = match meas.value with Some v -> v | None -> assert false in
+      (fun () -> f v; false)
+    else
+      (fun () ->
+         (* Fetch the value once, so can be updated (by a different
+            thread) without harm during the exec of this callback. *)
+         let v = match meas.value with Some v -> v | None -> assert false in
+         if cond v then (
+           remove_events c.robot;
+           f v;
+           true)
+         else false)
+  in
+  c.robot.events <- exec :: c.robot.events
+;;
+
+let event_is m f = event m (fun b -> b) (fun _ -> f())
+
 
 let rec exec_first = function
   | [] -> ()
   | e :: tl -> if not(e()) then exec_first tl
 
 let run r =
-  while true do
-    try
-      List.iter (fun (need, get) -> if !need then get()) r.get_meas;
-      if r.events = [] then
-        failwith "Robot.run: no events (this would loop indefinitely)";
-      exec_first(List.rev r.events)
-    with e ->
-      Printf.eprintf "Uncaught exception: %s\n%!" (Printexc.to_string e)
-  done
-
+  try
+    while true do
+      try
+        List.iter (fun m ->
+                     if m.is_needed then m.get_value() (* => up to date *)
+                     else m.is_up_to_date <- false
+                  ) r.meas;
+        if r.events = [] then
+          failwith "Robot.run: no events (this would loop indefinitely)";
+        exec_first(List.rev r.events)
+      with
+      | Exit -> raise Exit (* considered as an acceptable way to stop. *)
+      | Unix.Unix_error(Unix.ENOTCONN, _, _) -> failwith "Robot disconnected"
+      | Failure _ as e -> raise e
+      | e ->
+          Printf.eprintf "Uncaught exception: %s\n%!" (Printexc.to_string e)
+    done
+  with Exit -> ()
 
 
 
