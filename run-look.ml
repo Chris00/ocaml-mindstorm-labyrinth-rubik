@@ -13,11 +13,13 @@ struct
      blanc).  S'il voit de la couleur noire, il regarde a droite et a
      gauche s'il y a des chemins possibles. *)
 
+  let r = Robot.make()
+
   (* Initialisation, at functor instantiation *)
   let () =
     let stop _ =
       Motor.set C.conn Motor.all (Motor.speed 0);
-      Mindstorm.Sensor.set C.conn light_port `Light_inactive `Pct_full_scale;
+      Robot.stop r; (* turn off sensors *)
       Mindstorm.close C.conn;
       printf "\n";
       exit 0 in
@@ -32,7 +34,6 @@ struct
   let speed motor ?tach_limit sp =
     Motor.set C.conn motor (Motor.speed ?tach_limit (-sp))
 
-  let r = Robot.make()
   let color = Robot.light C.conn light_port r
   let ultra = Robot.ultrasonic C.conn ultrasonic_port r
 
