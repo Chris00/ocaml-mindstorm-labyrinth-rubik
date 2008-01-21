@@ -31,6 +31,7 @@ and t = {
   (* Measure functions (that need updating) associated to the robot. *)
   mutable events : (unit -> bool) list;
   (* conditions-callbacks to execute (see [event] below). *)
+  mutable at_exit : (unit -> unit) list;
 }
 
 (* The value has to be cached in [meas] because the robot (of type
@@ -41,7 +42,10 @@ type 'a meas = {
 }
 
 
-let make () = { meas = [];  events = [] }
+let make () = { meas = [];  events = [];  at_exit = [] }
+
+let stop r =
+  raise Exit (* quit the event loop and turn off sensors -- see [run]. *)
 
 let remove_events r =
   List.iter (fun m -> m.is_needed <- false) r.meas;
@@ -62,6 +66,35 @@ let meas r get =
     meas_common.is_up_to_date <- true in
   r.meas <- meas_common :: r.meas;
   meas
+
+let touch conn port r =
+  Mindstorm.Sensor.set conn port `Switch `Bool; (* Transition_cnt?? *)
+  meas r (fun () -> (Mindstorm.Sensor.get conn port).Mindstorm.Sensor.scaled = 1)
+
+let touch_count conn port ?(transition=false) r =
+  let mode = if transition then `Transition_cnt else `Period_counter in
+  Mindstorm.Sensor.set conn port `Switch mode;
+  meas r (fun () -> (Mindstorm.Sensor.get conn port).Mindstorm.Sensor.scaled)
+
+let light conn port ?(on=true) r =
+  let ty = if on then `Light_active else `Light_inactive in
+  Mindstorm.Sensor.set conn port ty `Pct_full_scale;
+  let turn_off() = Mindstorm.Sensor.set conn port `No_sensor `Raw in
+  r.at_exit <- turn_off :: r.at_exit;
+  meas r (fun () -> (Mindstorm.Sensor.get conn port).Mindstorm.Sensor.scaled)
+
+let sound conn port ?(human=false) r =
+  let ty = if human then `Sound_dba else `Sound_db in
+  Mindstorm.Sensor.set conn port ty `Pct_full_scale;
+  meas r (fun () -> (Mindstorm.Sensor.get conn port).Mindstorm.Sensor.scaled)
+
+let ultrasonic conn port r =
+  let u = Mindstorm.Sensor.Ultrasonic.make conn port in
+  Mindstorm.Sensor.Ultrasonic.set u `Meas;
+  let turn_off() = Mindstorm.Sensor.Ultrasonic.set u `Off in
+  r.at_exit <- turn_off :: r.at_exit;
+  meas r (fun () -> Mindstorm.Sensor.Ultrasonic.get u `Byte0)
+
 
 (* This measure always returns [true]. *)
 let always r =
@@ -130,7 +163,10 @@ let run r =
       | e ->
           Printf.eprintf "Uncaught exception: %s\n%!" (Printexc.to_string e)
     done
-  with Exit -> ()
+  with Exit ->
+    (* Turn of sensors we know about (whenever possible). *)
+    List.iter (fun f -> try f() with _ -> ()) r.at_exit;
+
 
 
 

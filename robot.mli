@@ -26,6 +26,13 @@ val run : t -> unit
       stop the robot, raise the exception [Exit] from an event
       callback. *)
 
+val stop : t -> unit
+  (** Stop the event loop of the robot (and turns off sensors it knows
+      about). *)
+
+
+(** {2 Measures} *)
+
 type 'a meas
   (** Holds a measure of type ['a] from the robot. *)
 
@@ -36,6 +43,44 @@ val meas : t -> (unit -> 'a) -> 'a meas
       measures as much as possible to avoid querying the robot several
       times for the same information. *)
 
+val touch : 'a Mindstorm.conn -> Mindstorm.Sensor.port ->
+  t -> bool meas
+  (** [touch conn port r] returns a measure reporting whether the
+      touch sensor connected to [port] is pressed. *)
+
+val touch_count : 'a Mindstorm.conn -> Mindstorm.Sensor.port ->
+  ?transition:bool -> t -> int meas
+  (** [touch_count conn port r] returns a measure counting number of
+      times the touch sensor connected to [port] has been pressed.
+
+      @param transition if [false] (the default), "pressed" means
+      pushed AND released; if [true], "pressed" means pushed OR
+      released. *)
+
+val light : 'a Mindstorm.conn -> Mindstorm.Sensor.port ->
+  ?on:bool -> t -> int meas
+  (** [light conn port r] returns a measure reporting the intensity of
+      light detected.
+
+      @param on if [true] (the default), turns on the light on the
+      sensor.  The sensor light is turned off if the robot exits
+      through an exception or via {!Robot.stop}. *)
+
+val sound : 'a Mindstorm.conn -> Mindstorm.Sensor.port ->
+  ?human:bool -> t -> int meas
+  (** [sound conn port r] returns a measure reporting the sound
+      intensity measured by the sensor connected to [port].
+
+      @param human if [true] focuses on sounds within human
+      hearing.  Default: [false]. *)
+
+val ultrasonic : 'a Mindstorm.conn -> Mindstorm.Sensor.port ->
+  t -> int meas
+  (** [ultrasonic conn port r] returns a measure reporting the
+      distance measured by the ultrasonic sensor connected to [port].
+      The sensor is turned off if the robot exits through an exception
+      or via {!Robot.stop}. *)
+
 val always : t -> bool meas
   (** A callback bound to this measure will always be executed,
       regardless of the condition given in {!Robot.event}.  To be
@@ -45,7 +90,11 @@ val always : t -> bool meas
       collect data until another event takes place.  *)
 
 val read : 'a meas -> 'a
-  (** [read m] returns the current value of the  *)
+  (** [read m] returns the current (up to date) value of the measure
+      [m]. *)
+
+
+(** {2 Events} *)
 
 val event : 'a meas -> ('a -> bool) -> ('a -> unit) -> unit
   (** [event m cond f] schedules [f v] to be executed when the value

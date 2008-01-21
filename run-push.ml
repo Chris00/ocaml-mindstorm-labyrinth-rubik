@@ -11,18 +11,13 @@ struct
   (* Le robot va tout droit; s'il touche un obstacle, il s'arrête. *)
 
   let r = Robot.make()
-  let touch =
-    Mindstorm.Sensor.set C.conn switch_port `Switch `Bool;
-    Robot.meas r (fun _ ->
-                    let v = Mindstorm.Sensor.get C.conn switch_port in
-                    v.Mindstorm.Sensor.scaled = 1)
-
+  let touch = Robot.touch C.conn switch_port r
 
   let rec stop _ =
     Motor.set C.conn Motor.all (Motor.speed 0)
 
   and go_straight() =
-    Robot.event touch (fun b -> b) stop;
+    Robot.event_is touch stop;
     Motor.set C.conn motor_left  (Motor.speed (30 * dir) ~sync:true);
     Motor.set C.conn motor_right (Motor.speed (30 * dir) ~sync:true)
 

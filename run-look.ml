@@ -1,5 +1,4 @@
 open Printf
-module Sensor = Mindstorm.Sensor
 module Motor = Mindstorm.Motor
 
 let light_port = `S3
@@ -16,10 +15,9 @@ struct
 
   (* Initialisation, at functor instantiation *)
   let () =
-    Sensor.set C.conn light_port `Light_active `Pct_full_scale;
     let stop _ =
       Motor.set C.conn Motor.all (Motor.speed 0);
-      Sensor.set C.conn light_port `Light_inactive `Pct_full_scale;
+      Mindstorm.Sensor.set C.conn light_port `Light_inactive `Pct_full_scale;
       Mindstorm.close C.conn;
       printf "\n";
       exit 0 in
@@ -35,8 +33,9 @@ struct
     Motor.set C.conn motor (Motor.speed ?tach_limit (-sp))
 
   let r = Robot.make()
-  let color =
-    Robot.meas r (fun () -> (Sensor.get C.conn light_port).Sensor.scaled)
+  let color = Robot.light C.conn light_port r
+  let ultra = Robot.ultrasonic C.conn ultrasonic_port r
+
   let idle = Robot.meas r (fun () ->
                              let (state,_,_,_) = Motor.get C.conn motor_left in
                              state.Motor.run_state = `Idle)
@@ -45,21 +44,17 @@ struct
                     let (state,_,_,_) = Motor.get C.conn motor_ultrasonic in
                     state.Motor.run_state = `Idle)
 
-  let ultra_conn = Sensor.Ultrasonic.make C.conn ultrasonic_port
-  let look () = Mindstorm.Sensor.Ultrasonic.get ultra_conn `Byte0
-
-  let reset angle f g =
-    let v = f() in
+  let reset angle v g =
     Robot.event_is idle_ultra (fun _ -> g v);
     speed motor_ultrasonic ~tach_limit:(abs angle)
-      (if angle >= 0 then 25 else (-25))
+      (if angle >= 0 then 25 else -25)
 
   let turn_and_do angle f g =
     Robot.event_is idle_ultra (fun _ -> reset (-angle) f g);
     speed motor_left 0;
     speed motor_right 0;
     speed motor_ultrasonic ~tach_limit:(abs angle)
-      (if angle >= 0 then 25 else (-25))
+      (if angle >= 0 then 25 else -25)
 
   let rec rectif tl sp =
     Robot.event color is_path (fun _ -> go_straight());
@@ -88,21 +83,22 @@ struct
   and look_left () =
     speed motor_left 0;
     speed motor_right 0;
-    turn_and_do 90 look
-      (fun a -> if a > 30 then go_straight_before_do (fun _ -> turn 180 40)
-        else look_front())
+    turn_and_do 90 (Robot.read ultra) begin fun a ->
+      if a > 30 then go_straight_before_do (fun _ -> turn 180 40)
+      else look_front()
+    end
 
   and look_front () =
-    let v = look() in
+    let v = Robot.read ultra in
     if v > 30 then go_straight_before_do go_straight else look_right()
 
   and look_right () =
-    turn_and_do (-90) look
-       (fun a -> if a > 30 then go_straight_before_do (fun _ -> turn 180 (-40))
-         else turn 360 50)
+    turn_and_do (-90) (Robot.read ultra) begin fun a ->
+      if a > 30 then go_straight_before_do (fun _ -> turn 180 (-40))
+      else turn 360 50
+    end
 
   let run() =
-    Sensor.Ultrasonic.set ultra_conn `Meas_cont;
     go_straight ();
     Robot.run r
 
