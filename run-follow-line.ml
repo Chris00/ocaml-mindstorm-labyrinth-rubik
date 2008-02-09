@@ -7,6 +7,7 @@ let ultrasonic_port = `S4
 let motor_ultrasonic = Motor.c
 let motor_left = Motor.a
 let motor_right = Motor.b
+let motor_dir = -1 (* ±1 *)
 
 module Run(C: sig val conn : Mindstorm.bluetooth Mindstorm.conn end) =
 struct
@@ -35,9 +36,17 @@ struct
   let wheel = motor motor_left
   let is_idle state = state.Motor.run_state = `Idle
 
-  (* Handful shortcut *)
+  (* Handful shortcuts *)
   let speed ?tach_limit ?sync m s =
     Motor.set C.conn m (Motor.speed s ?tach_limit ?sync)
+
+  let turn ?tach_limit s =
+    speed ?tach_limit motor_left s;
+    speed ?tach_limit motor_right (-s)
+
+  let go_straight ?tach_limit s =
+    speed motor_left  (s * motor_dir) ?tach_limit;
+    speed motor_right (s * motor_dir) ?tach_limit
 
   (* the robot Move its "head" left and right *)
   let say_hello k =
@@ -66,38 +75,53 @@ struct
      calibrate according to the light/dark colors detected. *)
   let rec calibrate k =
     let colors = ref [] in
-    speed motor_left 30 ~tach_limit:60;
-    speed motor_right (-30) ~tach_limit:60;
+    turn 30 ~tach_limit:60;
     Robot.event_is always (fun _ -> colors := Robot.read color :: !colors);
     Robot.event wheel is_idle (fun _ -> calibrate2 colors k)
   and calibrate2 colors k =
-    speed motor_left (-10) ~tach_limit:120;
-    speed motor_right 10 ~tach_limit:120;
+    turn (-10) ~tach_limit:120;
     Robot.event_is always (fun _ -> colors := Robot.read color :: !colors);
     Robot.event wheel is_idle (fun _ -> calibrate3 colors k)
   and calibrate3 colors k =
     List.iter (fun (v,n) -> eprintf "(%i,%i) " v n) (hist !colors);
-    eprintf "\n";
+    eprintf "\n%!";
     let min_max (mi, mx) v = (min mi v, max mx v) in
     let cmin, cmax = List.fold_left min_max  (max_int, min_int) !colors in
     let d = (cmax - cmin) / 3 in
     let cdark = cmin + d
     and clight = cmax - d in
+    eprintf "on_road: ]_, %i];  off_road: [%i, _[\n%!" cdark clight;
     let on_road v = v <= cdark
     and off_road v = v >= clight in
     (* Position the robot back on the road *)
-    speed motor_left 10;
-    speed motor_right (-10);
+    turn 10;
     Robot.event color on_road begin fun _ ->
       speed Motor.all 0;
       k on_road off_road
     end
 
+  let rec follow_line positive on_road off_road =
+    go_straight 30;
+    Robot.event color off_road begin fun _ ->
+      (* Turn to go back on the road. *)
+      turn (if positive then -10 else 10) ~tach_limit:60;
+      Robot.event_is always (fun () -> eprintf "%i %!" (Robot.read color));
+      Robot.event color on_road
+        (fun _ -> follow_line (not positive) on_road off_road);
+      Robot.event wheel is_idle begin fun _ ->
+        (* Try to find the road on the other side *)
+        turn (if positive then 10 else -10) ~tach_limit:60;
+        Robot.event color on_road
+          (fun _ -> follow_line (not positive) on_road off_road);
+        (* We are really off the road here, what do we do? *)
+        Mindstorm.Sound.play_tone C.conn 1000 500;
+        
+      end
+    end
+  ;;
 
   let run () =
-    calibrate begin fun on_road off_road ->
-      raise Exit
-    end;
+    calibrate (* then *) (follow_line true);
     Robot.run r
 
 end

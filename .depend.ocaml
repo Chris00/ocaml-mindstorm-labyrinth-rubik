@@ -1,3 +1,5 @@
+ppm.cmo: ppm.cmi 
+ppm.cmx: ppm.cmi 
 robot.cmo: robot.cmi 
 robot.cmx: robot.cmi 
 run-follow-line.cmo: robot.cmi 
@@ -10,3 +12,5 @@ run-push.cmo: robot.cmi
 run-push.cmx: robot.cmx 
 run-turn.cmo: robot.cmi 
 run-turn.cmx: robot.cmx 
+test_ppm.cmo: ppm.cmi 
+test_ppm.cmx: ppm.cmx 

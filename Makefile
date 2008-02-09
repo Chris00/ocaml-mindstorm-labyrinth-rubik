@@ -25,6 +25,8 @@ run-follow-line.exe: robot.cmo
 robot.cma: robot.cmo
 robot.cmxa: robot.cmx
 
+test_ppm.exe: ppm.cmo
+test_ppm.exe: LIBS_CMA+=graphics.cma
 
 # Generate HTML documentation
 .PHONY: doc

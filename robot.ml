@@ -148,25 +148,24 @@ let rec exec_first = function
 let run r =
   try
     while true do
-      try
-        List.iter (fun m ->
-                     if m.is_needed then m.get_value() (* => up to date *)
-                     else m.is_up_to_date <- false
-                  ) r.meas;
-        if r.events = [] then
-          failwith "Robot.run: no events (this would loop indefinitely)";
-        exec_first(List.rev r.events)
-      with
-      | Exit -> raise Exit (* considered as an acceptable way to stop. *)
-      | Unix.Unix_error(Unix.ENOTCONN, _, _) -> failwith "Robot disconnected"
-      | Failure _ as e -> raise e
-      | e ->
-          Printf.eprintf "Uncaught exception: %s\n%!" (Printexc.to_string e)
-    done
-  with Exit ->
-    (* Turn of sensors we know about (whenever possible). *)
-    List.iter (fun f -> try f() with _ -> ()) r.at_exit;
+      List.iter (fun m ->
+                   if m.is_needed then m.get_value() (* => up to date *)
+                   else m.is_up_to_date <- false
+                ) r.meas;
+      if r.events = [] then
+        failwith "Robot.run: no events (this would loop indefinitely)";
+      exec_first(List.rev r.events)
 
+    done
+  with e ->
+    (* Turn off sensors we know about (whenever possible). *)
+    List.iter (fun f -> try f() with _ -> ()) r.at_exit;
+    match e with
+    | Exit -> () (* considered as an acceptable way to stop. *)
+    | Unix.Unix_error(Unix.ENOTCONN, _, _) -> failwith "Robot disconnected"
+    | Failure _ as e -> raise e
+    | e ->
+        Printf.eprintf "Uncaught exception: %s\n%!" (Printexc.to_string e)
 
 
 
