@@ -55,13 +55,13 @@ struct
       chan.in1 <- input chan.in_ch chan.in_buf 0 buffer_len;
     end
 
-  (* reads a single char. *)
-  let char chan =
+  (* Reads a single byte. *)
+  let byte chan =
     fill_in_buf chan;
     if chan.in1 = 0 then raise End_of_file else begin
       let c = chan.in_buf.[chan.in0] in
       chan.in0 <- chan.in0 + 1;
-      c
+      Char.code c
     end
 
   let unsafe_input chan buf ofs len =
@@ -128,19 +128,30 @@ struct
       if c < '0' || c > '9' then failwith "Ppm.Read.uint"
       else gather_int chan 0
 
-  (** Read a RGB color,the value being represented by 1 byte. *)
-  let get_color1 chan = Char.code(char chan)
+  (** Read a RGB color. *)
+  let get_color maxval =
+    assert(maxval >= 0);
+    if maxval = 255 then (fun chan -> byte chan)
+    else
+      let fmaxval = float maxval in
+      if maxval < 255 then
+        (fun chan -> truncate(255. *. float(byte chan) /. fmaxval))
+      else
+        fun chan ->
+          let c1 = byte chan in
+          let c0 = byte chan in
+          truncate(255. *. float((c1 lsl 8) lor c0) /. fmaxval)
 
-  (** Read a RGB color, the value being represented by 2 bytes. *)
-  let get_color2 chan =
-    let c1 = Char.code(char chan) in
-    let _c0 = Char.code(char chan) in
-    c1                                  (* least significant byte dropped *)
-
-  let get_color_ascii chan =
-    skip_spaces_and_comments chan;
-    let c = uint chan in
-    if c < 0 then 0 else if c > 255 then 255 else c
+  let get_color_ascii maxval =
+    assert(maxval >= 0);
+    if maxval = 255 then
+      (fun chan -> skip_spaces_and_comments chan;  min 255 (uint chan))
+    else
+      let fmaxval = float maxval in
+      fun chan ->
+        skip_spaces_and_comments chan;
+        let c = min maxval (uint chan) in
+        truncate(255. *. float c /. fmaxval)
 end
 
 type color = int                        (* as Graphics *)
@@ -169,8 +180,7 @@ let as_matrix_exn ?(gamma=1.) fname =
   let maxval = Read.uint fh in
   let img = Array.create_matrix height width transp in
   let get_color =
-    if ppm_ascii then Read.get_color_ascii
-    else if maxval < 256 then Read.get_color1 else Read.get_color2 in
+    if ppm_ascii then Read.get_color_ascii maxval else Read.get_color maxval in
   let gamma_transf =
     if gamma = 1. then (fun x -> x) (* optimize *) else gamma_transf gamma in
   if ppm_ascii then Read.skip_spaces_and_comments fh (* be lenient *)
