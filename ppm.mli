@@ -20,8 +20,14 @@
 
 type color = int
 
-val as_matrix_exn : string -> color array array
+val as_matrix_exn : ?gamma:float -> string -> color array array
   (** [as_matrix_exn fname] reads the PPM file named [fname] and
       return the image in a form compatible with the [Graphics]
       library.  In particular, this means that the row of coordinate
-      [0] is the top one.  *)
+      [0] is the top one.
+
+      @raise gamma the gamma correction.  The format specifies 2.2 but
+      the default here is [1.] as files seem to respect this.
+
+      @raise Failure if the file does not respect the PPM
+      specification of the image is too big. *)

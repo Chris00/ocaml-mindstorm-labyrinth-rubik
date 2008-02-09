@@ -82,16 +82,28 @@ struct
       chars left in the channel, return these. *)
   let string chan len = fill_string chan (String.create len) 0 len
 
-  (** Skips blanks, TABs, CRs, LFs.  If the end of file is reached, do
-      nothing. *)
-  let rec skip_spaces chan =
+  let is_space c =
+    c = ' ' || c = '\t' || c = '\n' || c = '\r' || c = '\011' || c = '\012'
+
+  (** Skips whithespace.  Also, if we encounter a '#', skip till the
+      end of the line.  If the end of file is reached, do nothing. *)
+  let rec skip_spaces_and_comments chan =
+    fill_in_buf chan;
+    if chan.in1 > 0 (* not End_of_file *) then begin
+      let c = chan.in_buf.[chan.in0] in
+      if is_space c then begin
+        chan.in0 <- chan.in0 + 1;
+        skip_spaces_and_comments chan
+      end
+      else if c = '#' then skip_till_eol chan
+    end
+  and skip_till_eol chan =
     fill_in_buf chan;
     if chan.in1 > 0 then begin
       let c = chan.in_buf.[chan.in0] in
-      if c = ' ' || c = '\t' || c = '\n' || c = '\r' then begin
-        chan.in0 <- chan.in0 + 1;
-        skip_spaces chan
-      end
+      chan.in0 <- chan.in0 + 1;
+      if c = '\n' || c = '\r' then skip_spaces_and_comments chan
+      else skip_till_eol chan
     end
 
   let zero = Char.code '0'
@@ -116,45 +128,60 @@ struct
       if c < '0' || c > '9' then failwith "Ppm.Read.uint"
       else gather_int chan 0
 
-  (** Read a RGB color, each value being represented by 1 byte. *)
-  let rgb1 chan =
-    let r = Char.code(char chan) in     (* or End_of_file *)
-    let g = Char.code(char chan) in
-    let b = Char.code(char chan) in
-    (r lsl 16) lor (g lsl 8) lor b
+  (** Read a RGB color,the value being represented by 1 byte. *)
+  let get_color1 chan = Char.code(char chan)
 
-  let rgb2_color chan =
+  (** Read a RGB color, the value being represented by 2 bytes. *)
+  let get_color2 chan =
     let c1 = Char.code(char chan) in
     let _c0 = Char.code(char chan) in
     c1                                  (* least significant byte dropped *)
 
-  (** Read a RGB color, each value being represented by 2 bytes. *)
-  let rgb2 chan = 1
+  let get_color_ascii chan =
+    skip_spaces_and_comments chan;
+    let c = uint chan in
+    if c < 0 then 0 else if c > 255 then 255 else c
 end
 
 type color = int                        (* as Graphics *)
 let transp = -1                         (* as Graphics *)
 
-(* TODO: comments (strings starting whith '#') are not care about. *)
-let as_matrix_exn fname =
+let gamma_transf g c =
+  truncate(255. *. (float c /. 255.)**g)
+
+(* TODO: several images in a file; P6 only (not a priority). *)
+let as_matrix_exn ?(gamma=1.) fname =
   let fh = Read.open_in fname in
-  if Read.string fh 2 <> "P6" then
-    failwith "Ppm.as_matrix_exn: not a PPM file (not starting with P6)";
-  Read.skip_spaces fh;
+  let magic = Read.string fh 2 in
+  let ppm_ascii =
+    if magic = "P6" then false
+    else if magic = "P3" then true
+    else failwith "Ppm.as_matrix_exn: not a PPM file (wrong magic number)" in
+  Read.skip_spaces_and_comments fh;
   let width = Read.uint fh in
-  Read.skip_spaces fh;
+  if width > Sys.max_array_length then
+    failwith "Ppm.as_matrix_exn: width exceeds Sys.max_array_length";
+  Read.skip_spaces_and_comments fh;
   let height = Read.uint fh in
-  Read.skip_spaces fh;
+  if height > Sys.max_array_length then
+    failwith "Ppm.as_matrix_exn: height exceeds Sys.max_array_length";
+  Read.skip_spaces_and_comments fh;
   let maxval = Read.uint fh in
-  ignore(Read.string fh 1);             (* single white space *)
   let img = Array.create_matrix height width transp in
-  let rgb =
-    if maxval < 256 then (fun () -> Read.rgb1 fh)
-    else (fun () -> Read.rgb2 fh) in
+  let get_color =
+    if ppm_ascii then Read.get_color_ascii
+    else if maxval < 256 then Read.get_color1 else Read.get_color2 in
+  let gamma_transf =
+    if gamma = 1. then (fun x -> x) (* optimize *) else gamma_transf gamma in
+  if ppm_ascii then Read.skip_spaces_and_comments fh (* be lenient *)
+  else ignore(Read.string fh 1);             (* single white space *)
   for h = 0 to height - 1 do
     let row = img.(h) in
     for w = 0 to width - 1 do
-      row.(w) <- rgb()
+      let r = gamma_transf (get_color fh) in (* or End_of_file *)
+      let g = gamma_transf (get_color fh) in
+      let b = gamma_transf (get_color fh) in
+      row.(w) <- (r lsl 16) lor (g lsl 8) lor b
     done;
   done;
   Read.close_in fh;
