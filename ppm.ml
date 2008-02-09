@@ -161,7 +161,7 @@ let gamma_transf g c =
   truncate(255. *. (float c /. 255.)**g)
 
 (* TODO: several images in a file; P6 only (not a priority). *)
-let as_matrix_exn ?(gamma=1.) fname =
+let as_matrix_exn ?(gamma=1.) ?(bgr=false) fname =
   let fh = Read.open_in fname in
   let magic = Read.string fh 2 in
   let ppm_ascii =
@@ -183,6 +183,9 @@ let as_matrix_exn ?(gamma=1.) fname =
     if ppm_ascii then Read.get_color_ascii maxval else Read.get_color maxval in
   let gamma_transf =
     if gamma = 1. then (fun x -> x) (* optimize *) else gamma_transf gamma in
+  let rgb =
+    if bgr then (fun r g b -> (b lsl 16) lor (g lsl 8) lor r)
+    else (fun r g b -> (r lsl 16) lor (g lsl 8) lor b) in
   if ppm_ascii then Read.skip_spaces_and_comments fh (* be lenient *)
   else ignore(Read.string fh 1);             (* single white space *)
   for h = 0 to height - 1 do
@@ -191,7 +194,7 @@ let as_matrix_exn ?(gamma=1.) fname =
       let r = gamma_transf (get_color fh) in (* or End_of_file *)
       let g = gamma_transf (get_color fh) in
       let b = gamma_transf (get_color fh) in
-      row.(w) <- (r lsl 16) lor (g lsl 8) lor b
+      row.(w) <- rgb r g b
     done;
   done;
   Read.close_in fh;
