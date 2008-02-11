@@ -27,8 +27,8 @@ struct
     printf "Press Ctrl-c to quit.\n%!"
   ;;
 
-  let is_crossing a = a < 33
-  let is_path a = a < 45 && a > 33
+  let is_crossing a = a < 30
+  let is_path a = a < 45 && a > 30
   let is_floor a = a > 45
 
   let speed motor ?tach_limit sp =
@@ -45,13 +45,14 @@ struct
                     let (state,_,_,_) = Motor.get C.conn motor_ultrasonic in
                     state.Motor.run_state = `Idle)
 
-  let reset angle v g =
-    Robot.event_is idle_ultra (fun _ -> g v);
+  let reset angle k =
+    let v = Robot.read ultra in
+    Robot.event_is idle_ultra (fun _ -> k v);
     speed motor_ultrasonic ~tach_limit:(abs angle)
       (if angle >= 0 then 25 else -25)
 
-  let turn_and_do angle f g =
-    Robot.event_is idle_ultra (fun _ -> reset (-angle) f g);
+  let see_ultra angle k =
+    Robot.event_is idle_ultra (fun _ -> reset (-angle) k);
     speed motor_left 0;
     speed motor_right 0;
     speed motor_ultrasonic ~tach_limit:(abs angle)
@@ -69,14 +70,14 @@ struct
     speed motor_left ~tach_limit:tl (-sp);
     speed motor_right ~tach_limit:tl sp
 
-  and go_straight_before_do f =
-    Robot.event_is idle (fun _ -> f());
+  and go_straight_before_do k =
+    Robot.event_is idle (fun _ -> k());
     speed motor_left ~tach_limit:180 40;
     speed motor_right ~tach_limit:180 40
 
   and go_straight () =
-    let sp = if Random.bool() then 15 else -15 in
-    Robot.event color is_floor (fun _ -> rectif 30 sp);
+    let sp = if Random.bool() then 25 else -25 in
+    Robot.event color is_floor (fun _ -> rectif 40 sp);
     Robot.event color is_crossing (fun _ -> look_left());
     speed motor_left 45;
     speed motor_right 45
@@ -84,7 +85,7 @@ struct
   and look_left () =
     speed motor_left 0;
     speed motor_right 0;
-    turn_and_do 90 (Robot.read ultra) begin fun a ->
+    see_ultra (-200) begin fun a ->
       if a > 30 then go_straight_before_do (fun _ -> turn 180 40)
       else look_front()
     end
@@ -94,7 +95,7 @@ struct
     if v > 30 then go_straight_before_do go_straight else look_right()
 
   and look_right () =
-    turn_and_do (-90) (Robot.read ultra) begin fun a ->
+    see_ultra 200 begin fun a ->
       if a > 30 then go_straight_before_do (fun _ -> turn 180 (-40))
       else turn 360 50
     end
