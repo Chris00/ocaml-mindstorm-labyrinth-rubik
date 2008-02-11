@@ -90,7 +90,7 @@ let sound conn port ?(human=false) r =
 
 let ultrasonic conn port r =
   let u = Mindstorm.Sensor.Ultrasonic.make conn port in
-  Mindstorm.Sensor.Ultrasonic.set u `Meas;
+  Mindstorm.Sensor.Ultrasonic.set u `Meas_cont;
   let turn_off() = Mindstorm.Sensor.Ultrasonic.set u `Off in
   r.at_exit <- turn_off :: r.at_exit;
   meas r (fun () -> Mindstorm.Sensor.Ultrasonic.get u `Byte0)
