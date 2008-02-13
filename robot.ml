@@ -37,7 +37,7 @@ and t = {
 (* The value has to be cached in [meas] because the robot (of type
    [t]) needs a uniform access to all data fetching. *)
 type 'a meas = {
-  common : meas_common;
+  Common : meas_common;
   mutable value : 'a option; (* The fetched value, if any *)
 }
 
