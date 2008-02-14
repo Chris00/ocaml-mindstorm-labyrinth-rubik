@@ -10,7 +10,7 @@ module Make(C: sig
 end) :
 sig
 
-val next_case_to_explore : Labyrinth.Coord.t  -> Labyrinth.dir_rel list
+val next_case_to_explore : unit  -> Labyrinth.dir_rel list
 
 type cont = unit -> unit
 

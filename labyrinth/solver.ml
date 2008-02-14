@@ -12,21 +12,43 @@ struct
 
 let make_rel_dir l = List.map Labyrinth.rel_dir l
 
-let search acc l =
-  match l with
-  |[] -> []
-  |sqr::tl ->
-     if Labyrinth.status sqr = `Cross_roads then acc
-     else search (fst sqr)::acc tl
+module CoordAndPath =
+struct
+  type t = Labyrinth.Coord.t*Labyrinth.dir list
+  let compare (p,_) (q,_) = Labyrinth.Coord.compare p q
+end
 
-let next_case_to_explore coord =
-  let square = Labyrinth.position() in
-  let unexpl = Labyrinth.nbh_unexplored square in
+module S = struct
+  include Set.Make(CoordAndPath)
+  let mem p set = mem (p, []) set
+    (* we want to find [p] in [set], no matter the associated path *)
+end
+
+let rec search n v =
+  if S.is_empty n then []
+  else let x_roads =
+    S.filter (fun (sq,_) -> (Labyrinth.status sq) = `Cross_roads) n in
+       if not(S.is_empty x_roads) then snd (S.choose x_roads)
+       else let get_nbh (q,dl) (nG,vG) = let select_nbh (nS,vS) (d,p) =
+         if S.mem p v then (nS,vS)
+         else let newp = (p,List.rev (d::dl)) in
+           (S.add newp nS, S.add newp vS)
+         in let l = Labyrinth.nbh_explored q in
+         let (nF,vF) = List.fold_left select_nbh (S.empty,v) l in
+         (S.union n nF, S.union v vF) in
+       let (n_new,v_new) = S.fold get_nbh n (S.empty, S.empty) in
+       search n_new v_new
+
+let noLabExit () = exit 1
+
+let next_case_to_explore ()  =
+  let sqr = Labyrinth.position() in
+  let unexpl = Labyrinth.nbh_unexplored sqr in
   match unexpl with
-  | (dir,_) :: _ -> Labyrinth.rel_dir dir
-  | [] ->  let l = search [] (Labyrinth.nbh_explored square) in
-           if l = [] then ()(* Pas de sortie! *) 
-           else make_rel_dir (List.rev l)
+  | (dir,_) :: _ -> Labyrinth.rel_dir dir::[]
+  | [] ->  let dir_list = search (S.singleton (sqr,[])) (S.singleton (sqr,[]))
+    in if dir_list = [] then noLabExit()
+      else make_rel_dir dir_list
 
 type cont = unit -> unit
 
