@@ -13,7 +13,7 @@ end
 val nbh_explored : Coord.t -> (dir*Coord.t) list
 val nbh_unexplored : Coord.t -> (dir*Coord.t) list
 val wall_on : Coord.t -> dir -> [`True | `False | `Unknown]
-val status : Coord.t -> [`Explored | `Cross_roads | `Non_explored]a
+val status : Coord.t -> [`Explored | `Cross_roads | `Non_explored]
 
 val position : unit -> Coord.t
 val robot_dir : unit -> dir
