@@ -108,7 +108,12 @@ struct
                                ^ " present twice");
               ) edge;
     (* Make sure the orientation is globally coherent *)
-    unsafe_make corner (List.map (fun (e,o) -> (e, if o then 1 else 0)) edge)
+    if (List.fold_left (fun s (_,o) -> s + o) 0 corner) mod 3 <> 0 then
+      invalid_arg "Rubik.Cubie.make: incoherent orientation of corner cubies";
+    let edge = List.map (fun (e,o) -> (e, if o then 1 else 0)) edge in
+    if (List.fold_left (fun s (_,o) -> s + o) 0 edge) land 0x1 <> 0 then
+      invalid_arg "Rubik.Cubie.make: incoherent orientation of edge cubies";
+    unsafe_make corner edge
 
   let corner cube c =
     let ci = int_of_corner c in
