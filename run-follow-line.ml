@@ -1,3 +1,7 @@
+(* Inspiration:
+   - http://www.wrighthobbies.net/guides/linefollower.htm
+   - Steve Hassenplug *)
+
 open Printf
 module Sensor = Mindstorm.Sensor
 module Motor = Mindstorm.Motor
