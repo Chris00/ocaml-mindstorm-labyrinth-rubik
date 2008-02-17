@@ -25,6 +25,8 @@ sig
   module Coord :
   sig
     type t = int * int
+        (** Position [(x,y)] of the robot. *)
+
     val compare : t -> t -> int
     val nbh : t -> (dir * t) list
   end
@@ -35,8 +37,8 @@ sig
   val status : Coord.t -> [`Explored | `Cross_roads | `Non_explored]
 
   val robot_pos : unit -> Coord.t
-    (** [robot_pos()] returns the current position of the robot
-        relative to its initial position. *)
+    (** [robot_pos()] returns the current position [(x,y)] of the
+        robot relative to its initial position. *)
   val robot_dir : unit -> dir
     (** [robot_dir()] returns the current orientation of the front of
         the robot.  *)

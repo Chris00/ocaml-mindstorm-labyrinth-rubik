@@ -51,10 +51,8 @@ type dir_rel = [`Left | `Front | `Right | `Back]
 type state = [`Explored | `Cross_roads | `Non_explored]
 type wall  = [`True | `False | `Unknown]
 type square = { mutable s_state : state;
-                mutable wall_left: wall;
-                mutable wall_top: wall; }
-
-let taille_lab = 7
+                mutable wall_W: wall;
+                mutable wall_N: wall; }
 
 module Coord =
 struct
@@ -65,41 +63,50 @@ struct
     else if (a = c) && (b = d) then 0
     else 1
 
-  let nbh (i,j) =
-    [(`N, (i+1, j)); (`S, (i-1, j)); (`E, (i, j+1)); (`W, (i, j-1))]
+  let nbh (x,y) =
+    [(`N, (x, y+1)); (`S, (x, y-1)); (`E, (x+1, y)); (`W, (x-1, y))]
 end
+
+(* For the current realisation, it is enough but in general a more
+   extensible datastructure is needed.  We have chosen this for simplicity. *)
+let taille_lab = 7
+let i0 = taille_lab
+let j0 = taille_lab
 
 (* Global state of this module: what we know of the labyrinth and the
    state of the robot. *)
 let lab =
   let n = 2 * taille_lab + 1 in
-  Array.init n (fun _ -> Array.init n (fun _ -> { s_state = `Non_explored;
-                                                wall_left = `Unknown;
-                                                wall_top = `Unknown; } ))
+  let make_square _ = { s_state = `Non_explored;
+                        wall_W = `Unknown;
+                        wall_N = `Unknown; } in
+  Array.init n (fun _ -> Array.init n make_square)
 
-let current_pos = ref (taille_lab, taille_lab)
+let current_pos = ref (0, 0)
 
 let robot_orient = ref `N
 
-let verif_in_lab (i,j) =
-  if i > 2 * Array.length lab || i < 0 || j > 2 * Array.length lab.(0) || j < 0
-  then failwith "Position not in the labyrinth"
+
+let lab_coord (x,y) =
+  let i = i0 + x and j = j0 + y in
+  if i > Array.length lab || i < 0 || j > Array.length lab.(0) || j < 0
+  then failwith "Position not in the labyrinth";
+  (i,j)
 ;;
 
-let wall_on ((i,j) as pos) d =
-  verif_in_lab pos;
+let wall_on xy d =
+  let (i,j) = lab_coord xy in
   match d with
-  | `N -> lab.(i).(j).wall_top
-  | `S -> lab.(i-1).(j).wall_top
-  | `W -> lab.(i).(j).wall_left
-  | `E -> lab.(i).(j+1).wall_left
+  | `N -> lab.(i).(j).wall_N
+  | `S -> lab.(i).(j-1).wall_N
+  | `W -> lab.(i).(j).wall_W
+  | `E -> lab.(i+1).(j).wall_W
 
-let status ((i,j) as pos) =
-  verif_in_lab pos;
+let status xy =
+  let (i,j) = lab_coord xy in
   lab.(i).(j).s_state
 
-let robot_pos () =
-  let (i,j) = !current_pos in (i - taille_lab, j - taille_lab)
+let robot_pos () = !current_pos
 
 let robot_dir () = !robot_orient
 
@@ -121,45 +128,36 @@ let abs_dir (dir:dir_rel) : dir =
   | 2 -> `S
   | _ -> `W
 
-let nbh_explored ((i,j) as pos0) =
-  verif_in_lab pos0;                   (* raise exn if not in lab *)
-  let add_if_explored (dir:dir) pos nbh =
-    if wall_on pos0 dir = `False && status pos = `Explored then
-      (dir, pos) :: nbh
+let nbh_explored xy0 =
+  let add_if_explored nbh (dir, xy) =
+    if wall_on xy0 dir = `False && status xy = `Explored then
+      (dir, xy) :: nbh
     else nbh in
-  let nbh = add_if_explored `N (i+1,j) [] in
-  let nbh = add_if_explored `S (i-1,j) nbh in
-  let nbh = add_if_explored `E (i,j+1) nbh in
-  add_if_explored `W (i,j-1) nbh
+  List.fold_left add_if_explored [] (Coord.nbh xy0)
 
-let nbh_unexplored ((i,j) as pos0) =
-  verif_in_lab pos0;                   (* raise exn if not in lab *)
-  let add_if_unexplored dir pos nbh =
-    if wall_on pos0 dir <> `True && status pos = `Non_explored then
-      (dir, pos) :: nbh
+let nbh_unexplored xy0 =
+  let add_if_unexplored nbh (dir, xy) =
+    if wall_on xy0 dir <> `True && status xy = `Non_explored then
+      (dir, xy) :: nbh
     else nbh in
-  let nbh = add_if_unexplored `N (i+1,j) [] in
-  let nbh = add_if_unexplored `S (i-1,j) nbh in
-  let nbh = add_if_unexplored `E (i,j+1) nbh in
-  add_if_unexplored `W (i,j-1) nbh
-
+  List.fold_left add_if_unexplored [] (Coord.nbh xy0)
 
 let set_wall (d:dir_rel) w =
-  let (i,j) = !current_pos in
+  let (i,j) = lab_coord !current_pos in
   let w = if w then `True else `False in
   match abs_dir d with
-  | `N -> lab.(i).(j).wall_top <- w
-  | `S -> lab.(i-1).(j).wall_top <- w
-  | `W -> lab.(i).(j).wall_left <- w
-  | `E -> lab.(i).(j+1).wall_left <- w
+  | `N -> lab.(i).(j).wall_N <- w
+  | `S -> lab.(i).(j-1).wall_N <- w
+  | `W -> lab.(i).(j).wall_W <- w
+  | `E -> lab.(i+1).(j).wall_W <- w
 
 let move d =
-  let explored =
+  let is_explored =
     List.fold_left (fun a (d,p) -> a && (wall_on !current_pos d = `True
                                        || status p <> `Non_explored)
                    ) true (Coord.nbh !current_pos) in
   let (i,j) = !current_pos in
-  lab.(i).(j).s_state <- if explored then `Explored else `Cross_roads;
+  lab.(i).(j).s_state <- if is_explored then `Explored else `Cross_roads;
   let d_abs = abs_dir d in
   robot_orient := d_abs;
   current_pos := (match d_abs with
