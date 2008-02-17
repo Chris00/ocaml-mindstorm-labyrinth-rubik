@@ -25,10 +25,15 @@ sig
   module Coord :
   sig
     type t = int * int
-        (** Position [(x,y)] of the robot. *)
+        (** Position [(x,y)] of the robot relative to its initial
+            position.  (The coordinates of the initial position thus
+            being [(0,0)]).  *)
 
     val compare : t -> t -> int
+      (** Lexicographic comparison function. *)
     val nbh : t -> (dir * t) list
+      (** [Coord.nbh xy] return the directions and coordinates of all
+          neighbors of [xy]. *)
   end
 
   val nbh_explored : Coord.t -> (dir * Coord.t) list
