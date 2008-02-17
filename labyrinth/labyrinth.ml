@@ -34,11 +34,11 @@ sig
   val wall_on : Coord.t -> dir -> [`True | `False | `Unknown]
   val status : Coord.t -> [`Explored | `Cross_roads | `Non_explored]
 
-  val position : unit -> Coord.t
+  val robot_pos : unit -> Coord.t
   val robot_dir : unit -> dir
   val rel_dir : dir -> dir_rel
   val abs_dir : dir_rel -> dir
-  val set_wall : dir_rel -> [`True | `False | `Unknown] -> unit
+  val set_wall : dir_rel -> bool -> unit
   val move :  [`Left | `Front | `Right | `Back] -> unit
 end
 
@@ -98,7 +98,7 @@ let status ((i,j) as pos) =
   verif_in_lab pos;
   lab.(i).(j).s_state
 
-let position () =
+let robot_pos () =
   let (i,j) = !current_pos in (i - taille_lab, j - taille_lab)
 
 let robot_dir () = !robot_orient
@@ -144,8 +144,9 @@ let nbh_unexplored ((i,j) as pos0) =
   add_if_unexplored `W (i,j-1) nbh
 
 
-let set_wall (d:dir_rel) (w:wall) =
+let set_wall (d:dir_rel) w =
   let (i,j) = !current_pos in
+  let w = if w then `True else `False in
   match abs_dir d with
   | `N -> lab.(i).(j).wall_top <- w
   | `S -> lab.(i-1).(j).wall_top <- w
