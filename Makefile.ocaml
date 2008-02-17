@@ -12,6 +12,7 @@ OCAMLFIND  ?= ocamlfind
 
 TAR	?= tar
 CD	?= cd
+MKDIR	?= mkdir
 
 # The location of OCaml's library files.
 OCAMLLIBDIR ?= $(shell $(OCAMLC) -where)
