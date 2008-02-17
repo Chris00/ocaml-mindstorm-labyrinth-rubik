@@ -10,5 +10,3 @@ run-push.cmo: robot.cmi
 run-push.cmx: robot.cmx 
 run-turn.cmo: robot.cmi 
 run-turn.cmx: robot.cmx 
-x_run_light.cmo: robot.cmi 
-x_run_light.cmx: robot.cmx 
