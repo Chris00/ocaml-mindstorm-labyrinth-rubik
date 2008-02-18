@@ -35,6 +35,8 @@ sig
 
   val run_loop : unit -> unit
 
+  val stop : unit -> unit
+
   val next_case_to_explore : unit -> Labyrinth.dir list
     (** [next_case_to_explore()] returns the possible directions... *)
 

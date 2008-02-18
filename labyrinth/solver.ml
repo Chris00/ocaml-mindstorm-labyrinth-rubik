@@ -36,21 +36,29 @@ module Make(C: sig
             end) =
 struct
   open C
- 
+  open Printf
+
+  let stop _ =
+    Motor.set conn Motor.all (Motor.speed 0);
+    Sensor.set conn light_port `Light_inactive `Pct_full_scale;
+    close conn
+
   (** If the robot determines that there is no exit to the labyrinth,
       it will call this function. *)
   let no_lab_exit () = (* Print on the screen that there is no issue *)
-    Mindstorm.Sound.play C.conn "Woops.rso" ~loop:true;
+    (* Mindstorm.Sound.play C.conn "Woops.rso" ~loop:true;
     Unix.sleep 3;
-    Mindstorm.Sound.stop C.conn;
+    Mindstorm.Sound.stop C.conn;*)
+    stop();
     exit 1
 
   (** If the robot finds the exit of the labyrinth, it will call this
       function. *)
   let found_exit () =
-    C.success();
+    Labyrinth.success();
     (* Leave the graph displayed (=> do not exit immediately) *)
     Unix.sleep 60;                      (* FIXME *)
+    stop();
     exit 0
 
   (** Continuations taken by the fonctions. *)
@@ -99,7 +107,7 @@ struct
     | (dir,_) :: _ -> dir :: []
     | [] ->
         let dir_list = search (S.singleton (pos,[])) (S.singleton (pos,[])) in
-        if dir_list = [] then no_lab_exit() else dir_list
+        if dir_list = [] then (printf "no issue\n%!"; no_lab_exit()) else dir_list
 
   let is_crossing a = a < 30
   let is_path a = a < 45 && a > 30
@@ -109,38 +117,38 @@ struct
 
   let run_loop _ = Robot.run r
 
-  let color = Robot.light C.conn C.light_port r
-  let ultra = Robot.ultrasonic C.conn C.ultra_port r
-  let touch = Robot.touch C.conn switch_port r
+  let color = Robot.light conn light_port r
+  let ultra = Robot.ultrasonic conn ultra_port r
+  let touch = Robot.touch conn switch_port r
 
   let idle = Robot.meas r begin fun () ->
-    let (state,_,_,_) = Motor.get C.conn C.motor_left in
+    let (state,_,_,_) = Motor.get conn motor_left in
     state.Motor.run_state = `Idle
   end
   let idle_ultra =
     Robot.meas r (fun () ->
-                    let (state,_,_,_) = Motor.get C.conn C.motor_ultra in
+                    let (state,_,_,_) = Motor.get conn motor_ultra in
                     state.Motor.run_state = `Idle)
 
   let speed motor ?tach_limit sp =
-    Motor.set C.conn motor (Motor.speed ?tach_limit (-sp))
+    Motor.set conn motor (Motor.speed ?tach_limit (-sp))
 
   (** The robot goes straight a little bit without testing if it is on a
       crossing. *)
   let go_straight_before_do k =
     Robot.event_is touch found_exit;
     Robot.event_is idle (fun _ -> k());
-    speed C.motor_left ~tach_limit:180 40;
-    speed C.motor_right ~tach_limit:180 40
+    speed motor_left ~tach_limit:180 40;
+    speed motor_right ~tach_limit:180 40
 
   (** The robot goes to the next square, i.e. the next crossing. *)
   let rec go_next_square k =
     Robot.event_is touch found_exit;
     Robot.event color is_crossing (fun _ -> k());
-    let sp = if Random.bool() then 15 else -15 in
+    let sp = if Random.bool() then 30 else -30 in
     Robot.event color is_floor (fun _ -> rectif k 40 sp);
-    speed C.motor_left 45;
-    speed C.motor_right 45
+    speed motor_left 45;
+    speed motor_right 45
 
   (** The robot rectifies its trajectory. *)
   and rectif k tl sp =
@@ -148,43 +156,50 @@ struct
     Robot.event color is_path (fun _ -> go_next_square k);
     Robot.event color is_crossing (fun _ -> k());
     Robot.event_is idle (fun _ -> rectif k (tl*2) (-sp));
-    speed C.motor_left ~tach_limit:tl (-sp);
-    speed C.motor_right ~tach_limit:tl sp
+    speed motor_left ~tach_limit:tl (-sp);
+    speed motor_right ~tach_limit:tl sp
 
   (** The robot resets the position of its 'eyes'. *)
   let reset angle k =
     let v = Robot.read ultra in
     Robot.event_is idle_ultra (fun _  -> k v);
-    speed C.motor_ultra ~tach_limit:(abs angle) (if angle >= 0 then 25 else -25)
+    speed motor_ultra ~tach_limit:(abs angle) (if angle >= 0 then 25 else -25)
 
   (** The robot turns its 'eyes' to look around. *)
   let see_ultra angle k =
     Robot.event_is idle_ultra (fun _ -> reset (-angle) k);
-    speed C.motor_ultra ~tach_limit:(abs angle) (if angle >= 0 then 25 else -25)
+    speed motor_ultra ~tach_limit:(abs angle) (if angle >= 0 then 25 else -25)
 
   let look_left k =
-    see_ultra (-200) (fun a -> Labyrinth.set_wall `Left (a <= 15); k())
+    see_ultra (-200) (fun a -> Labyrinth.set_wall `Left (a <= 20); k())
 
   let look_right k =
-    see_ultra 200 (fun a -> Labyrinth.set_wall `Right (a <= 15); k())
+    see_ultra 200 (fun a -> Labyrinth.set_wall `Right (a <= 20); k())
 
   let look_front k =
-    let v = Robot.read ultra in Labyrinth.set_wall `Front (v <= 15);
+    let v = Robot.read ultra in Labyrinth.set_wall `Front (v <= 20);
     k()
 
   (** The robot turns on itself. *)
   let turn tl sp k =
     Robot.event_is idle k;
-    speed C.motor_left ~tach_limit:tl (-sp);
-    speed C.motor_right ~tach_limit:tl sp
+    speed motor_left ~tach_limit:tl (-sp);
+    speed motor_right ~tach_limit:tl sp
+
+  let rec search_crossing tl sp k =
+    Robot.event color is_crossing (fun _ -> k());
+    Robot.event_is idle (fun _ -> search_crossing (tl*2) (-sp) k);
+    speed motor_left ~tach_limit:tl (-sp);
+    speed motor_right ~tach_limit:tl sp
 
   let look_wall_back k =
-    turn 360 40 (fun _ -> Labyrinth.set_wall `Back ((Robot.read ultra) <= 15);
-      turn 360 40 k)
+    search_crossing 20 30 (fun _ -> turn 360 30
+      (fun _ -> Labyrinth.set_wall `Back ((Robot.read ultra) <= 20);
+        turn 360 30 (fun _ -> search_crossing 20 30 k)))
 
   let look_walls k =
-    speed C.motor_left 0;
-    speed C.motor_right 0;
+    speed motor_left 0;
+    speed motor_right 0;
     let wall d =
       Labyrinth.wall_on (Labyrinth.robot_pos()) (Labyrinth.abs_dir d)  in
     if wall `Left = `Unknown then
@@ -208,7 +223,7 @@ struct
     go_straight_before_do (fun _ -> turn 180 40 (fun _ -> go_next_square k))
 
   let go_right k = Labyrinth.move `Right;
-    go_straight_before_do (fun _ -> turn (-180) 40 (fun _ -> go_next_square k))
+    go_straight_before_do (fun _ -> turn 180 (-40) (fun _ -> go_next_square k))
 
   let go_back k = Labyrinth.move `Back;
     go_straight_before_do (fun _ -> turn 360 40 (fun _ -> go_next_square k))
