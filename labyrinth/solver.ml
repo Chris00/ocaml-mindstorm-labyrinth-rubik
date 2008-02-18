@@ -45,7 +45,7 @@ struct
 
   (** If the robot determines that there is no exit to the labyrinth,
       it will call this function. *)
-  let no_exit_lab () = (* Print on the screen that there is no issue *)
+  let no_exit_exists () =
     (* Mindstorm.Sound.play C.conn "Woops.rso" ~loop:true;
     Unix.sleep 3;
     Mindstorm.Sound.stop C.conn;*)
@@ -122,7 +122,7 @@ struct
     | [] ->
         let is_x_roads (sq,_) = Labyrinth.status sq = `Cross_roads in
         match path_to_closer pos is_x_roads with
-        | [] -> no_exit_lab()
+        | [] -> no_exit_exists()
         | p -> p
 
   let is_crossing a = a < 30
