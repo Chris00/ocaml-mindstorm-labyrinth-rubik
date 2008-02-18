@@ -32,6 +32,7 @@ let explored_color = rgb 166 227 147    (* green *)
 let corss_road_color = red
 let laby_structure = rgb 171 183 227
 let goal_color = yellow
+let text_font = "-*-times new roman-medium-r-normal--100-0-0-0-p-0-iso8859-1"
 
 let dx = square_length + 2 * wall_thickness
 let dy = dx
@@ -131,7 +132,13 @@ struct
     and py = y0 + y * dy + wall_thickness in
     set_color goal_color;
     fill_rect px py square_length square_length;
-    draw_robot()
+    draw_robot();
+    let msg = "Trouvé !" in
+    set_font text_font;
+    set_color black;
+    let (w,h) = text_size msg in
+    moveto x0 y0; rmoveto (-w / 2) (-h /2);  draw_string msg
+
 end
 
 
