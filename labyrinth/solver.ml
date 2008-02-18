@@ -45,10 +45,11 @@ struct
 
   (** If the robot determines that there is no exit to the labyrinth,
       it will call this function. *)
-  let no_lab_exit () = (* Print on the screen that there is no issue *)
+  let no_exit_lab () = (* Print on the screen that there is no issue *)
     (* Mindstorm.Sound.play C.conn "Woops.rso" ~loop:true;
     Unix.sleep 3;
     Mindstorm.Sound.stop C.conn;*)
+    printf "no issue\n%!";
     stop();
     exit 1
 
@@ -78,14 +79,27 @@ struct
   module S = struct
     include Set.Make(CoordAndPath)
     let mem p set = mem (p, []) set
-      (* We want to find whether [p] is in [set], no matter the
-         associated path (since the comparison function does not care
-         about the path, we can a dummy []). *)
+      (* We want to find whether [p] is in [set], no matter what the
+         associated path is (since the comparison function does not
+         care about the path, we can a use dummy []). *)
   end
 
-  (** We search for a square labelled by `Cross_roads in the neighbourhood of
-      the current square. *)
-  let rec search n v =
+  (** [path_to_closer pos cond] search for a square [p] satisfying
+      [cond p] as close as possible to the square [pos] while staying
+      in the square already visited.  If no such square [p] exists,
+      return [[]].  Otherwise, return a list of directions to reach it. *)
+  let rec path_to_closer pos cond =
+    let init = S.singleton (pos,[]) in
+    search cond init init
+
+  (** [search cond n v] construct an increasing sequance of neighbors
+      until a square [p] satisfying [cond p] is found or there is no
+      more squares to explore.  [n] is the set of squares that are
+      reached from the initial position by a minimal path of k moves
+      (where k is the number of times [search] was called) and [v] are
+      all previous squares reachable from the initial position in k
+      moves or less.  *)
+  and search cond n v =
     if S.is_empty n then []
     else let x_roads =
       S.filter (fun (sq,_) -> (Labyrinth.status sq) = `Cross_roads) n in
@@ -104,10 +118,12 @@ struct
     let pos = Labyrinth.robot_pos() in
     let unexpl = Labyrinth.nbh_unexplored pos in
     match unexpl with
-    | (dir,_) :: _ -> dir :: []
+    | (dir,_) :: _ -> [dir]
     | [] ->
-        let dir_list = search (S.singleton (pos,[])) (S.singleton (pos,[])) in
-        if dir_list = [] then (printf "no issue\n%!"; no_lab_exit()) else dir_list
+        let is_x_roads (sq,_) = Labyrinth.status sq = `Cross_roads in
+        match path_to_closer pos is_x_roads with
+        | [] -> no_exit_lab()
+        | p -> p
 
   let is_crossing a = a < 30
   let is_path a = a < 45 && a > 30
@@ -150,7 +166,7 @@ struct
     speed motor_left 45;
     speed motor_right 45
 
-  (** The robot rectifies its trajectory. *)
+  (** The robot rectifies its trajectory to go back to the path. *)
   and rectif k tl sp =
     Robot.event_is touch found_exit;
     Robot.event color is_path (fun _ -> go_next_square k);
