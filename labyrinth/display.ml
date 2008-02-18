@@ -33,6 +33,7 @@ let corss_road_color = red
 let laby_structure = rgb 171 183 227
 let goal_color = yellow
 let text_font = "-*-times new roman-medium-r-normal--100-0-0-0-p-0-iso8859-1"
+let text_success = "Trouvé !"
 
 let dx = square_length + 2 * wall_thickness
 let dy = dx
@@ -133,11 +134,10 @@ struct
     set_color goal_color;
     fill_rect px py square_length square_length;
     draw_robot();
-    let msg = "Trouvé !" in
     set_font text_font;
     set_color black;
-    let (w,h) = text_size msg in
-    moveto x0 y0; rmoveto (-w / 2) (-h /2);  draw_string msg
+    let (w,h) = text_size text_success in
+    moveto x0 y0;  rmoveto (-w / 2) (-h /2);  draw_string text_success
 
 end
 

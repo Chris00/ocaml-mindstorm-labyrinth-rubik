@@ -29,7 +29,7 @@ module Make(C: sig
               val ultra_port : Mindstorm.Sensor.port
               val switch_port : Mindstorm.Sensor.port
 
-              module Labyrinth : Labyrinth.T
+              module Labyrinth : Display.T
             end) :
 sig
 

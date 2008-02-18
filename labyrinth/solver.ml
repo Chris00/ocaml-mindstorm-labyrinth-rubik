@@ -32,7 +32,7 @@ module Make(C: sig
               val ultra_port : Sensor.port
               val switch_port : Sensor.port
 
-              module Labyrinth : Labyrinth.T
+              module Labyrinth : Display.T
             end) =
 struct
   open C
@@ -47,7 +47,11 @@ struct
 
   (** If the robot finds the exit of the labyrinth, it will call this
       function. *)
-  let found_exit () = exit 0
+  let found_exit () =
+    C.success();
+    (* Leave the graph displayed (=> do not exit immediately) *)
+    Unix.sleep 60;                      (* FIXME *)
+    exit 0
 
   (** Continuations taken by the fonctions. *)
   type cont = unit -> unit

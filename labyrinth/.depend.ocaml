@@ -4,7 +4,7 @@ labyrinth.cmo: labyrinth.cmi
 labyrinth.cmx: labyrinth.cmi 
 run.cmo: solver.cmi labyrinth.cmi display.cmi 
 run.cmx: solver.cmx labyrinth.cmx display.cmx 
-solver.cmo: labyrinth.cmi solver.cmi 
-solver.cmx: labyrinth.cmx solver.cmi 
+solver.cmo: labyrinth.cmi display.cmi solver.cmi 
+solver.cmx: labyrinth.cmx display.cmx solver.cmi 
 display.cmi: labyrinth.cmi 
-solver.cmi: labyrinth.cmi 
+solver.cmi: labyrinth.cmi display.cmi 
