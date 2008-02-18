@@ -16,7 +16,9 @@
    LICENSE for more details. *)
 
 
+(** Current knowledge of the labyrinth and of the robot position. *)
 
+(** The signature of a "Labyrinth" module. *)
 module type T =
 sig
   type dir = [`N | `S | `E | `W]

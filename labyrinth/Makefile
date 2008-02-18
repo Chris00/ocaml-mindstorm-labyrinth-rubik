@@ -1,6 +1,7 @@
 # Compile in -custom mode so there is no problem with finding the
 # shared library dllmindstorm.so
 MINDSTORM_PATH = ../../mindstorm
+DOC_DIR = doc
 
 OCAMLC_FLAGS = -g -dtypes -dllpath .. -custom -I $(MINDSTORM_PATH) -I ..
 OCAMLOPT_FLAGS = -dtypes -I $(MINDSTORM_PATH) -I ..
@@ -26,3 +27,4 @@ include ../Makefile.ocaml
 
 clean::
 	$(RM) *.exe *.com
+	$(RM) -rf $(DOC_DIR)

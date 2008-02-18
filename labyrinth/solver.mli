@@ -17,6 +17,9 @@
    MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the file
    LICENSE for more details. *)
 
+
+(** Functor using a [Labyrinth] module to develop some strategies to
+    find the exit of a labyrinth.  *)
 module Make(C: sig
               val conn : 'a Mindstorm.conn
               val motor_left : Mindstorm.Motor.port
