@@ -120,13 +120,14 @@ struct
 
   (* @override *)
   let move (d: dir_rel) =
-    draw_square (robot_pos());          (* clear current square *)
+    let old_pos = robot_pos() in
     L.move d;
-    draw_square (robot_pos());          (* mark new square as visited *)
+    draw_square old_pos;                (* clear current square *)
+    draw_square (robot_pos());
     draw_robot();
   ;;
 
-  (* New function *)
+  (* New functions *)
   let success () =
     let (x,y) = robot_pos() in
     let px = x0 + x * dx + wall_thickness
