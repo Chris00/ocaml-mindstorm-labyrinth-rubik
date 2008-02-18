@@ -24,7 +24,7 @@ open Mindstorm
    change them easily) and by the Labyrinth implementation (so as to
    enrich it esily with e.g. a graphical mode). *)
 module Make(C: sig
-              val conn : 'a Mindstorm.conn
+              val conn : Mindstorm.bluetooth Mindstorm.conn
               val motor_left : Motor.port
               val motor_right : Motor.port
               val motor_ultra : Motor.port
@@ -166,6 +166,16 @@ struct
     let v = Robot.read ultra in Labyrinth.set_wall `Front (v <= 40);
     k()
 
+  (** The robot turns on itself. *)
+  let turn tl sp k =
+    Robot.event_is idle k;
+    speed C.motor_left ~tach_limit:tl (-sp);
+    speed C.motor_right ~tach_limit:tl sp
+
+  let look_wall_back k =
+    turn 360 40 (fun _ -> Labyrinth.set_wall `Back ((Robot.read ultra) <= 40);
+      turn 360 40 k)
+
   let look_walls k =
     speed C.motor_left 0;
     speed C.motor_right 0;
@@ -184,12 +194,6 @@ struct
     else if wall `Front = `Unknown then
       look_front k
     else k()
-
-  (** The robot turns on itself. *)
-  let turn tl sp k =
-    Robot.event_is idle k;
-    speed C.motor_left ~tach_limit:tl (-sp);
-    speed C.motor_right ~tach_limit:tl sp
 
   let go_straight k = Labyrinth.move `Front;
     go_straight_before_do (fun _ -> go_next_square k)

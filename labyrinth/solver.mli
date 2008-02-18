@@ -21,7 +21,7 @@
 (** Functor using a [Labyrinth] module to develop some strategies to
     find the exit of a labyrinth.  *)
 module Make(C: sig
-              val conn : 'a Mindstorm.conn
+              val conn : Mindstorm.bluetooth Mindstorm.conn
               val motor_left : Mindstorm.Motor.port
               val motor_right : Mindstorm.Motor.port
               val motor_ultra : Mindstorm.Motor.port
@@ -38,6 +38,10 @@ sig
 
   type cont = unit -> unit
     (** Continuations taken by the fonctions. *)
+
+  val look_wall_back : cont -> unit
+    (** [look_wall_back k] makes the robot look behind it,
+        and then continues with [k]. *)
 
   val look_walls : cont  -> unit
     (** [look_walls k] makes the robot look around in the 3 directions,
