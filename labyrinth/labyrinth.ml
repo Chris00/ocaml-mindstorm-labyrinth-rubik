@@ -64,7 +64,7 @@ struct
     else 1
 
   let nbh (x,y) =
-    [(`N, (x, y+1)); (`S, (x, y-1)); (`E, (x+1, y)); (`W, (x-1, y))]
+    [(`N, (x+1, y)); (`S, (x-1, y)); (`E, (x, y+1)); (`W, (x, y-1))]
 end
 
 (* For the current realisation, it is enough but in general a more
@@ -85,7 +85,6 @@ let lab =
 let current_pos = ref (0, 0)
 
 let robot_orient = ref `N
-
 
 let lab_coord (x,y) =
   let i = i0 + x and j = j0 + y in
