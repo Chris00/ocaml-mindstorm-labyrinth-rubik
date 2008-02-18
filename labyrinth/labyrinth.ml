@@ -157,20 +157,17 @@ let set_wall (d:dir_rel) w =
   | `E -> lab.(i+1).(j).wall_W <- w
 
 let move d =
+  let d_abs = abs_dir d in
+  (* [explored d] tells whether the neighbor square [d] needs not be
+     explored in the future.  If a neighbor square should be explored,
+     we want come back at a later date to the current square to do it. *)
+  let explored (dir,xy) =
+    dir = d_abs || wall_on !current_pos dir = `True
+    || status xy <> `Non_explored in
   let fully_explored =
-    List.fold_left (fun a (d,xy) ->
-                      let x,y = xy in
-                      Printf.printf "xy=(%i,%i) => %s\n%!" x y
-                        (match status xy with
-                           `Explored -> "Ex"
-                         | `Cross_roads -> "X"
-                         | `Non_explored -> "NonEx");
-                      a && (wall_on !current_pos d = `True
-                          || status xy <> `Non_explored)
-                   ) true (Coord.nbh !current_pos) in
+    List.fold_left (fun a d -> a && explored d) true (Coord.nbh !current_pos) in
   let (i,j) = lab_coord !current_pos in
   lab.(i).(j).s_state <- if fully_explored then `Explored else `Cross_roads;
-  let d_abs = abs_dir d in
   robot_orient := d_abs;
   current_pos := Coord.pos !current_pos d_abs
 

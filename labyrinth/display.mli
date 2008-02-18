@@ -23,5 +23,7 @@ sig
     (** Call this function when the robot is on the final square.  *)
 end
 
-
+(** This functor add some visualisation (in an OCaml graphics window)
+    to the Labyrinth operations.  A way to signal that we have found
+    the labyrinth exit is also provided. *)
 module Make : functor (L:Labyrinth.T) -> T
