@@ -18,6 +18,8 @@
 
 *)
 
+open Bigarray
+
 (* Enrich List *)
 module List = struct
   include List
@@ -32,7 +34,29 @@ end
 
 type generator = F | B | L | R | U | D
 
-(** Symmetric group of the cube.  Some Rubik cube coordinates are
+let generator = [| F; B; L; R; U; D |]
+
+type move = int
+    (* F -> 0, F^2 -> 1, F^3 -> 2, B -> 3, B^2 -> 4,..., D^3 -> 17 *)
+
+let nmove = 18                         (* to iterate on the moves *)
+
+(* We use [(g, e)] because that is how we want the solution of the
+   rubik cube to be presented. *)
+let move (g, e) =
+  if e < 1 || e > 3 then invalid_arg "Rubik.move: exponent must be 1, 2, or 3";
+  match g with
+  | F -> e - 1
+  | B -> e + 2
+  | L -> e + 5
+  | R -> e + 8
+  | U -> e + 11
+  | D -> e + 14
+
+let generator m = (generator.(m / 3), (m mod 3) + 1)
+
+
+(** Symmetry group of the cube.  Some Rubik cube coordinates are
     "reduced" using this symmetry group. *)
 module Sym =
 struct
@@ -53,6 +77,7 @@ struct
     | DFR -> 4 | DLF -> 5 | DBL -> 6 | DRB -> 7
   let corner_int = [| URF; UFL; ULB; UBR; DFR; DLF; DBL; DRB |]
   let corner_name = [| "URF"; "UFL"; "ULB"; "UBR"; "DFR"; "DLF"; "DBL"; "DRB" |]
+  let ncorners = 8
 
   type edge = UR | UF | UL | UB | DR | DF | DL | DB | FR | FL | BL | BR
   let int_of_edge = function
@@ -61,6 +86,7 @@ struct
   let edge_int = [| UR; UF; UL; UB; DR; DF; DL; DB; FR; FL; BL; BR |]
   let edge_name = [| "UR"; "UF"; "UL"; "UB"; "DR"; "DF";
                      "DL"; "DB"; "FR"; "FL"; "BL"; "BR" |]
+  let nedges = 12
 
   type t = {
     corner_perm: int array;
@@ -70,14 +96,14 @@ struct
   }
 
   let unsafe_make corners edges =
-    let corner_perm = Array.make 8 (-1)
-    and corner_rot = Array.make 8 0 in
+    let corner_perm = Array.make ncorners (-1)
+    and corner_rot = Array.make ncorners 0 in
     List.iteri (fun i (c,o) ->
                   corner_perm.(i) <- int_of_corner c;
                   corner_rot.(i) <- o
                ) corners;
-    let edge_perm = Array.make 12 (-1)
-    and edge_flip = Array.make 12 0 in
+    let edge_perm = Array.make nedges (-1)
+    and edge_flip = Array.make nedges 0 in
     List.iteri (fun i (e,o) ->
                   edge_perm.(i) <- int_of_edge e;
                   edge_flip.(i) <- o;
@@ -86,10 +112,12 @@ struct
       edge_perm = edge_perm; edge_flip = edge_flip }
 
   let make ~corner ~edge =
-    if List.length corner <> 8 then invalid_arg "Rubik.Cubie.make: 8 corners!";
-    if List.length edge <> 12 then invalid_arg "Rubik.Cubie.make: 12 edges!";
+    if List.length corner <> ncorners then
+      invalid_arg "Rubik.Cubie.make: 8 corners!";
+    if List.length edge <> nedges then
+      invalid_arg "Rubik.Cubie.make: 12 edges!";
     (* Check injectivity & orientations valuesa *)
-    let corner_seen = Array.make 8 false in
+    let corner_seen = Array.make ncorners false in
     List.iter (fun (c,o) ->
                  let ci = int_of_corner c in
                  if corner_seen.(ci) then
@@ -100,7 +128,7 @@ struct
                    invalid_arg("Rubik.Cubie.make: " ^ corner_name.(ci)
                                ^ " orientation must be 0, 1, or 2");
               ) corner;
-    let edge_seen = Array.make 12 false in
+    let edge_seen = Array.make nedges false in
     List.iter (fun (e,_) ->
                  let ei = int_of_edge e in
                  if edge_seen.(ei) then
@@ -148,39 +176,85 @@ struct
 
   (* Group operations *)
   let id = {
-    corner_perm = Array.init 8 (fun i -> i); (* 8 corners *)
-    corner_rot = Array.make 8 0;
-    edge_perm = Array.init 12 (fun x -> x); (* 12 edges *)
-    edge_flip = Array.make 12 0;
+    corner_perm = Array.init ncorners (fun i -> i);
+    corner_rot = Array.make ncorners 0;
+    edge_perm = Array.init nedges (fun x -> x);
+    edge_flip = Array.make nedges 0;
   }
 
   let is_identity cube = cube = id
 
   let mul a b = {
-    corner_perm = Array.init 8 (fun x -> a.corner_perm.(b.corner_perm.(x)));
+    corner_perm =
+      Array.init ncorners (fun x -> a.corner_perm.(b.corner_perm.(x)));
     corner_rot =
       (let o x = (a.corner_rot.(b.corner_perm.(x)) + b.corner_rot.(x)) mod 3 in
-       Array.init 8 o);
-    edge_perm = Array.init 12 (fun x -> a.edge_perm.(b.edge_perm.(x)));
+       Array.init ncorners o);
+    edge_perm = Array.init nedges (fun x -> a.edge_perm.(b.edge_perm.(x)));
     edge_flip =
       (let o x = (a.edge_flip.(a.edge_perm.(x)) + b.edge_flip.(x)) land 0x1 in
-       Array.init 12 o);
+       Array.init nedges o);
   }
 
   (* inverse in Z/3Z *)
   let inv3 x = if x = 0 then 0 else 3 - x
 
   let inv cube =
-    let corner_perm = Array.make 8 (-1) in
-    for i = 0 to 7 do corner_perm.(cube.corner_perm.(i)) <- i done;
-    let edge_perm = Array.make 12 (-1) in
-    for i = 0 to 11 do edge_perm.(cube.edge_perm.(i)) <- i done;
+    let corner_perm = Array.make ncorners (-1) in
+    for i = 0 to ncorners - 1 do corner_perm.(cube.corner_perm.(i)) <- i done;
+    let edge_perm = Array.make nedges (-1) in
+    for i = 0 to nedges - 1 do edge_perm.(cube.edge_perm.(i)) <- i done;
     {
       corner_perm = corner_perm;
-      corner_rot = Array.init 8 (fun i -> inv3 cube.corner_rot.(i));
+      corner_rot = Array.init ncorners (fun i -> inv3 cube.corner_rot.(i));
       edge_perm = edge_perm;
-      edge_flip = cube.edge_flip;         (* in Z/2Z, -x = x *)
+      edge_flip = cube.edge_flip;       (* in Z/2Z, -x = x *)
     }
 
 end
 
+module CornerO =
+struct
+  type t = int                          (* 0 .. 2186 = 2^7 - 1 *)
+  let norient = 2187
+
+  let of_cube cube =
+    let n = ref 0 in
+    for i = 0 to ncorners - 2 do n := 3 * !n + cube.corner_rot.(i) done;
+    !n
+
+  (* Generate a cube with the orientation represented by the number n *)
+  let to_cube n =
+    let corner_rot = Array.make ncorners (-1) in
+    let n = ref n and s = ref 0 in
+    for i = ncorners - 2 downto 0 do
+      let d = !n mod 3 in
+      corner_rot.(i) <- d;  s := !s + d;
+      n := !n / 3
+    done;
+    corner_rot.(ncorners - 1) <- Cubie.inv3(s mod 3);
+    { Cubie.id with corner_rot = corner_rot }
+
+  let mul_table = Array2.create int16 c_layout norient 
+
+  let mul c g = mul_table.{c,g}
+
+  let initialize ?file () =
+    for i = 0 to norient - 1 do
+      
+    done
+end
+
+module CornerP =
+struct
+
+end
+
+module EdgeO =
+struct
+
+end
+
+module EdgeP =
+struct
+end

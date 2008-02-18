@@ -15,12 +15,30 @@
    MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the file
    LICENSE for more details. *)
 
-(** Rubik cube solvers. *)
+(** Rubik cube group encodings. *)
 
-(** Standard Rubik group generators.  The letters respectively stand
-    for the clockwise rotations of the faces `Front', `Back', `Left',
-    `Right', `Up' and `Down'. *)
-type generator = F | B | L | R | U | D
+
+(** {2 Rubik group generators} *)
+
+(** Standard Rubik group generators. *)
+type generator =
+  | F     (** 90° CW turn of the {i front} face *)
+  | B     (** 90° CW turn of the {i back} face *)
+  | L     (** 90° CW turn of the {i left} face *)
+  | R     (** 90° CW turn of the {i right} face *)
+  | U     (** 90° CW turn of the {i up} face *)
+  | D     (** 90° CW turn of the {i down} face *)
+
+type move
+  (** The basic moves that the generators allow: F, F^2, F^3, B, B^2,
+      B^3, L, L^2, L^3,...  Remember that X^4 = 1 for all generators X. *)
+
+val move : generator * int -> move
+  (** [move (g, i)] returns the move corresponding to [g^i].
+      @raise Invalid_Argument if [i < 1] or [i > 3]. *)
+
+val generator : move -> generator * int
+  (** [generator] is the inverse function of {!Rubik.move}. *)
 
 
 (** {2 Coordinate systems}
@@ -119,4 +137,25 @@ sig
   val is_identity : t -> bool
     (** The premutation is the Rubik cube home state i.e., the
         identity (neutral element of the group). *)
+end
+
+(** Corner orientation (requires initialisation). *)
+module CornerO :
+sig
+  type t
+    (** The orientation of the corners in compact form for fast
+        computations. *)
+
+  val of_cube : Cubie.t -> t
+    (** [of_cube cube] returns the orientation coordinates of the
+        [cube].  Note that this function is not one-to-one, i.e. these
+        coordinates are a partial characterization of a cube.  *)
+
+  val mul : t -> move -> t
+    (** [mul c m] apply the move [m] to the cube [c] i.e. right
+        multiply the element [c] of the group by [m].  BEWARE: before
+        using this, you need to run {!Rubik.CornerO.initialize}. *)
+
+  val initialize : ?file:string -> unit -> unit
+    (** [initialize()] build the tables needed by {!Rubik.CornerO.mul}. *)
 end
