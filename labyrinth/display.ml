@@ -95,28 +95,27 @@ struct
   (* @override *)
   let set_wall (d: dir_rel) b =
     L.set_wall d b;
-    if b then begin
-      set_color wall_color;
-      let (rx,ry) = robot_pos() in
-      let px = x0 + rx * dx and py = y0 + ry * dy in
-      match abs_dir d with
-      | `N ->
-          let x = px + wall_thickness
-          and y = py + wall_thickness + square_length in
-          fill_rect x y square_length (2 * wall_thickness)
-      | `S ->
-          let x = px + wall_thickness
-          and y = py - wall_thickness in
-          fill_rect x y square_length (2 * wall_thickness)
-      | `W ->
-          let x = px - wall_thickness
-          and y = py + wall_thickness in
-          fill_rect x y (2 * wall_thickness) square_length
-      | `E ->
-          let x = px + wall_thickness + square_length
-          and y = py + wall_thickness in
-          fill_rect x y (2 * wall_thickness) square_length
-    end
+    set_color (if b then wall_color else explored_color);
+    let (rx,ry) = robot_pos() in
+    let px = x0 + rx * dx and py = y0 + ry * dy in
+    match abs_dir d with
+    | `N ->
+        let x = px + wall_thickness
+        and y = py + wall_thickness + square_length in
+        fill_rect x y square_length (2 * wall_thickness)
+    | `S ->
+        let x = px + wall_thickness
+        and y = py - wall_thickness in
+        fill_rect x y square_length (2 * wall_thickness)
+    | `W ->
+        let x = px - wall_thickness
+        and y = py + wall_thickness in
+        fill_rect x y (2 * wall_thickness) square_length
+    | `E ->
+        let x = px + wall_thickness + square_length
+        and y = py + wall_thickness in
+        fill_rect x y (2 * wall_thickness) square_length
+
 
   (* @override *)
   let move (d: dir_rel) =
