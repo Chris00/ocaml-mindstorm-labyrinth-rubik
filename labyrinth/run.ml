@@ -28,4 +28,5 @@ module Solver = Solver.Make(C)
 let () =
   let rec solve () = Solver.follow_path look (Solver.next_case_to_explore())
   and look () = Solver.look_walls solve in
-  Solver.look_wall_back look
+  Solver.look_wall_back look;
+  Solver.run_loop()

@@ -36,7 +36,7 @@ module Make(C: sig
             end) =
 struct
   open C
-
+ 
   (** If the robot determines that there is no exit to the labyrinth,
       it will call this function. *)
   let no_lab_exit () = (* Print on the screen that there is no issue *)
@@ -103,6 +103,8 @@ struct
 
   let r = Robot.make()
 
+  let run_loop _ = Robot.run r
+
   let color = Robot.light C.conn C.light_port r
   let ultra = Robot.ultrasonic C.conn C.ultra_port r
   let touch = Robot.touch C.conn switch_port r
@@ -157,13 +159,13 @@ struct
     speed C.motor_ultra ~tach_limit:(abs angle) (if angle >= 0 then 25 else -25)
 
   let look_left k =
-    see_ultra (-200) (fun a -> Labyrinth.set_wall `Left (a <= 40); k())
+    see_ultra (-200) (fun a -> Labyrinth.set_wall `Left (a <= 15); k())
 
   let look_right k =
-    see_ultra 200 (fun a -> Labyrinth.set_wall `Right (a <= 40); k())
+    see_ultra 200 (fun a -> Labyrinth.set_wall `Right (a <= 15); k())
 
   let look_front k =
-    let v = Robot.read ultra in Labyrinth.set_wall `Front (v <= 40);
+    let v = Robot.read ultra in Labyrinth.set_wall `Front (v <= 15);
     k()
 
   (** The robot turns on itself. *)
@@ -173,7 +175,7 @@ struct
     speed C.motor_right ~tach_limit:tl sp
 
   let look_wall_back k =
-    turn 360 40 (fun _ -> Labyrinth.set_wall `Back ((Robot.read ultra) <= 40);
+    turn 360 40 (fun _ -> Labyrinth.set_wall `Back ((Robot.read ultra) <= 15);
       turn 360 40 k)
 
   let look_walls k =
