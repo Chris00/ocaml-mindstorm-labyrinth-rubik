@@ -15,6 +15,12 @@
    MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the file
    LICENSE for more details. *)
 
+module type T =
+sig
+  include Labyrinth.T
+  val success : unit -> unit
+end
+
 open Graphics
 
 let (x0,y0) = (350, 350)                (* initial position *)
@@ -25,11 +31,12 @@ let wall_color = black
 let explored_color = rgb 166 227 147    (* green *)
 let corss_road_color = red
 let laby_structure = rgb 171 183 227
+let goal_color = yellow
 
 let dx = square_length + 2 * wall_thickness
 let dy = dx
 
-module Make(L : Labyrinth.T) : Labyrinth.T =
+module Make(L : Labyrinth.T) : T =
 struct
   include L
 
@@ -116,6 +123,15 @@ struct
     draw_square (robot_pos());          (* mark new square as visited *)
     draw_robot();
   ;;
+
+  (* New function *)
+  let success () =
+    let (x,y) = robot_pos() in
+    let px = x0 + x * dx + wall_thickness
+    and py = y0 + y * dy + wall_thickness in
+    set_color goal_color;
+    fill_rect px py square_length square_length;
+    draw_robot()
 end
 
 
