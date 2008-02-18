@@ -95,7 +95,7 @@ let robot_orient = ref `N
 let lab_coord (x,y) =
   let i = i0 + x and j = j0 + y in
   if i > Array.length lab || i < 0 || j > Array.length lab.(0) || j < 0
-  then failwith "Position not in the labyrinth";
+  then failwith "Position not in the labyrinth matrix";
   (i,j)
 ;;
 
@@ -157,12 +157,19 @@ let set_wall (d:dir_rel) w =
   | `E -> lab.(i+1).(j).wall_W <- w
 
 let move d =
-  let is_explored =
-    List.fold_left (fun a (d,p) -> a && (wall_on !current_pos d = `True
-                                       || status p <> `Non_explored)
+  let fully_explored =
+    List.fold_left (fun a (d,xy) ->
+                      let x,y = xy in
+                      Printf.printf "xy=(%i,%i) => %s\n%!" x y
+                        (match status xy with
+                           `Explored -> "Ex"
+                         | `Cross_roads -> "X"
+                         | `Non_explored -> "NonEx");
+                      a && (wall_on !current_pos d = `True
+                          || status xy <> `Non_explored)
                    ) true (Coord.nbh !current_pos) in
   let (i,j) = lab_coord !current_pos in
-  lab.(i).(j).s_state <- if is_explored then `Explored else `Cross_roads;
+  lab.(i).(j).s_state <- if fully_explored then `Explored else `Cross_roads;
   let d_abs = abs_dir d in
   robot_orient := d_abs;
   current_pos := Coord.pos !current_pos d_abs

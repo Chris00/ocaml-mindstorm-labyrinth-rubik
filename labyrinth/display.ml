@@ -29,7 +29,7 @@ let robot_color = magenta
 let wall_thickness = 2 (* pixels; wall are twice as thick *)
 let wall_color = black
 let explored_color = rgb 166 227 147    (* green *)
-let corss_road_color = red
+let cross_road_color = red
 let laby_structure = rgb 171 183 227
 let goal_color = yellow
 let text_font = "-*-times new roman-medium-r-normal--100-0-0-0-p-0-iso8859-1"
@@ -50,7 +50,7 @@ struct
                | `Non_explored ->  background);
     fill_rect px py square_length square_length;
     if status xy = `Cross_roads then begin
-      set_color corss_road_color;
+      set_color cross_road_color;
       moveto px py;  rlineto square_length square_length;
       moveto px (py + square_length);  rlineto square_length (- square_length)
     end
