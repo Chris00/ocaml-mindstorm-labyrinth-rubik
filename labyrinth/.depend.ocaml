@@ -2,6 +2,8 @@ display.cmo: labyrinth.cmi
 display.cmx: labyrinth.cmx 
 labyrinth.cmo: labyrinth.cmi 
 labyrinth.cmx: labyrinth.cmi 
+run.cmo: solver.cmi labyrinth.cmi display.cmo 
+run.cmx: solver.cmx labyrinth.cmx display.cmx 
 solver.cmo: labyrinth.cmi solver.cmi 
 solver.cmx: labyrinth.cmx solver.cmi 
 solver.cmi: labyrinth.cmi 

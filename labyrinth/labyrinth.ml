@@ -63,8 +63,14 @@ struct
     else if (a = c) && (b = d) then 0
     else 1
 
-  let nbh (x,y) =
-    [(`N, (x+1, y)); (`S, (x-1, y)); (`E, (x, y+1)); (`W, (x, y-1))]
+  let pos (x,y) = function
+    | `N -> (x, y+1)
+    | `S -> (x, y-1)
+    | `W -> (x-1, y)
+    | `E -> (x+1, y)
+
+  let nbh xy =
+    let c = pos xy in [(`N, c `N); (`S, c `S); (`E, c `E); (`W, c `W)]
 end
 
 (* For the current realisation, it is enough but in general a more
@@ -155,15 +161,11 @@ let move d =
     List.fold_left (fun a (d,p) -> a && (wall_on !current_pos d = `True
                                        || status p <> `Non_explored)
                    ) true (Coord.nbh !current_pos) in
-  let (i,j) = !current_pos in
+  let (i,j) = lab_coord !current_pos in
   lab.(i).(j).s_state <- if is_explored then `Explored else `Cross_roads;
   let d_abs = abs_dir d in
   robot_orient := d_abs;
-  current_pos := (match d_abs with
-                  | `N -> (i+1, j)
-                  | `S -> (i-1, j)
-                  | `W -> (i, j-1)
-                  | `E -> (i, j+1))
+  current_pos := Coord.pos !current_pos d_abs
 
 
 
