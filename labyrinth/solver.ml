@@ -101,18 +101,20 @@ struct
       moves or less.  *)
   and search cond n v =
     if S.is_empty n then []
-    else let x_roads =
-      S.filter (fun (sq,_) -> (Labyrinth.status sq) = `Cross_roads) n in
-    if not(S.is_empty x_roads) then snd (S.choose x_roads)
-    else let get_nbh (q,dl) (nG,vG) = let select_nbh (nS,vS) (d,p) =
-      if S.mem p v then (nS,vS)
-      else let newp = (p,List.rev (d :: dl)) in
-      (S.add newp nS, S.add newp vS)
-    in let l = Labyrinth.nbh_explored q in
-    let (nF,vF) = List.fold_left select_nbh (S.empty,v) l in
-    (S.union n nF, S.union v vF) in
-    let (n_new,v_new) = S.fold get_nbh n (S.empty, S.empty) in
-    search n_new v_new
+    else
+      let sq_of_cond = S.filter cond n in
+      if S.is_empty sq_of_cond then begin
+        let nbh_of_n (q,path) ((n_curr,v_curr) as curr) =
+          let nbh_q ((n_curr,v_curr) as curr) (dir,pos) =
+            if S.mem pos v_curr then curr
+            else let newp = (pos, dir :: path) in
+                 (S.add newp n_curr, S.add newp v_curr) in
+          List.fold_left nbh_q curr (Labyrinth.nbh_explored q)
+        in
+        let (n_new,v_new) = S.fold nbh_of_n n (S.empty, v) in
+        search cond n_new v_new
+      end
+      else List.rev(snd(S.choose sq_of_cond))
 
   let next_case_to_explore ()  =
     let pos = Labyrinth.robot_pos() in
@@ -208,10 +210,16 @@ struct
     speed motor_left ~tach_limit:tl (-sp);
     speed motor_right ~tach_limit:tl sp
 
+  let go_back_before_do k =
+    Robot.event_is idle (fun _ -> k());
+    speed motor_left ~tach_limit:20 (-40);
+    speed motor_right ~tach_limit:20 (-40)
+
   let look_wall_back k =
-    search_crossing 20 30 (fun _ -> turn 360 30
+    search_crossing 20 30 (fun _ -> turn 350 30
       (fun _ -> Labyrinth.set_wall `Back ((Robot.read ultra) <= 20);
-        turn 360 30 (fun _ -> search_crossing 20 30 k)))
+        turn 350 30 (fun _ -> go_back_before_do
+          (fun _ -> search_crossing 20 30 k))))
 
   let look_walls k =
     speed motor_left 0;
