@@ -135,7 +135,7 @@ let abs_dir (dir:dir_rel) : dir =
 
 let nbh_explored xy0 =
   let add_if_explored nbh (dir, xy) =
-    if wall_on xy0 dir = `False && status xy = `Explored then
+    if wall_on xy0 dir = `False && status xy <> `Non_explored then
       (dir, xy) :: nbh
     else nbh in
   List.fold_left add_if_explored [] (Coord.nbh xy0)
