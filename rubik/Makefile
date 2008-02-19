@@ -3,12 +3,12 @@
 MINDSTORM_PATH = ../../mindstorm
 DOC_DIR = doc
 
-OCAMLC_FLAGS = -thread -g -dtypes -dllpath .. -custom -I $(MINDSTORM_PATH)
-OCAMLOPT_FLAGS = -thread -dtypes -I $(MINDSTORM_PATH)
+OCAMLC_FLAGS = -thread -g -dtypes -dllpath .. -custom -I $(MINDSTORM_PATH) -I ..
+OCAMLOPT_FLAGS = -thread -dtypes -I $(MINDSTORM_PATH) -I ..
 
 INTERFACES=$(wildcard *.mli)
 PROGRAM=
-LIBS_CMA=unix.cma mindstorm.cma threads.cma
+LIBS_CMA=unix.cma mindstorm.cma robot.cmo
 LIBS_CMXA=$(LIBS_CMA:.cma=.cmxa) robot.cmx
 
 .PHONY: byte native
