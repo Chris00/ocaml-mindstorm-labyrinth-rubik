@@ -236,155 +236,177 @@ module type Coordinate =
 sig
   type t
   val of_cube : Cubie.t -> t
-  val mul : t -> move -> t
-  val initialize : ?file:string -> unit -> unit
+    (** Returns the coordinate of a cube. *)
+  val initialize : ?file:string -> unit -> (t -> move -> t)
 end
 
-(** Common structure of coordinates functorized.  (This is performance
-    critical, so if it turns out that the code is too slow, one may
-    inline the functor by hand...) *)
-module MakeCoord(C: sig
-                   val length : int
-                   val of_cube : Cubie.t -> int
-                     (** Returns the coordinate of a cube. *)
-                   val to_cube : int -> Cubie.t
-                     (** Generate a cube with the orientation
-                         represented by the number [o]. *)
-                 end) =
-struct
-  type t = int                          (* 0 .. length-1 *)
+(* Common structure of coordinates.
 
-  let mul_table = Array2.create int16_unsigned c_layout C.length nmove
+    We first wanted to functorize it but, apart from the possible
+    performance penalty (this part of the code is critical), it is a
+    bit heavy to parametrize by the Bigarray.kind -- no existential
+    types => have to abstract (int,_,c_layout) Array.2 and redefine
+    the needed needed array operations on the new type...
 
-  let mul o m = mul_table.{o,m}
-
+    Since eventually, only the initialize function is shared, a macro
+    was deemed simpler.  We assume that the following values are
+    defined:
+    - val length : int
+    - val of_cube : Cubie.t -> int
+    - val to_cube : int -> Cubie.t
+      (* Generate a cube with the orientation represented by the number. *)
+*)
+DEFINE INITIALIZE(kind) =
   let initialize_mul () =
+    let mul_table = Array2.create kind c_layout length nmove in
     for o = 0 to length - 1 do
-      let cube = C.to_cube o in
+      let cube = to_cube o in
       for m = 0 to nmove - 1 do
-        mul_table.{o,m} <- C.of_cube(Cubie.mul cube (Cubie.move m))
+        mul_table.{o,m} <- of_cube(Cubie.mul cube (Cubie.move m))
       done
-    done
-
-  let initialize ?file () =
-    match file with
+    done;
+    mul_table in
+  let mul_table = match file with
     | None -> initialize_mul()
     | Some fname ->
         if Sys.file_exists fname then begin
           let fh = open_in_bin fname in
-          let tbl = input_value fh in   (* may segfault! *)
-          Array2.blit tbl mul_table;
-          close_in fh
+          let mul_table : (int, _, c_layout) Array2.t = input_value fh in
+          (* may segfault! *)
+          close_in fh;
+          mul_table
         end
         else begin
           (* Compute and save the table *)
-          initialize_mul();
+          let mul_table = initialize_mul() in
           let fh = open_out_bin fname in
           output_value fh mul_table;
-          close_out fh
-        end
+          close_out fh;
+          mul_table
+        end in
+  fun o m -> mul_table.{o,m}             (* [mul] function hiding the table *)
+;;
+
+
+module CornerO =
+struct
+  type t = int                         (* 0 .. 2186 = 2^7 - 1 *)
+  let length = 2187
+
+  let of_cube cube =
+    let n = ref 0 in
+    for i = 0 to Cubie.ncorners - 2 do
+      n := 3 * !n + cube.Cubie.corner_rot.(i)
+    done;
+    !n
+
+  let to_cube o =
+    let corner_rot = Array.make Cubie.ncorners (-1) in
+    let o = ref o and s = ref 0 in
+    for i = Cubie.ncorners - 2 downto 0 do
+      let d = !o mod 3 in
+      corner_rot.(i) <- d;
+      s := !s + d;
+      o := !o / 3
+    done;
+    (* (the sum of all orientations) mod 3 = 0 *)
+    corner_rot.(Cubie.ncorners - 1) <- Cubie.inv3(!s mod 3);
+    { Cubie.id with Cubie.corner_rot = corner_rot }
+
+  let initialize ?file () = INITIALIZE(int16_unsigned)
 end
 
 
-module CornerO = MakeCoord
-  (struct
-     (* t : 0 .. 2186 = 2^7 - 1 *)
-     let length = 2187
+module EdgeO =
+struct
+  type t = int                          (* 0 .. 2047 = 2^11 - 1 *)
+  let length = 2048
 
-     let of_cube cube =
-       let n = ref 0 in
-       for i = 0 to Cubie.ncorners - 2 do
-         n := 3 * !n + cube.Cubie.corner_rot.(i)
-       done;
-       !n
+  let of_cube cube =
+    let n = ref 0 in
+    for i = 0 to Cubie.nedges - 2 do
+      n := 2 * !n + cube.Cubie.edge_flip.(i)
+    done;
+    !n
 
-     let to_cube o =
-       let corner_rot = Array.make Cubie.ncorners (-1) in
-       let o = ref o and s = ref 0 in
-       for i = Cubie.ncorners - 2 downto 0 do
-         let d = !o mod 3 in
-         corner_rot.(i) <- d;
-         s := !s + d;
-         o := !o / 3
-       done;
-       (* (the sum of all orientations) mod 3 = 0 *)
-       corner_rot.(Cubie.ncorners - 1) <- Cubie.inv3(!s mod 3);
-       { Cubie.id with Cubie.corner_rot = corner_rot }
-   end)
+  let to_cube o =
+    let edge_flip = Array.make Cubie.nedges (-1) in
+    let o = ref o and s = ref 0 in
+    for i = Cubie.ncorners - 2 downto 0 do
+      let d = !o land 0x1 in         (* mod 2 *)
+      edge_flip.(i) <- d;
+      s := !s + d;
+      o := !o lsr 2                  (* div 2 *)
+    done;
+    (* (the sum of all orientations) mod 2 = 0 *)
+    edge_flip.(Cubie.nedges - 1) <- !s land 0x1; (* -x = x in Z/2Z *)
+    { Cubie.id with Cubie.edge_flip = edge_flip }
 
-
-module EdgeO = MakeCoord
-  (struct
-     let length = 2048
-
-     let of_cube cube =
-       let n = ref 0 in
-       for i = 0 to Cubie.nedges - 2 do
-         n := 2 * !n + cube.Cubie.edge_flip.(i)
-       done;
-       !n
-
-     let to_cube o =
-       let edge_flip = Array.make Cubie.nedges (-1) in
-       let o = ref o and s = ref 0 in
-       for i = Cubie.ncorners - 2 downto 0 do
-         let d = !o land 0x1 in         (* mod 2 *)
-         edge_flip.(i) <- d;
-         s := !s + d;
-         o := !o lsr 2                  (* div 2 *)
-       done;
-       (* (the sum of all orientations) mod 2 = 0 *)
-       edge_flip.(Cubie.nedges - 1) <- !s land 0x1; (* -x = x in Z/2Z *)
-       { Cubie.id with Cubie.edge_flip = edge_flip }
-   end)
+  let initialize ?file () = INITIALIZE(int16_unsigned)
+end
 
 
 
-module CornerP = MakeCoord
-  (struct
-     let length = 40320                  (* = 8! *)
+module CornerP =
+struct
+  type t = int
+  let length = 40_320                  (* = 8! *)
 
-     (* See http://kociemba.org/math/coordlevel.htm#cornpermdef *)
-     let of_cube cube =
-       let n = ref 0 in
-       for i = Cubie.ncorners - 1 downto 1 do
-         let c = cube.Cubie.corner_perm.(i) in
-         let s = ref 0 in
-         for j = i - 1 downto 0 do
-           if cube.Cubie.corner_perm.(j) > c then incr s
-         done;
-         n := (!n + !s) * i
-       done;
-       !n
+  (* See http://kociemba.org/math/coordlevel.htm#cornpermdef *)
+  let of_cube cube =
+    let n = ref 0 in
+    for i = Cubie.ncorners - 1 downto 1 do
+      let c = cube.Cubie.corner_perm.(i) in
+      let s = ref 0 in
+      for j = i - 1 downto 0 do
+        if cube.Cubie.corner_perm.(j) > c then incr s
+      done;
+      n := (!n + !s) * i
+    done;
+    !n
 
-     let to_cube o =
-       
-   end)
+  let to_cube p =
+    let corner_perm = Array.make Cubie.ncorners (-1) in
+    
+    { Cubie.id with Cubie.corner_perm = corner_perm }
+
+  let initialize ?file () = INITIALIZE(int16_unsigned)
+end
 
 
-module EdgeP = MakeCoord
-  (struct
-     let length = 479001600             (* = 12! *)
+module EdgeP =
+struct
+  type t = int
+  let length = 479_001_600             (* = 12! *)
 
-     let of_cube cube =
-       let n = ref 0 in
-       for i = Cubie.nedges - 1 downto 1 do
-         let c = cube.Cubie.edge_perm.(i) in
-         let s = ref 0 in
-         for j = i - 1 downto 0 do
-           if cube.Cubie.edge_perm.(j) > c then incr s
-         done;
-         n := (!n + !s) * i
-       done;
-       !n
+  let of_cube cube =
+    let n = ref 0 in
+    for i = Cubie.nedges - 1 downto 1 do
+      let c = cube.Cubie.edge_perm.(i) in
+      let s = ref 0 in
+      for j = i - 1 downto 0 do
+        if cube.Cubie.edge_perm.(j) > c then incr s
+      done;
+      n := (!n + !s) * i
+    done;
+    !n
 
-     let to_cube o =
-       
-   end)
+  let to_cube o =
+    let edge_perm = Array.make Cubie.ncorners (-1) in
+    
+    { Cubie.id with Cubie.corner_perm = edge_perm }
+
+  let initialize ?file () = INITIALIZE(int)
+end
 
 
 module UDSlice =
 struct
+  type t = int                          (* 0 .. 494 = 12*11*10*9/4! - 1 *)
+  let length = 495
+
+  let of_cube cube =
+    -1
 
 end
 
