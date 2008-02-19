@@ -37,7 +37,10 @@ type generator = F | B | L | R | U | D
 let generator = [| F; B; L; R; U; D |]
 
 type move = int
-    (* F -> 0, F^2 -> 1, F^3 -> 2, B -> 3, B^2 -> 4,..., D^3 -> 17 *)
+    (* F -> 0, F^2 -> 1, F^3 -> 2, B -> 3, B^2 -> 4,..., D^3 -> 17.
+       It is important that the fact that is is an int is known by the
+       submodules because it will be used as an index of move
+       tables. *)
 
 let nmove = 18                         (* to iterate on the moves *)
 
@@ -89,7 +92,7 @@ struct
   let nedges = 12
 
   type t = {
-    corner_perm: int array;
+    corner_perm: int array;             (* int => easy perm composition *)
     corner_rot: int array;              (* 0,1,2: CW rotation of 120° *)
     edge_perm: int array;
     edge_flip: int array;               (* 0: not flipped, 1: flipped *)
@@ -150,30 +153,6 @@ struct
     let ei = int_of_edge e in
     (edge_int.(cube.edge_perm.(ei)), cube.edge_flip.(ei) <> 0)
 
-  (* The elements corresponding to the generators (a clockwise move of
-     the corresponding face). *)
-  let move_F =
-    unsafe_make [UFL,1; DLF,2; ULB,0; UBR,0; URF,2; DFR,1; DBL,0; DRB,0]
-      [UR,0;  FL,1;  UL,0;UB,0;DR,0;  FR,1;  DL,0;DB,0;  UF,1; DF,1;  BL,0;BR,0]
-  let move_B =
-    unsafe_make [URF,0; UFL,0; UBR,1; DRB,2; DFR,0; DLF,0; ULB,2; DBL,1]
-      [UR,0;UF,0;UL,0;  BR,1;  DR,0;DF,0;DL,0;  BL,1;  FR,0;FL,0;  UB,1; DB,1]
-  let move_L =
-    unsafe_make [URF,0; ULB,1; DBL,2; UBR,0; DFR,0; UFL,2; DLF,1; DRB,0]
-      [UR,0;UF,0;  BL,0;  UB,0;DR,0;DF,0;  FL,0;  DB,0;FR,0;  UL,0; DL,0;  BR,0]
-  let move_R =
-    unsafe_make [DFR,2; UFL,0; ULB,0; URF,1; DRB,1; DLF,0; DBL,0; UBR,2]
-      [FR,0;  UF,0;UL,0;UB,0;  BR,0;  DF,0;DL,0;DB,0;  DR,0;  FL,0;BL,0;  UR,0]
-  let move_U =
-    unsafe_make [UBR,0; URF,0; UFL,0; ULB,0; DFR,0; DLF,0; DBL,0; DRB,0]
-      [UB,0; UR,0; UF,0; UL,0;  DR,0;DF,0;DL,0;DB,0;FR,0;FL,0;BL,0;BR,0]
-  let move_D =
-    unsafe_make [URF,0; UFL,0; ULB,0; UBR,0; DLF,0; DBL,0; DRB,0; DFR,0]
-      [UR,0;UF,0;UL,0;UB,0;  DF,0; DL,0; DB,0; DR,0; FR,0;FL,0;BL,0;BR,0]
-  let move = function
-    | F -> move_F | B -> move_B | L -> move_L
-    | R -> move_R | U -> move_U | D -> move_D
-
   (* Group operations *)
   let id = {
     corner_perm = Array.init ncorners (fun i -> i);
@@ -211,50 +190,206 @@ struct
       edge_flip = cube.edge_flip;       (* in Z/2Z, -x = x *)
     }
 
+  (* The elements corresponding to the generators (a clockwise move of
+     the corresponding face). *)
+  let move_F =
+    unsafe_make [UFL,1; DLF,2; ULB,0; UBR,0; URF,2; DFR,1; DBL,0; DRB,0]
+      [UR,0;  FL,1;  UL,0;UB,0;DR,0;  FR,1;  DL,0;DB,0;  UF,1; DF,1;  BL,0;BR,0]
+  let move_B =
+    unsafe_make [URF,0; UFL,0; UBR,1; DRB,2; DFR,0; DLF,0; ULB,2; DBL,1]
+      [UR,0;UF,0;UL,0;  BR,1;  DR,0;DF,0;DL,0;  BL,1;  FR,0;FL,0;  UB,1; DB,1]
+  let move_L =
+    unsafe_make [URF,0; ULB,1; DBL,2; UBR,0; DFR,0; UFL,2; DLF,1; DRB,0]
+      [UR,0;UF,0;  BL,0;  UB,0;DR,0;DF,0;  FL,0;  DB,0;FR,0;  UL,0; DL,0;  BR,0]
+  let move_R =
+    unsafe_make [DFR,2; UFL,0; ULB,0; URF,1; DRB,1; DLF,0; DBL,0; UBR,2]
+      [FR,0;  UF,0;UL,0;UB,0;  BR,0;  DF,0;DL,0;DB,0;  DR,0;  FL,0;BL,0;  UR,0]
+  let move_U =
+    unsafe_make [UBR,0; URF,0; UFL,0; ULB,0; DFR,0; DLF,0; DBL,0; DRB,0]
+      [UB,0; UR,0; UF,0; UL,0;  DR,0;DF,0;DL,0;DB,0;FR,0;FL,0;BL,0;BR,0]
+  let move_D =
+    unsafe_make [URF,0; UFL,0; ULB,0; UBR,0; DLF,0; DBL,0; DRB,0; DFR,0]
+      [UR,0;UF,0;UL,0;UB,0;  DF,0; DL,0; DB,0; DR,0; FR,0;FL,0;BL,0;BR,0]
+
+  (* MAKE SURE to respect the encoding order of {!Rubik.move}. *)
+  let move_table =
+    let move_F2 = mul move_F move_F
+    and move_B2 = mul move_B move_B
+    and move_L2 = mul move_L move_L
+    and move_R2 = mul move_R move_R
+    and move_U2 = mul move_U move_U
+    and move_D2 = mul move_D move_D in
+    [| move_F; move_F2; mul move_F2 move_F;
+       move_B; move_B2; mul move_B2 move_B;
+       move_L; move_L2; mul move_L2 move_L;
+       move_R; move_R2; mul move_R2 move_R;
+       move_U; move_U2; mul move_U2 move_U;
+       move_D; move_D2; mul move_D2 move_D |]
+
+  let move (m: move) = move_table.(m)
+
+  let () = assert(Array.length move_table = nmove)
 end
 
-module CornerO =
+
+module type Coordinate =
+sig
+  type t
+  val of_cube : Cubie.t -> t
+  val mul : t -> move -> t
+  val initialize : ?file:string -> unit -> unit
+end
+
+(** Common structure of coordinates functorized.  (This is performance
+    critical, so if it turns out that the code is too slow, one may
+    inline the functor by hand...) *)
+module MakeCoord(C: sig
+                   val length : int
+                   val of_cube : Cubie.t -> int
+                     (** Returns the coordinate of a cube. *)
+                   val to_cube : int -> Cubie.t
+                     (** Generate a cube with the orientation
+                         represented by the number [o]. *)
+                 end) =
 struct
-  type t = int                          (* 0 .. 2186 = 2^7 - 1 *)
-  let norient = 2187
+  type t = int                          (* 0 .. length-1 *)
 
-  let of_cube cube =
-    let n = ref 0 in
-    for i = 0 to ncorners - 2 do n := 3 * !n + cube.corner_rot.(i) done;
-    !n
+  let mul_table = Array2.create int16_unsigned c_layout C.length nmove
 
-  (* Generate a cube with the orientation represented by the number n *)
-  let to_cube n =
-    let corner_rot = Array.make ncorners (-1) in
-    let n = ref n and s = ref 0 in
-    for i = ncorners - 2 downto 0 do
-      let d = !n mod 3 in
-      corner_rot.(i) <- d;  s := !s + d;
-      n := !n / 3
-    done;
-    corner_rot.(ncorners - 1) <- Cubie.inv3(s mod 3);
-    { Cubie.id with corner_rot = corner_rot }
+  let mul o m = mul_table.{o,m}
 
-  let mul_table = Array2.create int16 c_layout norient 
-
-  let mul c g = mul_table.{c,g}
+  let initialize_mul () =
+    for o = 0 to length - 1 do
+      let cube = C.to_cube o in
+      for m = 0 to nmove - 1 do
+        mul_table.{o,m} <- C.of_cube(Cubie.mul cube (Cubie.move m))
+      done
+    done
 
   let initialize ?file () =
-    for i = 0 to norient - 1 do
-      
-    done
+    match file with
+    | None -> initialize_mul()
+    | Some fname ->
+        if Sys.file_exists fname then begin
+          let fh = open_in_bin fname in
+          let tbl = input_value fh in   (* may segfault! *)
+          Array2.blit tbl mul_table;
+          close_in fh
+        end
+        else begin
+          (* Compute and save the table *)
+          initialize_mul();
+          let fh = open_out_bin fname in
+          output_value fh mul_table;
+          close_out fh
+        end
 end
 
-module CornerP =
+
+module CornerO = MakeCoord
+  (struct
+     (* t : 0 .. 2186 = 2^7 - 1 *)
+     let length = 2187
+
+     let of_cube cube =
+       let n = ref 0 in
+       for i = 0 to Cubie.ncorners - 2 do
+         n := 3 * !n + cube.Cubie.corner_rot.(i)
+       done;
+       !n
+
+     let to_cube o =
+       let corner_rot = Array.make Cubie.ncorners (-1) in
+       let o = ref o and s = ref 0 in
+       for i = Cubie.ncorners - 2 downto 0 do
+         let d = !o mod 3 in
+         corner_rot.(i) <- d;
+         s := !s + d;
+         o := !o / 3
+       done;
+       (* (the sum of all orientations) mod 3 = 0 *)
+       corner_rot.(Cubie.ncorners - 1) <- Cubie.inv3(!s mod 3);
+       { Cubie.id with Cubie.corner_rot = corner_rot }
+   end)
+
+
+module EdgeO = MakeCoord
+  (struct
+     let length = 2048
+
+     let of_cube cube =
+       let n = ref 0 in
+       for i = 0 to Cubie.nedges - 2 do
+         n := 2 * !n + cube.Cubie.edge_flip.(i)
+       done;
+       !n
+
+     let to_cube o =
+       let edge_flip = Array.make Cubie.nedges (-1) in
+       let o = ref o and s = ref 0 in
+       for i = Cubie.ncorners - 2 downto 0 do
+         let d = !o land 0x1 in         (* mod 2 *)
+         edge_flip.(i) <- d;
+         s := !s + d;
+         o := !o lsr 2                  (* div 2 *)
+       done;
+       (* (the sum of all orientations) mod 2 = 0 *)
+       edge_flip.(Cubie.nedges - 1) <- !s land 0x1; (* -x = x in Z/2Z *)
+       { Cubie.id with Cubie.edge_flip = edge_flip }
+   end)
+
+
+
+module CornerP = MakeCoord
+  (struct
+     let length = 40320                  (* = 8! *)
+
+     (* See http://kociemba.org/math/coordlevel.htm#cornpermdef *)
+     let of_cube cube =
+       let n = ref 0 in
+       for i = Cubie.ncorners - 1 downto 1 do
+         let c = cube.Cubie.corner_perm.(i) in
+         let s = ref 0 in
+         for j = i - 1 downto 0 do
+           if cube.Cubie.corner_perm.(j) > c then incr s
+         done;
+         n := (!n + !s) * i
+       done;
+       !n
+
+     let to_cube o =
+       
+   end)
+
+
+module EdgeP = MakeCoord
+  (struct
+     let length = 479001600             (* = 12! *)
+
+     let of_cube cube =
+       let n = ref 0 in
+       for i = Cubie.nedges - 1 downto 1 do
+         let c = cube.Cubie.edge_perm.(i) in
+         let s = ref 0 in
+         for j = i - 1 downto 0 do
+           if cube.Cubie.edge_perm.(j) > c then incr s
+         done;
+         n := (!n + !s) * i
+       done;
+       !n
+
+     let to_cube o =
+       
+   end)
+
+
+module UDSlice =
 struct
 
 end
 
-module EdgeO =
-struct
 
-end
 
-module EdgeP =
-struct
-end
+(* Local Variables: *)
+(* compile-command: "make -k rubik.cmo" *)
+(* End: *)

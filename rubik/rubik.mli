@@ -119,7 +119,7 @@ sig
     (** [edge cube e] returns the edge and its flip state by which [e]
         is replaced in the [cube]. *)
 
-  val move : generator -> t
+  val move : move -> t
     (** [move g] the  generator [g] expressed at the cubie level. *)
 
   val id : t
@@ -139,23 +139,38 @@ sig
         identity (neutral element of the group). *)
 end
 
-(** Corner orientation (requires initialisation). *)
-module CornerO :
+
+(** Coordinates are "tags" labelling the right cosets Hg of a (not
+    necessarily normal) subgroup H.  A fast multiplication table is
+    build to handle the multiplication by a generator to the right. *)
+module type Coordinate =
 sig
   type t
-    (** The orientation of the corners in compact form for fast
-        computations. *)
+    (** Compact form of the coordinate for fast computations. *)
 
   val of_cube : Cubie.t -> t
-    (** [of_cube cube] returns the orientation coordinates of the
-        [cube].  Note that this function is not one-to-one, i.e. these
-        coordinates are a partial characterization of a cube.  *)
+    (** [of_cube cube] returns the coordinate of the [cube].  Note
+        that this function is (usually) not one-to-one, i.e. these
+        coordinates only give a partial characterization of a cube.  *)
 
   val mul : t -> move -> t
-    (** [mul c m] apply the move [m] to the cube [c] i.e. right
-        multiply the element [c] of the group by [m].  BEWARE: before
-        using this, you need to run {!Rubik.CornerO.initialize}. *)
+    (** [mul c m] apply the move [m] to the coordinate [c] i.e. right
+        multiply the element [c] of the group by [m] (this is a coset
+        so any element of the group with coordinate [c] will give the
+        same coordinates for [c * m]).  BEWARE: before using this, you
+        need to run {!Rubik.CornerO.initialize}. *)
 
   val initialize : ?file:string -> unit -> unit
-    (** [initialize()] build the tables needed by {!Rubik.CornerO.mul}. *)
+    (** [initialize()] build the tables needed by [mul].
+
+        @param file if the file exists, assumes it contains the table
+        computed by a previous run.  If it does not exist, create it
+        and save the computed tables. *)
 end
+
+
+(** Orientation of the corner cubies (requires initialisation). *)
+module CornerO : Coordinate
+
+(** Edge orientation (requires initialisation). *)
+module EdgeO : Coordinate
