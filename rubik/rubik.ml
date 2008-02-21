@@ -272,7 +272,7 @@ DEFINE INITIALIZE(kind) =
         if Sys.file_exists fname then begin
           let fh = open_in_bin fname in
           let mul_table : (int, _, c_layout) Array2.t = input_value fh in
-          (* may segfault! *)
+          (* may segfault if the file does not contain the right value! *)
           close_in fh;
           mul_table
         end
@@ -352,23 +352,36 @@ struct
   type t = int
   let length = 40_320                  (* = 8! *)
 
-  (* See http://kociemba.org/math/coordlevel.htm#cornpermdef *)
+  (* See http://kociemba.org/math/coordlevel.htm#cornpermdef
+     If corner_perm = [| p0; p1; ...; pj; ...; p(N-1) |] (here N=8), then
+     si = #{ j < i | pj < pi }.  s0 = 0 so not computed.  The returned number
+     is s1 1! + s2 2! + ... + s(N-1) (N-1)!
+
+     Remark: contrarily to Kociemba we use pj < pi instead of pj > pi
+     as then p(N-1) = s(N-1) instead of p(N-1) = N - 1 - s(N-1),... *)
   let of_cube cube =
+    let p = cube.Cubie.corner_perm in
     let n = ref 0 in
     for i = Cubie.ncorners - 1 downto 1 do
-      let c = cube.Cubie.corner_perm.(i) in
-      let s = ref 0 in
-      for j = i - 1 downto 0 do
-        if cube.Cubie.corner_perm.(j) > c then incr s
-      done;
-      n := (!n + !s) * i
+      let pi = p.(i) in
+      let si = ref 0 in
+      for j = i - 1 downto 0 do if p.(j) < pi then incr si done;
+      n := (!n + !si) * i
     done;
     !n
 
-  let to_cube p =
-    let corner_perm = Array.make Cubie.ncorners (-1) in
-    
-    { Cubie.id with Cubie.corner_perm = corner_perm }
+  (* The inverse funtion of [of_cube] on corner permutations. *)
+  let to_cube perm =
+    let p = Array.make Cubie.ncorners 0 in (* s0 = 0 *)
+    let perm = ref perm in
+    for i = 1 to Cubie.ncorners - 1 do
+      let i1 = i + 1 in
+      let si = !perm mod i1 in
+      p.(i) <- si;
+      for j = i - 1 downto 0 do if p.(j) >= si then p.(j) <- p.(j) + 1 done;
+      perm := !perm / i1;
+    done;
+    { Cubie.id with Cubie.corner_perm = p }
 
   let initialize ?file () = INITIALIZE(int16_unsigned)
 end
@@ -378,23 +391,33 @@ module EdgeP =
 struct
   type t = int
   let length = 479_001_600             (* = 12! *)
+    (* This module is implemented for the record.  The [length] is too
+       large to actually build the multiplication array. *)
 
+  (* Same principle as CornerP.of_cube (with N = 12). *)
   let of_cube cube =
+    let p = cube.Cubie.edge_perm in
     let n = ref 0 in
     for i = Cubie.nedges - 1 downto 1 do
-      let c = cube.Cubie.edge_perm.(i) in
-      let s = ref 0 in
-      for j = i - 1 downto 0 do
-        if cube.Cubie.edge_perm.(j) > c then incr s
-      done;
-      n := (!n + !s) * i
+      let pi = p.(i) in
+      let si = ref 0 in
+      for j = i - 1 downto 0 do if p.(j) < pi then incr si done;
+      n := (!n + !si) * i
     done;
     !n
 
-  let to_cube o =
-    let edge_perm = Array.make Cubie.ncorners (-1) in
-    
-    { Cubie.id with Cubie.corner_perm = edge_perm }
+  (* Same principle as CornerP.to_cube (with N = 12). *)
+  let to_cube perm =
+    let p = Array.make Cubie.nedges 0 in
+    let perm = ref perm in
+    for i = 1 to Cubie.nedges - 1 do
+      let i1 = i + 1 in
+      let si = !perm mod i1 in
+      p.(i) <- si;
+      for j = i - 1 downto 0 do if p.(j) >= si then p.(j) <- p.(j) + 1 done;
+      perm := !perm / i1;
+    done;
+    { Cubie.id with Cubie.corner_perm = p }
 
   let initialize ?file () = INITIALIZE(int)
 end

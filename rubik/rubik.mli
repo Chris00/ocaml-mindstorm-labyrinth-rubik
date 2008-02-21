@@ -177,5 +177,6 @@ module EdgeO : Coordinate
 (** Corner permutation (requires initialisation). *)
 module CornerP : Coordinate
 
-(** Edge permutation (requires initialisation). *)
+(** Edge permutation (requires initialisation).  It is not recommended
+    to initialze it unless you have lots of memory. *)
 module EdgeP : Coordinate
