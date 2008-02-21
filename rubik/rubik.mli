@@ -153,18 +153,22 @@ sig
         that this function is (usually) not one-to-one, i.e. these
         coordinates only give a partial characterization of a cube.  *)
 
-  val initialize : ?file:string -> unit -> (t -> move -> t)
-    (** [initialize()] return a [mul] function.
+  val initialize : ?file:string -> unit -> (t -> move -> t)*(t -> int)
+    (** [initialize()] return a [mul] function and a [prun] function.
 
-        @param file if the file exists, assumes it contains the table
+        @param file if the file exists, assumes it contains the tables
         computed by a previous run.  If it does not exist, create it
         and save the computed tables.
 
-        [let mul = initialize()] is a function such that [mul c m]
+        [let mul = fst(initialize())] is a function such that [mul c m]
         applies the move [m] to the coordinate [c] i.e. right multiply
         the element [c] of the group by [m] ([c] represents a coset so
         any element of the group with coordinate [c] will give the
-        same coordinates for [c * m]).  *)
+        same coordinates for [c * m]).
+
+        [let prun = snd(initialize())] is a function such that [prun c]
+        returns a lower bound for the number of moves to bring the cube
+        [c] back to the goal state. *)
 end
 
 
