@@ -30,6 +30,11 @@ module List = struct
     iter 0 l
 end
 
+let max3 (i:int) j k =
+  if i <= j then
+    if j <= k then k else j
+  else (* i > j *)
+    if i <= k then k else i
 
 
 type generator = F | B | L | R | U | D
@@ -237,24 +242,25 @@ sig
   type t
   val of_cube : Cubie.t -> t
     (** Returns the coordinate of a cube. *)
-  val initialize : ?file:string -> unit -> (t -> move -> t)
+  val initialize : ?file:string -> unit -> (t -> move -> t) * (t -> int)
 end
 
-(* Common structure of coordinates.
+(* Common coordinates structure.
+   ----------------------------------------------------------------------
 
-    We first wanted to functorize it but, apart from the possible
-    performance penalty (this part of the code is critical), it is a
-    bit heavy to parametrize by the Bigarray.kind -- no existential
-    types => have to abstract (int,_,c_layout) Array.2 and redefine
-    the needed needed array operations on the new type...
+   We first wanted to functorize it but, apart from the possible
+   performance penalty (this part of the code is critical), it is a
+   bit heavy to parametrize by the Bigarray.kind -- no existential
+   types => have to abstract (int,_,c_layout) Array.2 and redefine
+   the needed needed array operations on the new type...
 
-    Since eventually, only the initialize function is shared, a macro
-    was deemed simpler.  We assume that the following values are
-    defined:
-    - val length : int
-    - val of_cube : Cubie.t -> int
-    - val to_cube : int -> Cubie.t
-      (* Generate a cube with the orientation represented by the number. *)
+   Since eventually, only the initialize function is shared, a macro
+   was deemed simpler.  We assume that the following values are
+   defined:
+   - val length : int
+   - val of_cube : Cubie.t -> int
+   - val to_cube : int -> Cubie.t
+     (* Generate a cube with the orientation represented by the number. *)
 *)
 DEFINE INITIALIZE(kind) =
   let initialize_mul () =
@@ -284,7 +290,8 @@ DEFINE INITIALIZE(kind) =
           close_out fh;
           mul_table
         end in
-  fun o m -> mul_table.{o,m}             (* [mul] function hiding the table *)
+  (fun o m -> mul_table.{o,m}),          (* [mul] function hiding the table *)
+  (fun o -> 1)                           (* pruning function *)
 ;;
 
 
@@ -417,10 +424,23 @@ struct
       for j = i - 1 downto 0 do if p.(j) >= si then p.(j) <- p.(j) + 1 done;
       perm := !perm / i1;
     done;
-    { Cubie.id with Cubie.corner_perm = p }
+    { Cubie.id with Cubie.edge_perm = p }
 
   let initialize ?file () = INITIALIZE(int)
 end
+
+(* binomial coefficients *)
+let choose n k =
+  if n <= 0 || k < 0 || k > n then 0
+  else
+    let k = if k > n/2 then n-k else k in
+    let fn = float n and fk = float k in
+    let acc = ref 1. in
+    for i = 0 to k-1 do
+      let fi = float i in
+      acc := !acc /. (fk -. fi) *. (fn -. fi);
+    done;
+    truncate(!acc +. 0.5)               (* round *)
 
 
 module UDSlice =
@@ -428,11 +448,57 @@ struct
   type t = int                          (* 0 .. 494 = 12*11*10*9/4! - 1 *)
   let length = 495
 
-  let of_cube cube =
-    -1
+  let fr = Cubie.int_of_edge Cubie.FR
 
+  let of_cube cube =
+    let edge = cube.Cubie.edge_perm in
+    let occupied = Array.make Cubie.nedges false in
+    for i = 0 to Cubie.nedges - 1 do
+      if edge.(i) >= fr then occupied.(i) <- true
+    done;
+    let s = ref 0
+    and k = ref 3
+    and n = ref (Cubie.nedges - 1) in
+    while !k >= 0 do
+      if occupied.(!n) then decr k else s := !s + choose !n !k;
+      decr n;
+    done;
+    !s
+
+  let to_cube s =
+    let p = Array.make Cubie.nedges 0 in
+    
+    { Cubie.id with Cubie.edge_perm = p }
+
+
+  let initialize ?file () = INITIALIZE(int)
 end
 
+
+
+module Phase1 =
+struct
+  type t = CornerO.t * EdgeO.t * UDSlice.t
+      (* 2187 * 2048 * 495 = 2_217_093_120 possibilities *)
+
+  let of_cube c =
+    (CornerO.of_cube c, EdgeO.of_cube c, UDSlice.of_cube c)
+
+  let in_G1 (c,e,u) = c = 0 && e = 0 && u = 0
+
+  (* FIXME: lazy initialize so they share the same matrices? *)
+  let initialize ?file () =
+    let file1, file2, file3 = match file with
+      | None -> None, None, None
+      | Some f ->
+          Some(f ^ ".cornero"), Some(f ^ ".edgeo"), Some(f ^ "usd1") in
+    let mulC, prunC = CornerO.initialize ?file:file1 ()
+    and mulE, prunE = EdgeO.initialize ?file:file2 ()
+    and mulU, prunU = UDSlice.initialize ?file:file3 () in
+    let mul (c,e,u) m = (mulC c m, mulE e m, mulU u m)
+    and prun (c,e,u) = max3 (prunC c) (prunE e) (prunU u) in
+    (mul, prun)
+end
 
 
 (* Local Variables: *)
