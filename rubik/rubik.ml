@@ -377,6 +377,8 @@ struct
     done;
     !n
 
+  let id = of_cube Cubie.id
+
   (* The inverse funtion of [of_cube] on corner permutations. *)
   let to_cube perm =
     let p = Array.make Cubie.ncorners 0 in (* s0 = 0 *)
@@ -474,8 +476,6 @@ struct
   let initialize ?file () = INITIALIZE(int)
 end
 
-
-
 module Phase1 =
 struct
   type t = CornerO.t * EdgeO.t * UDSlice.t
@@ -499,6 +499,59 @@ struct
     and prun (c,e,u) = max3 (prunC c) (prunE e) (prunU u) in
     (mul, prun)
 end
+
+
+
+(* Permutation of Edges coordinates, only valid in phase 2 *)
+module EdgeP2 =
+struct
+  type t = int                          (* 0 .. 40319 *)
+  let length = 40320
+
+  let of_cube cube =
+    1
+
+  let id = of_cube Cubie.id
+end
+
+(* Permutation of the 4 edge cubies; only valid in phase 2 *)
+module UDSlice2 =
+struct
+  type t = int                          (* 0 .. 23 *)
+  let length = 24
+
+  let of_cube cube =
+    1
+
+  let id = of_cube Cubie.id
+end
+
+
+module Phase2 =
+struct
+  type t = CornerP.t * EdgeP2.t * UDSlice2.t
+      (* 40320 * 40320 * 24 = 39_016_857_600 possibilities *)
+
+  let of_cube c =
+    (CornerP.of_cube c, EdgeP2.of_cube c, UDSlice2.of_cube c)
+
+  let is_identity (c,e,u) =
+    c = CornerP.id && e = EdgeP2.id && u = UDSlice2.id
+
+  (* FIXME: lazy initialize so they share the same matrices? *)
+  let initialize ?file () =
+    let file1, file2, file3 = match file with
+      | None -> None, None, None
+      | Some f ->
+          Some(f ^ ".cornero"), Some(f ^ ".edgeo"), Some(f ^ "usd1") in
+    let mulC, prunC = CornerP.initialize ?file:file1 ()
+    and mulE, prunE = EdgeP2.initialize ?file:file2 ()
+    and mulU, prunU = UDSlice2.initialize ?file:file3 () in
+    let mul (c,e,u) m = (mulC c m, mulE e m, mulU u m)
+    and prun (c,e,u) = max3 (prunC c) (prunE e) (prunU u) in
+    (mul, prun)
+end
+
 
 
 (* Local Variables: *)
