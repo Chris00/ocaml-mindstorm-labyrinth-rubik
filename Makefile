@@ -13,8 +13,8 @@ LIBS_CMXA=$(LIBS_CMA:.cma=.cmxa) robot.cmx
 
 .PHONY: all byte native tests tests-byte test-native
 all: byte native
-	$(CD) labyrinth/; $(MAKE)
-	$(CD) rubik/; $(MAKE)
+	$(CD) labyrinth/ &&  $(MAKE)
+	$(CD) rubik/ &&  $(MAKE)
 byte: robot.cma
 native: robot.cmxa
 tests: tests-byte test-native
