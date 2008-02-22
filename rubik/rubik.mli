@@ -29,16 +29,21 @@ type generator =
   | U     (** 90° CW turn of the {i up} face *)
   | D     (** 90° CW turn of the {i down} face *)
 
-type move
-  (** The basic moves that the generators allow: F, F^2, F^3, B, B^2,
-      B^3, L, L^2, L^3,...  Remember that X^4 = 1 for all generators X. *)
+(** Abstract vision of moves. *)
+module Move :
+sig
+  type t
+    (** The basic moves that the generators allow: F, F^2, F^3, B,
+        B^2, B^3, L, L^2, L^3,...  Remember that X^4 = 1 for all
+        generators X. *)
 
-val move : generator * int -> move
-  (** [move (g, i)] returns the move corresponding to [g^i].
-      @raise Invalid_Argument if [i < 1] or [i > 3]. *)
+  val make : generator * int -> t
+    (** [move (g, i)] returns the move corresponding to [g^i].
+        @raise Invalid_Argument if [i < 1] or [i > 3]. *)
 
-val generator : move -> generator * int
-  (** [generator] is the inverse function of {!Rubik.move}. *)
+  val generator : t -> generator * int
+    (** [generator] is the inverse function of {!Rubik.Move.make}. *)
+end
 
 
 (** {2 Coordinate systems}
@@ -46,8 +51,8 @@ val generator : move -> generator * int
     Various coordinate systems with corresponding multipliction
     tables.  *)
 
-(** The {{:http://kociemba.org/math/cubielevel.htm}cubies
-    coordinates}.  *)
+(** The {{:http://kociemba.org/math/cubielevel.htm}cubies}
+    coordinates.  *)
 module Cubie :
 sig
   type corner =
@@ -119,7 +124,7 @@ sig
     (** [edge cube e] returns the edge and its flip state by which [e]
         is replaced in the [cube]. *)
 
-  val move : move -> t
+  val move : Move.t -> t
     (** [move g] the  generator [g] expressed at the cubie level. *)
 
   val id : t
@@ -164,38 +169,44 @@ sig
         and save the computed tables.
 
         [let (mul, prun) = initialize()] define two functions such that
-        {ul
-
-        {- [mul c m] applies the move [m] to the coordinate [c]
-        i.e. right multiply the element [c] of the group by [m] ([c]
-        represents a coset so any element of the group with coordinate
-        [c] will give the same coordinates for [c * m]); }
-
-        {- [prun c] returns a lower bound for the number of moves to
-        bring the cube [c] back to the goal state. }} *)
+        - [mul c m]
+        applies the move [m] to the coordinate [c] i.e. right multiply
+        the element [c] of the group by [m] ([c] represents a coset so
+        any element of the group with coordinate [c] will give the
+        same coordinates for [c * m]);
+        - [prun c]
+        returns a lower bound for the number of moves to bring the
+        cube [c] back to the goal state.  *)
 end
 
 
 (** Orientation of the corner cubies (requires initialisation). *)
-module CornerO : Coordinate with type move = move
+module CornerO : Coordinate with type move = Move.t
 
 (** Edge orientation (requires initialisation). *)
-module EdgeO : Coordinate with type move = move
+module EdgeO : Coordinate with type move = Move.t
 
 (** Corner permutation (requires initialisation). *)
-module CornerP : Coordinate with type move = move
+module CornerP : Coordinate with type move = Move.t
 
 (** Edge permutation (requires initialisation).  It is not recommended
     to initialze it unless you have several Gb of memory. *)
-module EdgeP : Coordinate with type move = move
+module EdgeP : Coordinate with type move = Move.t
 
-(** Position of the 4 edge cubies (in the 12 possible positions)
-    without taking their order into account. *)
-module UDSlice : Coordinate with type move = move
+(** {{:http://kociemba.org/math/twophase.htm#udslicedef}UDSlice}
+    coordinates (requires initialisation).  Position of the 4 edge
+    cubies (in the 12 possible positions) without taking their order
+    into account. *)
+module UDSlice : Coordinate with type move = Move.t
 
+
+(** {{:http://kociemba.org/math/twophase.htm}Phase 1} coordinates
+    (requires initialisation).  It is known that G1 can be reached
+    (i.e. that {!Rubik.Phase1.in_G1} returns [true]) from any given
+    position by maximum 12 moves. *)
 module Phase1 :
 sig
-  include Coordinate with type move = move
+  include Coordinate with type move = Move.t
 
   val in_G1 : t -> bool
     (** Tells whether the coordinates define a cube in the subgroup G1
@@ -203,11 +214,17 @@ sig
 end
 
 
+(** {{:http://kociemba.org/math/twophase.htm#phase2edge}Phase 2}
+    coordinates (requires initialisation).  It is known that 1 can be
+    reached (i.e. that {!Rubik.Phase2.is_identity} returns [true])
+    from any position in G1 by maximum 18 moves. *)
 module Phase2 :
 sig
   include Coordinate
     (** The [move] type is local to this module (only the moves U, D,
         R2, L2, F2, B2 are permitted). *)
+
+  val move : Move.t -> move
 
   val is_identity : t -> bool
     (** Tells whether the coordinates define a "home" cube i.e. the
