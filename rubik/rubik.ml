@@ -1,20 +1,50 @@
+(* File: rubik.ml
 
-(* www.geometer.org/rubik/group.pdf *)
+   Copyright (C) 2008
+
+     Christophe Troestler <Christophe.Troestler@umh.ac.be>
+     WWW: http://math.umh.ac.be/an/software/
+
+   This library is free software; you can redistribute it and/or modify
+   it under the terms of the GNU General Public License version 2.1 or
+   later as published by the Free Software Foundation, with the special
+   exception on linking described in the file LICENSE.
+
+   This library is distributed in the hope that it will be useful, but
+   WITHOUT ANY WARRANTY; without even the implied warranty of
+   MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the file
+   LICENSE for more details. *)
+
+
+(** This module implements various datastructures (partially)
+    representing the Rubik cube.
+
+    The main inspiration for this code is the work of Herbert Kociemba:
+    http://kociemba.org/cube.htm
+
+
+    On the mathematical theory of groups, using the Rubik cube as a
+    motivation, you can consult:
+
+    - David Joyner, Mathematics of the Rubik's cube,
+    http://www.permutationpuzzles.org/rubik/webnotes/ (LaTeX tarball)
+    http://cadigweb.ew.usna.edu/~wdj/rubik/
+
+    - Tom Davis, Group Theory via Rubik's Cube,
+    http://www.geometer.org/rubik/group.pdf
+*)
+
 (* http://www-cs-staff.Stanford.EDU/~knuth/preprints.html
    Efficient representation of perm groups. (Sims's algorithm)
    http://www-cs-staff.stanford.edu/~knuth/papers/erpg.tex.gz *)
 (* http://www.math.ucf.edu/~reid/Rubik/index.html
 
    e.g. http://www.math.ucf.edu/~reid/Rubik/optimal_solver.html
-
-   http://kociemba.org/cube.htm
+   
    http://bj.middlebury.edu/~plubans/report
 
    Supposedly easier introduction to Kociemba algo:
    http://www.geocities.com/jaapsch/puzzles/compcube.htm
-
-   http://cadigweb.ew.usna.edu/~wdj/papers/rubik.pdf
-   http://cadigweb.ew.usna.edu/~wdj/rubik_nts.htm
 
 *)
 
@@ -255,45 +285,57 @@ end
    the needed needed array operations on the new type...
 
    Since eventually, only the initialize function is shared, a macro
-   was deemed simpler.  We assume that the following values are
-   defined:
+   was deemed simpler.  For INITIALIZE_MUL, we assume that the following
+   values are defined:
    - val length : int
    - val of_cube : Cubie.t -> int
    - val to_cube : int -> Cubie.t
      (* Generate a cube with the orientation represented by the number. *)
 *)
-DEFINE INITIALIZE(kind) =
-  let initialize_mul () =
-    let mul_table = Array2.create kind c_layout length nmove in
-    for o = 0 to length - 1 do
-      let cube = to_cube o in
-      for m = 0 to nmove - 1 do
-        mul_table.{o,m} <- of_cube(Cubie.mul cube (Cubie.move m))
-      done
-    done;
-    mul_table in
-  let mul_table = match file with
-    | None -> initialize_mul()
+DEFINE INITIALIZE_MUL(kind) =
+  let mul_table = Array2.create kind c_layout length nmove in
+  for o = 0 to length - 1 do
+    let cube = to_cube o in
+    for m = 0 to nmove - 1 do
+      mul_table.{o,m} <- of_cube(Cubie.mul cube (Cubie.move m))
+    done
+  done;
+  mul_table
+;;
+(* This must be a macro so that the type of the tables is monomorphic and
+   the compiler generates efficient access to them. *)
+DEFINE INITIALIZE_FILE(initialize_mul, initialize_prun) =
+  let mul_table, prun_table = match file with
+    | None -> (initialize_mul(), initialize_prun())
     | Some fname ->
         if Sys.file_exists fname then begin
           let fh = open_in_bin fname in
           let mul_table : (int, _, c_layout) Array2.t = input_value fh in
-          (* may segfault if the file does not contain the right value! *)
+          let prun_table : (int, _, c_layout) Array1.t = input_value fh in
+          (* may segfault if the file does not contain the right values! *)
           close_in fh;
-          mul_table
+          (mul_table, prun_table)
         end
         else begin
           (* Compute and save the table *)
           let mul_table = initialize_mul() in
+          let prun_table = initialize_prun() in
           let fh = open_out_bin fname in
           output_value fh mul_table;
+          output_value fh prun_table;
           close_out fh;
-          mul_table
+          (mul_table, prun_table)
         end in
   (fun o m -> mul_table.{o,m}),          (* [mul] function hiding the table *)
-  (fun o -> 1)                           (* pruning function *)
+  (fun o -> prun_table.{o})              (* pruning function *)
 ;;
-
+DEFINE INITIALIZE(kind) =
+  let initialize_mul () = INITIALIZE_MUL(kind) in
+  let initialize_prun () =
+    Array1.create int8_unsigned c_layout length (* to complete *)
+  in
+  INITIALIZE_FILE(initialize_mul, initialize_prun)
+;;
 
 module CornerO =
 struct
@@ -377,8 +419,6 @@ struct
     done;
     !n
 
-  let id = of_cube Cubie.id
-
   (* The inverse funtion of [of_cube] on corner permutations. *)
   let to_cube perm =
     let p = Array.make Cubie.ncorners 0 in (* s0 = 0 *)
@@ -391,6 +431,8 @@ struct
       perm := !perm / i1;
     done;
     { Cubie.id with Cubie.corner_perm = p }
+
+  let id = of_cube Cubie.id
 
   let initialize ?file () = INITIALIZE(int16_unsigned)
 end
@@ -427,6 +469,8 @@ struct
       perm := !perm / i1;
     done;
     { Cubie.id with Cubie.edge_perm = p }
+
+  let id = of_cube Cubie.id
 
   let initialize ?file () = INITIALIZE(int)
 end
@@ -467,14 +511,27 @@ struct
     done;
     !s
 
-  let to_cube s =
+  let id = of_cube Cubie.id
+
+  let initialize_mul() =
+    let mul_table = Array2.create int16_unsigned c_layout length nmove in
+    (* Generate all possibilities of placing the 4 UDSlice edges
+       directly as a permutation [p]. *)
     let p = Array.make Cubie.nedges 0 in
-    
-    { Cubie.id with Cubie.edge_perm = p }
+    for o = 0 to length - 1 do
+      let cube = { Cubie.id with Cubie.edge_perm = p } in
+      for m = 0 to nmove - 1 do
+        mul_table.{o,m} <- of_cube(Cubie.mul cube (Cubie.move m))
+      done
+    done;
+    mul_table
 
+  let initialize_prun () =
+    Array1.create int8_unsigned c_layout length (* to complete *)
 
-  let initialize ?file () = INITIALIZE(int)
+  let initialize ?file () = INITIALIZE_FILE(initialize_mul, initialize_prun)
 end
+
 
 module Phase1 =
 struct
@@ -502,7 +559,7 @@ end
 
 
 
-(* Permutation of Edges coordinates, only valid in phase 2 *)
+(* Permutation of Edges coordinates; only valid in phase 2 *)
 module EdgeP2 =
 struct
   type t = int                          (* 0 .. 40319 *)
@@ -543,7 +600,7 @@ struct
     let file1, file2, file3 = match file with
       | None -> None, None, None
       | Some f ->
-          Some(f ^ ".cornero"), Some(f ^ ".edgeo"), Some(f ^ "usd1") in
+          Some(f ^ ".cornerp"), Some(f ^ ".edgep2"), Some(f ^ "usd2") in
     let mulC, prunC = CornerP.initialize ?file:file1 ()
     and mulE, prunE = EdgeP2.initialize ?file:file2 ()
     and mulU, prunU = UDSlice2.initialize ?file:file3 () in
