@@ -28,7 +28,12 @@ doc: $(INTERFACES:.mli=.cmi)
 	  $(INTERFACES) -I $(MINDSTORM_PATH)
 
 include ../Makefile.ocaml
+include ../Makefile.latex
+
+# Images -> talk (requires ImageMagick)
+images/Rubik_cube.jpg: images/Rubik_cube.svg
+	cd images/ && convert $^ $@
 
 clean::
-	$(RM) *.exe *.com
+	$(RM) *.exe *.com images/Rubik_cube.jpg
 	$(RM) -rf $(DOC_DIR)
