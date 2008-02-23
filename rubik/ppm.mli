@@ -19,6 +19,7 @@
 
 
 type color = int
+    (** Color, compatible with the [Graphics] module. *)
 
 val as_matrix_exn : ?gamma:float -> ?bgr:bool -> string -> color array array
   (** [as_matrix_exn fname] reads the PPM file named [fname] and
