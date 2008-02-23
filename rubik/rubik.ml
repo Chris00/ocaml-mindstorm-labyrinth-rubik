@@ -354,7 +354,25 @@ DEFINE INITIALIZE_FILE(initialize_mul, initialize_prun) =
 DEFINE INITIALIZE(kind) =
   let initialize_mul () = INITIALIZE_MUL(kind) in
   let initialize_prun () =
-    Array1.create int8_unsigned c_layout length (* to complete *)
+    let prun_table = Array1.create int8_unsigned c_layout length in
+    (* The array [taken] enables us to know whether we have already taken a
+       cube to compute its value in the prun_table or not. *)
+    let taken = Array.make length false in
+    let n = ref 0 in (* n counts the number of already taken cubes. *)
+    prun_table.{0} <- 0; (* This is the goal state. *)
+    taken.(0) <- true; n := 1;
+    let fill_table n taken cube_coord =
+      if n <= length then
+        let cube = to_cube cube_coord in
+        for m = 0 to Move.length - 1 do (* To restrict... *)
+          let newc = of_cube (Cubie.mul cube (Cubie.move m)) in
+          if not taken.(newc) then
+            (prun_table.{newc} <- prun_table.{cube_coord} + 1;(*one more move*)
+             taken.(newc) <- true; incr n);
+          fill_table n taken newc
+        done in
+    fill_table n taken 0;
+    prun_table
   in
   INITIALIZE_FILE(initialize_mul, initialize_prun)
 ;;
