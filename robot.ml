@@ -2,8 +2,12 @@
 
    Copyright (C) 2008
 
-     Christophe Troestler <Christophe.Troestler@umh.ac.be>
+     Christophe Troestler <chris_77@users.sourceforge.net>
      WWW: http://math.umh.ac.be/an/software/
+
+     Julie de Pril <julie_87@users.sourceforge.net>
+     Dany Maslowski <dan_86@users.sourceforge.net>
+     Marc Ducobu <el_marcu@users.sourceforge.net>
 
    This library is free software; you can redistribute it and/or modify
    it under the terms of the GNU General Public License version 2.1 or
