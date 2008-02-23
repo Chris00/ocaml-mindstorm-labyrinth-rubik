@@ -291,9 +291,10 @@ end
 module type Coordinate =
 sig
   type t
+  type move
   val of_cube : Cubie.t -> t
     (** Returns the coordinate of a cube. *)
-  val initialize : ?file:string -> unit -> (t -> Move.t -> t) * (t -> int)
+  val initialize : ?file:string -> unit -> (t -> move -> t) * (t -> int)
 end
 
 (* Common coordinates structure.
@@ -362,6 +363,7 @@ module CornerO =
 struct
   type t = int                         (* 0 .. 2186 = 2^7 - 1 *)
   let length = 2187
+  type move = Move.t
 
   let of_cube cube =
     let n = ref 0 in
@@ -391,6 +393,7 @@ module EdgeO =
 struct
   type t = int                          (* 0 .. 2047 = 2^11 - 1 *)
   let length = 2048
+  type move = Move.t
 
   let of_cube cube =
     let n = ref 0 in
@@ -451,6 +454,7 @@ module CornerP =
 struct
   type t = int
   let length = 40_320                  (* = 8! *)
+  type move = Move.t
 
   let of_cube cube = int_of_perm cube.Cubie.corner_perm Cubie.ncorners
 
@@ -471,6 +475,7 @@ struct
   let length = 479_001_600             (* = 12! *)
     (* WARNING: This module is implemented for the record.  The
        [length] is too large to actually build the multiplication array. *)
+  type move = Move.t
 
   let of_cube cube = int_of_perm cube.Cubie.edge_perm Cubie.nedges
 
@@ -490,6 +495,7 @@ module UDSlice =
 struct
   type t = int                          (* 0 .. 494 = 12*11*10*9/4! - 1 *)
   let length = 495
+  type move = Move.t
 
   (* Assume: FR < FL < BL < BR and to be after all other (including
      for [Cubie.int_of_edge].  *)
@@ -554,6 +560,7 @@ module Phase1 =
 struct
   type t = CornerO.t * EdgeO.t * UDSlice.t
       (* 2187 * 2048 * 495 = 2_217_093_120 possibilities *)
+  type move = Move.t
 
   let of_cube c =
     (CornerO.of_cube c, EdgeO.of_cube c, UDSlice.of_cube c)
@@ -593,6 +600,7 @@ module EdgeP2 =
 struct
   type t = int                          (* 0 .. 40319 *)
   let length = 40320
+  type move = Move2.t
 
   let nedges = Cubie.nedges - 4         (* U & D edges only *)
 
@@ -614,6 +622,7 @@ module UDSlice2 =
 struct
   type t = int                          (* 0 .. 23 *)
   let length = 24
+  type move = Move2.t
 
   let fr = Cubie.int_of_edge Cubie.FR
   let first = 0
@@ -639,6 +648,8 @@ module Phase2 =
 struct
   type t = CornerP.t * EdgeP2.t * UDSlice2.t
       (* 40320 * 40320 * 24 = 39_016_857_600 possibilities *)
+  type move = Move2.t
+  external to_move : move -> Move.t = "%identity"
 
   let of_cube c =
     (CornerP.of_cube c, EdgeP2.of_cube c, UDSlice2.of_cube c)

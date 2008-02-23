@@ -224,7 +224,7 @@ sig
     (** The [move] type is local to this module (only the moves U, D,
         R2, L2, F2, B2 are permitted). *)
 
-  val move : Move.t -> move
+  val to_move : move -> Move.t
 
   val is_identity : t -> bool
     (** Tells whether the coordinates define a "home" cube i.e. the
