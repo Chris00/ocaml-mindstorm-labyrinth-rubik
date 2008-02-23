@@ -50,6 +50,9 @@
 
 open Bigarray
 
+(** Helpers
+ ***********************************************************************)
+
 (* Enrich List *)
 module List = struct
   include List
@@ -64,6 +67,20 @@ let max3 (i:int) j k =
   if i <= j then   if j <= k then k else j
   else (* i > j *) if i <= k then k else i
 
+(* binomial coefficients *)
+let choose n k =
+  if n <= 0 || k < 0 || k > n then 0
+  else
+    let k = if k > n/2 then n-k else k in
+    let fn = float n and fk = float k in
+    let acc = ref 1. in
+    for i = 0 to k-1 do
+      let fi = float i in
+      acc := !acc /. (fk -. fi) *. (fn -. fi);
+    done;
+    truncate(!acc +. 0.5)               (* round *)
+
+(************************************************************************)
 
 type generator = F | B | L | R | U | D
 
@@ -399,41 +416,46 @@ struct
 end
 
 
+(* See http://kociemba.org/math/coordlevel.htm#cornpermdef
+   If p = [| p0; p1; ...; pj; ...; p(n-1) |], then
+   si = #{ j < i | pj < pi }.  s0 = 0 so not computed.  The returned number
+   is s1 1! + s2 2! + ... + s(n-1) (n-1)!
+
+   Remark: contrarily to Kociemba we use pj < pi instead of pj > pi
+   as then p(N-1) = s(N-1) instead of p(N-1) = N - 1 - s(N-1),... *)
+let int_of_perm p n =
+  let s = ref 0 in
+  for i = n - 1 downto 1 do
+    let pi = p.(i) in
+    let si = ref 0 in
+    for j = i - 1 downto 0 do if p.(j) < pi then incr si done;
+    s := (!s + !si) * i
+  done;
+  !s
+
+(* The inverse funtion of [int_of_perm], fill [p] instead of returning
+   the permutation.. *)
+let perm_of_int perm n p =
+  p.(0) <- 0; (* s0 = 0 *)
+  let perm = ref perm in
+  for i = 1 to n - 1 do
+    let i1 = i + 1 in
+    let si = !perm mod i1 in
+    p.(i) <- si;
+    for j = i - 1 downto 0 do if p.(j) >= si then p.(j) <- p.(j) + 1 done;
+    perm := !perm / i1;
+  done
 
 module CornerP =
 struct
   type t = int
   let length = 40_320                  (* = 8! *)
 
-  (* See http://kociemba.org/math/coordlevel.htm#cornpermdef
-     If corner_perm = [| p0; p1; ...; pj; ...; p(N-1) |] (here N=8), then
-     si = #{ j < i | pj < pi }.  s0 = 0 so not computed.  The returned number
-     is s1 1! + s2 2! + ... + s(N-1) (N-1)!
+  let of_cube cube = int_of_perm cube.Cubie.corner_perm Cubie.ncorners
 
-     Remark: contrarily to Kociemba we use pj < pi instead of pj > pi
-     as then p(N-1) = s(N-1) instead of p(N-1) = N - 1 - s(N-1),... *)
-  let of_cube cube =
-    let p = cube.Cubie.corner_perm in
-    let n = ref 0 in
-    for i = Cubie.ncorners - 1 downto 1 do
-      let pi = p.(i) in
-      let si = ref 0 in
-      for j = i - 1 downto 0 do if p.(j) < pi then incr si done;
-      n := (!n + !si) * i
-    done;
-    !n
-
-  (* The inverse funtion of [of_cube] on corner permutations. *)
   let to_cube perm =
-    let p = Array.make Cubie.ncorners 0 in (* s0 = 0 *)
-    let perm = ref perm in
-    for i = 1 to Cubie.ncorners - 1 do
-      let i1 = i + 1 in
-      let si = !perm mod i1 in
-      p.(i) <- si;
-      for j = i - 1 downto 0 do if p.(j) >= si then p.(j) <- p.(j) + 1 done;
-      perm := !perm / i1;
-    done;
+    let p = Array.make Cubie.ncorners 0 in
+    perm_of_int perm Cubie.ncorners p;
     { Cubie.id with Cubie.corner_perm = p }
 
   let id = of_cube Cubie.id
@@ -446,32 +468,14 @@ module EdgeP =
 struct
   type t = int
   let length = 479_001_600             (* = 12! *)
-    (* This module is implemented for the record.  The [length] is too
-       large to actually build the multiplication array. *)
+    (* WARNING: This module is implemented for the record.  The
+       [length] is too large to actually build the multiplication array. *)
 
-  (* Same principle as CornerP.of_cube (with N = 12). *)
-  let of_cube cube =
-    let p = cube.Cubie.edge_perm in
-    let n = ref 0 in
-    for i = Cubie.nedges - 1 downto 1 do
-      let pi = p.(i) in
-      let si = ref 0 in
-      for j = i - 1 downto 0 do if p.(j) < pi then incr si done;
-      n := (!n + !si) * i
-    done;
-    !n
+  let of_cube cube = int_of_perm cube.Cubie.edge_perm Cubie.nedges
 
-  (* Same principle as CornerP.to_cube (with N = 12). *)
   let to_cube perm =
     let p = Array.make Cubie.nedges 0 in
-    let perm = ref perm in
-    for i = 1 to Cubie.nedges - 1 do
-      let i1 = i + 1 in
-      let si = !perm mod i1 in
-      p.(i) <- si;
-      for j = i - 1 downto 0 do if p.(j) >= si then p.(j) <- p.(j) + 1 done;
-      perm := !perm / i1;
-    done;
+    perm_of_int perm Cubie.nedges p;
     { Cubie.id with Cubie.edge_perm = p }
 
   let id = of_cube Cubie.id
@@ -479,18 +483,6 @@ struct
   let initialize ?file () = INITIALIZE(int)
 end
 
-(* binomial coefficients *)
-let choose n k =
-  if n <= 0 || k < 0 || k > n then 0
-  else
-    let k = if k > n/2 then n-k else k in
-    let fn = float n and fk = float k in
-    let acc = ref 1. in
-    for i = 0 to k-1 do
-      let fi = float i in
-      acc := !acc /. (fk -. fi) *. (fn -. fi);
-    done;
-    truncate(!acc +. 0.5)               (* round *)
 
 
 module UDSlice =
@@ -582,6 +574,17 @@ struct
     (mul, prun)
 end
 
+(* Authorized moves in the phase 2 of the algo (safety and possibly
+   memory gains). *)
+module Move2 =
+struct
+  include Move
+    (* We do not distinguish them from Move for now because memory is
+       not an issue.  (If we ever need more memory, move the phase 2
+       moves first in Move.t.) *)
+
+  external to_move : t -> Move.t = "%identity"
+end
 
 
 (* Permutation of Edges coordinates; only valid in phase 2 *)
@@ -590,10 +593,18 @@ struct
   type t = int                          (* 0 .. 40319 *)
   let length = 40320
 
-  let of_cube cube =
-    1
+  (* ASSUME: FR, FL, BL, BR are given that last indices by [int_of_edge]. *)
+  (* See CornerP.of_cube for the principle. *)
+  let of_cube cube = int_of_perm cube.Cubie.edge_perm (Cubie.nedges - 4)
+
+  let to_cube perm =
+    let p = Array.init Cubie.nedges (fun i -> i) in (* last 4 untouched *)
+    perm_of_int perm (Cubie.nedges - 4) p;
+    { Cubie.id with Cubie.edge_perm = p }
 
   let id = of_cube Cubie.id
+
+  let initialize ?file () = INITIALIZE(int16_unsigned)
 end
 
 (* Permutation of the 4 edge cubies; only valid in phase 2 *)
