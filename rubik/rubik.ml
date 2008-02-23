@@ -112,6 +112,7 @@ struct
     | D -> e + 14
 
   let generator m = (generator.(m / 3), (m mod 3) + 1)
+
 end
 
 
@@ -358,20 +359,29 @@ DEFINE INITIALIZE(kind) =
     (* The array [taken] enables us to know whether we have already taken a
        cube to compute its value in the prun_table or not. *)
     let taken = Array.make length false in
+    (* [is_next m next] tells us if the move [next] can be applied after the
+       move [m] or not. *)
+    let is_next m next = let gen = fst(Move.generator m) in
+                         next <> Move.make (gen,1) && next <> Move.make (gen,2)
+                         && next <> Move.make (gen,3) in
     prun_table.{0} <- 0; (* This is the goal state. *)
     taken.(0) <- true;
-    let rec fill_table n taken cube_coord =
-      (* n counts the number of already taken cubes. *)
+    let rec fill_table n move taken cube_coord =
+      (* n counts the number of already taken cubes
+         and m is the last move we have applied.*)
       if n <= length then
         let cube = to_cube cube_coord in
-        for m = 0 to Move.length - 1 do (* To restrict... *)
-          let newc = of_cube (Cubie.mul cube (Cubie.move m)) in
-          if not taken.(newc) then
-            (prun_table.{newc} <- prun_table.{cube_coord} + 1;(*one more move*)
-             taken.(newc) <- true; fill_table (n+1) taken newc)
-          else fill_table n taken newc
+        for m = 0 to Move.length - 1 do
+          (* We apply [m] if we are in the first step or if [m] can be applied
+             after [move]. *)
+          if move = -1 || is_next move m then
+            let newc = of_cube (Cubie.mul cube (Cubie.move m)) in
+            if not taken.(newc) then
+              (prun_table.{newc} <- prun_table.{cube_coord} + 1;
+               (* One more move to bring the cube back to the goal state. *)
+               taken.(newc) <- true; fill_table (n+1) m taken newc)
         done in
-    fill_table 1 taken 0;
+    fill_table 1 (-1) taken 0;
     prun_table
   in
   INITIALIZE_FILE(initialize_mul, initialize_prun)
