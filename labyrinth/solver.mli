@@ -22,20 +22,35 @@
     find the exit of a labyrinth.  *)
 module Make(C: sig
               val conn : Mindstorm.bluetooth Mindstorm.conn
+                (** The bluetooth connection of the robot. *)
               val motor_left : Mindstorm.Motor.port
+                (** The port of the left wheel motor of the robot. *)
               val motor_right : Mindstorm.Motor.port
+                (** The port of the right wheel motor of the robot. *)
               val motor_ultra : Mindstorm.Motor.port
+                (** The port of the "head" motor of the robot, moving
+                    the ultrasonic sensor. *)
               val light_port : Mindstorm.Sensor.port
+                (** The port of the light sensor (directed to the
+                    floor). *)
               val ultra_port : Mindstorm.Sensor.port
+                (** The ultrasonic "head" port. *)
               val switch_port : Mindstorm.Sensor.port
-
+                (** The port of the switch used to indicate that the
+                    goal square has been reached. *)
               module Labyrinth : Display.T
+                (** The labyrinth structure with some additional
+                    graphical display capabilities. *)
             end) :
 sig
 
   val run_loop : unit -> unit
+    (** Launch the robot (must be used last, after a strategy is
+        constructed using the functions below.).  *)
 
   val stop : unit -> unit
+    (** Stop the event loop -- presumably because the exit was found
+        or it was determined that there is no way out. *)
 
   val next_case_to_explore : unit -> Labyrinth.dir list
     (** [next_case_to_explore()] returns the possible directions... *)

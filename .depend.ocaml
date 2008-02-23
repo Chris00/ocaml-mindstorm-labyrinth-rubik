@@ -10,3 +10,13 @@ run-push.cmo: robot.cmi
 run-push.cmx: robot.cmx 
 run-turn.cmo: robot.cmi 
 run-turn.cmx: robot.cmx 
+labyrinth/display.cmo: labyrinth/display.cmi 
+labyrinth/display.cmx: labyrinth/display.cmi 
+labyrinth/labyrinth.cmo: labyrinth/labyrinth.cmi 
+labyrinth/labyrinth.cmx: labyrinth/labyrinth.cmi 
+labyrinth/solver.cmo: robot.cmi labyrinth/solver.cmi 
+labyrinth/solver.cmx: robot.cmx labyrinth/solver.cmi 
+rubik/ppm.cmo: rubik/ppm.cmi 
+rubik/ppm.cmx: rubik/ppm.cmi 
+rubik/snapshot.cmo: rubik/snapshot.cmi 
+rubik/snapshot.cmx: rubik/snapshot.cmi 

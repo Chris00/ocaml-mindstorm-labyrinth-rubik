@@ -6,7 +6,8 @@ DOC_DIR=doc
 OCAMLC_FLAGS = -thread -g -dtypes -custom -I $(MINDSTORM_PATH)
 OCAMLOPT_FLAGS = -thread -dtypes -I $(MINDSTORM_PATH)
 
-INTERFACES=$(wildcard *.mli)
+INTERFACES=$(wildcard *.mli) \
+  $(wildcard labyrinth/*.mli) $(wildcard rubik/*.mli)
 TESTS=$(wildcard *-*.ml)
 LIBS_CMA=unix.cma mindstorm.cma threads.cma
 LIBS_CMXA=$(LIBS_CMA:.cma=.cmxa) robot.cmx
@@ -36,10 +37,21 @@ robot.cmxa: robot.cmx
 .PHONY: doc
 doc: $(INTERFACES:.mli=.cmi)
 	$(OCAMLDOC) -d $(DOC_DIR) -colorize-code -stars -html \
-	  $(INTERFACES) -I $(MINDSTORM_PATH)
+	  $(INTERFACES) -I $(MINDSTORM_PATH) -I labyrinth/ -I rubik/
+
+# Add subdirectories (necessary to compile the doc of all modules)
+.depend.ocaml: $(wildcard labyrinth/*.ml) $(wildcard labyrinth/*.mli)
+.depend.ocaml: $(wildcard rubik/*.ml) $(wildcard rubik/*.mli)
+
+labyrinth/%:
+	cd labyrinth/ && $(MAKE) $(@F)
+rubik/%:
+	cd rubik/ && $(MAKE) $(@F)
 
 include Makefile.ocaml
 
 clean::
 	$(RM) *.exe *.com
 	-cd $(DOC_DIR); $(RM) *~ *.html *.css
+	$(CD) labyrinth/ &&  $(MAKE) clean
+	$(CD) rubik/ &&  $(MAKE) clean

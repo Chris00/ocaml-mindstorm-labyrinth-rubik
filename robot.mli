@@ -15,6 +15,11 @@
    MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the file
    LICENSE for more details. *)
 
+
+(** Module implementing a simple event loop to dialog with a mindstorm
+    robot. *)
+
+
 type t
   (** Mutable robot state to be used in an event loop. *)
 
