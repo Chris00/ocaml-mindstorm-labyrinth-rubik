@@ -433,16 +433,17 @@ let int_of_perm p n =
   done;
   !s
 
-(* The inverse funtion of [int_of_perm], fill [p] instead of returning
-   the permutation.. *)
-let perm_of_int perm n p =
-  p.(0) <- 0; (* s0 = 0 *)
+(* The inverse funtion of [int_of_perm], fill [p.(i0 .. i0+n-1]
+   instead of returning the permutation. *)
+let perm_of_int perm p i0 n =
+  p.(i0) <- 0; (* s0 = 0 *)
   let perm = ref perm in
   for i = 1 to n - 1 do
     let i1 = i + 1 in
     let si = !perm mod i1 in
-    p.(i) <- si;
-    for j = i - 1 downto 0 do if p.(j) >= si then p.(j) <- p.(j) + 1 done;
+    let idx = i0 + i in
+    p.(idx) <- si;
+    for j = idx - 1 downto i0 do if p.(j) >= si then p.(j) <- p.(j) + 1 done;
     perm := !perm / i1;
   done
 
@@ -455,7 +456,7 @@ struct
 
   let to_cube perm =
     let p = Array.make Cubie.ncorners 0 in
-    perm_of_int perm Cubie.ncorners p;
+    perm_of_int perm p 0 Cubie.ncorners;
     { Cubie.id with Cubie.corner_perm = p }
 
   let id = of_cube Cubie.id
@@ -475,7 +476,7 @@ struct
 
   let to_cube perm =
     let p = Array.make Cubie.nedges 0 in
-    perm_of_int perm Cubie.nedges p;
+    perm_of_int perm p 0 Cubie.nedges;
     { Cubie.id with Cubie.edge_perm = p }
 
   let id = of_cube Cubie.id
@@ -593,13 +594,14 @@ struct
   type t = int                          (* 0 .. 40319 *)
   let length = 40320
 
+  let nedges = Cubie.nedges - 4         (* U & D edges only *)
+
   (* ASSUME: FR, FL, BL, BR are given that last indices by [int_of_edge]. *)
-  (* See CornerP.of_cube for the principle. *)
-  let of_cube cube = int_of_perm cube.Cubie.edge_perm (Cubie.nedges - 4)
+  let of_cube cube = int_of_perm cube.Cubie.edge_perm nedges
 
   let to_cube perm =
     let p = Array.init Cubie.nedges (fun i -> i) in (* last 4 untouched *)
-    perm_of_int perm (Cubie.nedges - 4) p;
+    perm_of_int perm p 0 nedges;
     { Cubie.id with Cubie.edge_perm = p }
 
   let id = of_cube Cubie.id
@@ -613,10 +615,23 @@ struct
   type t = int                          (* 0 .. 23 *)
   let length = 24
 
+  let fr = Cubie.int_of_edge Cubie.FR
+  let first = 0
+  let nedges = 4
+
+  (* Contrarily to http://kociemba.org/math/twophase.htm#phase2udslice
+     these coordinates are not an extension of the {!Rubik.UDSlice} ones. *)
   let of_cube cube =
-    1
+    int_of_perm (Array.sub cube.Cubie.edge_perm first nedges) nedges
+
+  let to_cube perm =
+    let p = Array.init Cubie.nedges (fun i -> i) in (* only last 4 touched *)
+    perm_of_int perm p first nedges;
+    { Cubie.id with Cubie.edge_perm = p }
 
   let id = of_cube Cubie.id
+
+  let initialize ?file () = INITIALIZE(int16_unsigned)
 end
 
 
