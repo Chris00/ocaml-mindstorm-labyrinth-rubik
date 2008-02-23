@@ -19,9 +19,13 @@
 (** This module implements various datastructures (partially)
     representing the Rubik cube.
 
-    The main inspiration for this code is the work of Herbert Kociemba:
-    http://kociemba.org/cube.htm
-
+    The main inspiration for this code is the work of Herbert Kociemba
+    <http://kociemba.org/cube.htm>.  If Kociemba writing is too
+    technical to you, you may want to start with Peter Lubans prose
+    <http://bj.middlebury.edu/~plubans/report> and follow with Jaap's
+    Puzzle Page <http://www.geocities.com/jaapsch/puzzles/compcube.htm>
+    but be sure to finally return to Kociemba pages as they contain
+    the most precise explanations.
 
     On the mathematical theory of groups, using the Rubik cube as a
     motivation, you can consult:
@@ -32,21 +36,17 @@
 
     - Tom Davis, Group Theory via Rubik's Cube,
     http://www.geometer.org/rubik/group.pdf
+
+    Finally Michael Reid's Rubik's cube page
+    <http://www.math.ucf.edu/~reid/Rubik/index.html> has a nice
+    collection of links, in particular featuring his own optimal cube
+    solver <http://www.math.ucf.edu/~reid/Rubik/optimal_solver.html>.
 *)
 
 (* http://www-cs-staff.Stanford.EDU/~knuth/preprints.html
    Efficient representation of perm groups. (Sims's algorithm)
    http://www-cs-staff.stanford.edu/~knuth/papers/erpg.tex.gz *)
-(* http://www.math.ucf.edu/~reid/Rubik/index.html
 
-   e.g. http://www.math.ucf.edu/~reid/Rubik/optimal_solver.html
-   
-   http://bj.middlebury.edu/~plubans/report
-
-   Supposedly easier introduction to Kociemba algo:
-   http://www.geocities.com/jaapsch/puzzles/compcube.htm
-
-*)
 
 open Bigarray
 
@@ -61,37 +61,41 @@ module List = struct
 end
 
 let max3 (i:int) j k =
-  if i <= j then
-    if j <= k then k else j
-  else (* i > j *)
-    if i <= k then k else i
+  if i <= j then   if j <= k then k else j
+  else (* i > j *) if i <= k then k else i
 
 
 type generator = F | B | L | R | U | D
 
 let generator = [| F; B; L; R; U; D |]
 
-type move = int
+
+module Move =
+struct
+
+  type t = int
     (* F -> 0, F^2 -> 1, F^3 -> 2, B -> 3, B^2 -> 4,..., D^3 -> 17.
        It is important that the fact that is is an int is known by the
        submodules because it will be used as an index of move
        tables. *)
 
-let nmove = 18                         (* to iterate on the moves *)
+  let length = 18                         (* to iterate on the moves *)
 
-(* We use [(g, e)] because that is how we want the solution of the
-   rubik cube to be presented. *)
-let move (g, e) =
-  if e < 1 || e > 3 then invalid_arg "Rubik.move: exponent must be 1, 2, or 3";
-  match g with
-  | F -> e - 1
-  | B -> e + 2
-  | L -> e + 5
-  | R -> e + 8
-  | U -> e + 11
-  | D -> e + 14
+  (* We use [(g, e)] because that is how we want the solution of the
+     rubik cube to be presented. *)
+  let make (g, e) =
+    if e < 1 || e > 3 then
+      invalid_arg "Rubik.move: exponent must be 1, 2, or 3";
+    match g with
+    | F -> e - 1
+    | B -> e + 2
+    | L -> e + 5
+    | R -> e + 8
+    | U -> e + 11
+    | D -> e + 14
 
-let generator m = (generator.(m / 3), (m mod 3) + 1)
+  let generator m = (generator.(m / 3), (m mod 3) + 1)
+end
 
 
 (** Symmetry group of the cube.  Some Rubik cube coordinates are
@@ -247,7 +251,7 @@ struct
       [UR,0;UF,0;UL,0;UB,0;  DF,0; DL,0; DB,0; DR,0; FR,0;FL,0;BL,0;BR,0]
 
   (* MAKE SURE to respect the encoding order of {!Rubik.move}. *)
-  let move_table =
+  let cube_of_move =
     let move_F2 = mul move_F move_F
     and move_B2 = mul move_B move_B
     and move_L2 = mul move_L move_L
@@ -261,9 +265,9 @@ struct
        move_U; move_U2; mul move_U2 move_U;
        move_D; move_D2; mul move_D2 move_D |]
 
-  let move (m: move) = move_table.(m)
+  let move (m: Move.t) = cube_of_move.(m)
 
-  let () = assert(Array.length move_table = nmove)
+  let () = assert(Array.length cube_of_move = Move.length)
 end
 
 
@@ -272,7 +276,7 @@ sig
   type t
   val of_cube : Cubie.t -> t
     (** Returns the coordinate of a cube. *)
-  val initialize : ?file:string -> unit -> (t -> move -> t) * (t -> int)
+  val initialize : ?file:string -> unit -> (t -> Move.t -> t) * (t -> int)
 end
 
 (* Common coordinates structure.
@@ -293,10 +297,10 @@ end
      (* Generate a cube with the orientation represented by the number. *)
 *)
 DEFINE INITIALIZE_MUL(kind) =
-  let mul_table = Array2.create kind c_layout length nmove in
+  let mul_table = Array2.create kind c_layout length Move.length in
   for o = 0 to length - 1 do
     let cube = to_cube o in
-    for m = 0 to nmove - 1 do
+    for m = 0 to Move.length - 1 do
       mul_table.{o,m} <- of_cube(Cubie.mul cube (Cubie.move m))
     done
   done;
@@ -494,7 +498,12 @@ struct
   type t = int                          (* 0 .. 494 = 12*11*10*9/4! - 1 *)
   let length = 495
 
+  (* Assume: FR < FL < BL < BR and to be after all other (including
+     for [Cubie.int_of_edge].  *)
   let fr = Cubie.int_of_edge Cubie.FR
+  let fl = Cubie.int_of_edge Cubie.FL
+  let bl = Cubie.int_of_edge Cubie.BL
+  let br = Cubie.int_of_edge Cubie.BR
 
   let of_cube cube =
     let edge = cube.Cubie.edge_perm in
@@ -514,20 +523,35 @@ struct
   let id = of_cube Cubie.id
 
   let initialize_mul() =
-    let mul_table = Array2.create int16_unsigned c_layout length nmove in
+    let mul_table = Array2.create int16_unsigned c_layout length Move.length in
     (* Generate all possibilities of placing the 4 UDSlice edges
        directly as a permutation [p]. *)
     let p = Array.make Cubie.nedges 0 in
-    for o = 0 to length - 1 do
-      let cube = { Cubie.id with Cubie.edge_perm = p } in
-      for m = 0 to nmove - 1 do
-        mul_table.{o,m} <- of_cube(Cubie.mul cube (Cubie.move m))
-      done
+    let exchange k l = let pk = p.(k) in p.(k) <- p.(l); p.(l) <- pk in
+    for i1 = 0 to Cubie.nedges - 4 do
+      exchange fr i1;
+      for i2 = i1 + 1 to Cubie.nedges - 3 do
+        exchange fl i2;
+        for i3 = i2 + 1 to Cubie.nedges - 2 do
+          exchange bl i3;
+          for i4 = i3 + 1 to Cubie.nedges - 1 do
+            exchange br i4;
+            let c = { Cubie.id with Cubie.edge_perm = p } in
+            for m = 0 to Move.length - 1 do
+              mul_table.{of_cube c,m} <- of_cube(Cubie.mul c (Cubie.move m))
+            done;
+            exchange br i4;             (* undo *)
+          done;
+          exchange bl i3;
+        done;
+        exchange fl i2;
+      done;
+      exchange fr i1;
     done;
     mul_table
 
   let initialize_prun () =
-    Array1.create int8_unsigned c_layout length (* to complete *)
+    Array1.create int8_unsigned c_layout length (* FIXME: to complete *)
 
   let initialize ?file () = INITIALIZE_FILE(initialize_mul, initialize_prun)
 end
@@ -554,6 +578,7 @@ struct
     and mulU, prunU = UDSlice.initialize ?file:file3 () in
     let mul (c,e,u) m = (mulC c m, mulE e m, mulU u m)
     and prun (c,e,u) = max3 (prunC c) (prunE e) (prunU u) in
+    (* FIXME: is this pruning method good enough? *)
     (mul, prun)
 end
 
