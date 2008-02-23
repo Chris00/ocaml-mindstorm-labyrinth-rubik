@@ -9,13 +9,15 @@ PP=camlp4o pa_macro.cmo #Camlp4MacroParser.cmo
 
 INTERFACES=$(wildcard *.mli)
 PROGRAM=run.ml
-LIBS_CMA=unix.cma mindstorm.cma robot.cmo
+LIBS_CMA=unix.cma bigarray.cma mindstorm.cma robot.cma
 LIBS_CMXA=$(patsubst %cmo,%.cmx, $(patsubst %.cma,%.cmxa, $(LIBS_CMA)))
 
 .PHONY: byte native
 byte: $(PROGRAM:.ml=.exe)
 native: $(PROGRAM:.ml=.com)
 
+run.exe: rubik.cmo
+run.com: rubik.cmx
 
 test_ppm.exe: ppm.cmo
 test_ppm.exe: LIBS_CMA+=graphics.cma

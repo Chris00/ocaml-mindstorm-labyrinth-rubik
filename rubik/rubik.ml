@@ -2,8 +2,10 @@
 
    Copyright (C) 2008
 
-     Christophe Troestler <Christophe.Troestler@umh.ac.be>
+     Christophe Troestler <chris_77@users.sourceforge.net>
      WWW: http://math.umh.ac.be/an/software/
+
+     Julie de Pril <julie_87@users.sourceforge.net>
 
    This library is free software; you can redistribute it and/or modify
    it under the terms of the GNU General Public License version 2.1 or
@@ -525,8 +527,8 @@ struct
   let length = 495
   type move = Move.t
 
-  (* Assume: FR < FL < BL < BR and to be after all other (including
-     for [Cubie.int_of_edge].  *)
+  (* Assume: FR < FL < BL < BR and to be after all other edges
+     (for [Cubie.int_of_edge].  *)
   let fr = Cubie.int_of_edge Cubie.FR
   let fl = Cubie.int_of_edge Cubie.FL
   let bl = Cubie.int_of_edge Cubie.BL
@@ -553,7 +555,7 @@ struct
     let mul_table = Array2.create int16_unsigned c_layout length Move.length in
     (* Generate all possibilities of placing the 4 UDSlice edges
        directly as a permutation [p]. *)
-    let p = Array.make Cubie.nedges 0 in
+    let p = Array.init Cubie.nedges (fun i -> i) (* id perm *) in
     let exchange k l = let pk = p.(k) in p.(k) <- p.(l); p.(l) <- pk in
     for i1 = 0 to Cubie.nedges - 4 do
       exchange fr i1;

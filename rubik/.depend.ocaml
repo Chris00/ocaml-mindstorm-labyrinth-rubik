@@ -2,6 +2,8 @@ ppm.cmo: ppm.cmi
 ppm.cmx: ppm.cmi 
 rubik.cmo: rubik.cmi 
 rubik.cmx: rubik.cmi 
+run.cmo: rubik.cmi 
+run.cmx: rubik.cmx 
 snapshot.cmo: snapshot.cmi 
 snapshot.cmx: snapshot.cmi 
 test_ppm.cmo: ppm.cmi 
