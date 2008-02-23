@@ -12,7 +12,8 @@ PROGRAM=run.ml
 LIBS_CMA=unix.cma bigarray.cma mindstorm.cma robot.cma
 LIBS_CMXA=$(patsubst %cmo,%.cmx, $(patsubst %.cma,%.cmxa, $(LIBS_CMA)))
 
-.PHONY: byte native
+.PHONY: all byte native
+all: byte native
 byte: $(PROGRAM:.ml=.exe)
 native: $(PROGRAM:.ml=.com)
 

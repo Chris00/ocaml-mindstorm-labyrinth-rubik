@@ -415,6 +415,8 @@ struct
     corner_rot.(Cubie.ncorners - 1) <- Cubie.inv3(!s mod 3);
     { Cubie.id with Cubie.corner_rot = corner_rot }
 
+  let id = of_cube Cubie.id
+
   let initialize ?file () = INITIALIZE(int16_unsigned)
 end
 
@@ -444,6 +446,8 @@ struct
     (* (the sum of all orientations) mod 2 = 0 *)
     edge_flip.(Cubie.nedges - 1) <- !s land 0x1; (* -x = x in Z/2Z *)
     { Cubie.id with Cubie.edge_flip = edge_flip }
+
+  let id = of_cube Cubie.id
 
   let initialize ?file () = INITIALIZE(int16_unsigned)
 end
