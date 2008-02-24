@@ -327,31 +327,32 @@ DEFINE INITIALIZE_MUL(kind) =
   done;
   mul_table
 ;;
-DEFINE INITIALIZE_PRUN(a) =
+DEFINE INITIALIZE_PRUN =
   let prun_table = Array1.create int8_unsigned c_layout length in
   (* The array [taken] enables us to know whether we have already taken a
      cube to compute its value in the prun_table or not. *)
   let taken = Array.make length false in
   (* [is_next m next] tells us if the move [next] can be applied after the
      move [m] or not. *)
-  let is_next m next = let gen = fst(Move.generator m) in
+  let is_next m next = let gen, _ = Move.generator m in
                        next <> Move.make (gen,1) && next <> Move.make (gen,2)
                        && next <> Move.make (gen,3) in
   prun_table.{id} <- 0; (* This is the goal state. *)
   taken.(id) <- true;
-  let rec fill_table n cond_move taken cube_coord =
-    (* n counts the number of already taken cubes and cond_move is a
+  let rec fill_table n move_allowed taken cube_coord =
+    (* n counts the number of already taken cubes and move_allowed is a
        condition to know whether a move can be applied or not.*)
     if n <= length then
       let cube = to_cube cube_coord in
       for m = 0 to Move.length - 1 do
-        if cond_move m then
+        if move_allowed m then
           let newc = of_cube (Cubie.mul cube (Cubie.move m)) in
-          if not taken.(newc) then
-            (prun_table.{newc} <- prun_table.{cube_coord} + 1;
-             (* One more move to bring the cube back to the goal state. *)
-             taken.(newc) <- true;
-             fill_table (n+1) (fun next -> is_next m next) taken newc)
+          if not taken.(newc) then (
+            prun_table.{newc} <- prun_table.{cube_coord} + 1;
+            (* One more move to bring the cube back to the goal state. *)
+            taken.(newc) <- true;
+            fill_table (n+1) (is_next m) taken newc
+          )
       done in
   fill_table 1 (fun _ -> true) taken id; (* The function [fun _ -> true] allows
                                         us to apply all the existing moves. *)
@@ -386,9 +387,10 @@ DEFINE INITIALIZE_FILE(initialize_mul, initialize_prun) =
 ;;
 DEFINE INITIALIZE(kind) =
   let initialize_mul () = INITIALIZE_MUL(kind) in
-  let initialize_prun () = INITIALIZE_PRUN() in
+  let initialize_prun () = INITIALIZE_PRUN in
   INITIALIZE_FILE(initialize_mul, initialize_prun)
 ;;
+
 
 module CornerO =
 struct
