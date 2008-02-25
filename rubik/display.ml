@@ -19,49 +19,50 @@ type def_face = {
   vect_u : vector (*Defines a face upper vector*)
 }
 
-let cube (c_U, c_L, c_F, c_R, c_B, c_D) lgth_sq angle =
+let cube x0 y0 (c_U, c_L, c_F, c_R, c_B, c_D) lgth_sq angle =
   let angle = rad angle in
-  open_graph (" " ^ string_of_int(9 * lgth_sq)
-              ^ "x" ^  string_of_int(9 * lgth_sq));
+  open_graph (" " ^ string_of_int(x0 + 12 * lgth_sq)
+              ^ "x" ^  string_of_int(y0 + 9 * lgth_sq));
   let caract_U = { (*Defines the feature of the Upper face*)
-    x0 = 3 * lgth_sq;
-    y0 = 6 * lgth_sq;
+    x0 = x0 + 3 * lgth_sq;
+    y0 = y0 + 6 * lgth_sq;
     vect_r = (lgth_sq, 0);
-    vect_u = (lgth_sq * round (cos angle), lgth_sq * round (sin angle))
+    vect_u = (round (float lgth_sq *. cos angle),
+              round (float lgth_sq *. sin angle))
   }
   in
   let caract_L = { (*Defines the feature of the Left face*)
-    x0 = 0;
-    y0 = 3 * lgth_sq;
+    x0 = x0;
+    y0 = y0 + 3 * lgth_sq;
     vect_r = (lgth_sq, 0);
     vect_u = (0, lgth_sq)
   }
   in
   let caract_F = { (*Defines the feature of the Front face*)
-    x0 = 3 * lgth_sq;
-    y0 = 3 * lgth_sq;
+    x0 = x0 + 3 * lgth_sq;
+    y0 = y0 + 3 * lgth_sq;
     vect_r = (lgth_sq, 0);
     vect_u = (0, lgth_sq)
   }
   in
   let caract_R = { (*Defines the feature of the Right face*)
-    x0 = 6 * lgth_sq;
-    y0 = 3 * lgth_sq;
-    vect_r = (lgth_sq * round (cos (pi -. angle))
-                , lgth_sq * round (sin (pi -. angle)));
+    x0 = x0 + 6 * lgth_sq;
+    y0 = y0 + 3 * lgth_sq;
+    vect_r = round (float lgth_sq *. cos angle)
+                , round (float lgth_sq *. sin angle);
     vect_u = (0, lgth_sq)
   }
   in
   let caract_B = { (*Defines the feature of the Back face*)
-    x0 = (6 + 3 * round  (cos (pi -. angle)))  * lgth_sq;
-    y0 = (3 + 3 * round (sin(pi -. angle))) * lgth_sq ;
+    x0 = x0 + 6 * lgth_sq + 3 * round (cos angle *. float lgth_sq);
+    y0 = y0 + 3 * lgth_sq + 3 * round (sin angle *. float lgth_sq);
     vect_r = (lgth_sq, 0);
     vect_u = (0, lgth_sq)
   }
   in
   let caract_D = { (*Defines the feature of the Down face*)
-    x0 = 3 * lgth_sq;
-    y0 = 0;
+    x0 = x0 + 3 * lgth_sq;
+    y0 = y0;
     vect_r = (lgth_sq, 0);
     vect_u = (0, lgth_sq)
   }
@@ -87,20 +88,20 @@ let cube (c_U, c_L, c_F, c_R, c_B, c_D) lgth_sq angle =
   let draw_square face id color =
     (* Draw the square [id] of the face [face] in the color [color]
        For a face the id is define in this way
-       -------------
-       |   |   |   |
+       –––––––––––––
        | 1 | 2 | 3 |
-       |   |   |   |
+       –––––––––––––
        | 4 | 5 | 6 |
-       |   |   |   |
+       –––––––––––––
        | 7 | 8 | 9 |
-       |   |   |   |
-       ------------- *)
+       ––––––––––––– *)
     set_color (color);
-    let x0 = (give_from face).x0 + (id mod 3) * fst((give_from face).vect_r)
-      + ((id-1)/3) * fst((give_from face).vect_u)
-    and y0 = (give_from face).x0 + (id mod 3) * snd((give_from face).vect_r)
-      + ((id-1)/3) *  snd((give_from face).vect_u) in
+    let x0 = (give_from face).x0
+      + (((id-1) mod 3) * fst((give_from face).vect_r))
+      + ((2-(id-1)/3) * fst((give_from face).vect_u))
+    and y0 = (give_from face).y0
+      + (((id-1) mod 3) * snd((give_from face).vect_r))
+      + ((2-(id-1)/3) *  snd((give_from face).vect_u)) in
     let coord_square = [|
       (x0, y0);
       (x0 + fst((give_from face).vect_u), y0 + snd((give_from face).vect_u));
@@ -129,7 +130,7 @@ let cube (c_U, c_L, c_F, c_R, c_B, c_D) lgth_sq angle =
     | Cubie.UB -> [| (`U,2); (`B,2) |]
     | Cubie.DR -> [| (`D,6); (`R,8) |]
     | Cubie.DF -> [| (`D,2); (`F,8) |]
-    | Cubie.DL -> [| (`D,4); (`L,3) |]
+    | Cubie.DL -> [| (`D,4); (`L,8) |]
     | Cubie.DB -> [| (`D,8); (`B,8) |]
     | Cubie.FR -> [| (`F,6); (`R,4) |]
     | Cubie.FL -> [| (`F,4); (`L,6) |]
@@ -143,19 +144,37 @@ let cube (c_U, c_L, c_F, c_R, c_B, c_D) lgth_sq angle =
     let struc = def_corner structure in
     Array.iteri (fun it (face, id) ->
                       let color = color_of
-                        (fst struc.((it + orientation) mod 3)) in
-                      draw_square  face id color) pos in
-
-  let draw_edge position (structure, orient) =
-    (*Draws the edge [structure] at the position [position]
-      with the orientation [orientation] *)
+                        (fst struc.((it - orientation + 3) mod 3)) in
+                      draw_square  face id color) pos
+  in
+  let draw_edge position (structure, fliped) =
+    (*Draws the edge [structure] at the position [position] who is [fliper]
+    or not!*)
     let pos = def_edge position in
     let struc = def_edge structure in
     Array.iteri (fun it (face, id) ->
                       let color = color_of
-                        (fst struc.((it + (if orient then 0 else 1)) mod 2)) in
-                      draw_square face id color) pos in
+                        (fst struc.((it + (if fliped then 1 else 0)) mod 2)) in
+                      draw_square face id color) pos
+  in
+  let draw_structure =
+    (*Draws the rubie without color! *)
+    Array.iter (fun face ->
+                  Array.iter (fun id ->
+                                 draw_square face id white;
+                  ) [|1; 2; 3; 4; 6; 7; 8; 9|]
+    ) [|`U; `R; `L; `F; `B; `D|]
+  in
   fun cube corner_list edge_list ->
+    (* creating the structure *)
+    draw_structure;
+    (* puting color on the square middle face *)
+    draw_square `U  5 c_U;
+    draw_square `R  5 c_R;
+    draw_square `L  5 c_L;
+    draw_square `F  5 c_F;
+    draw_square `B  5 c_B;
+    draw_square `D  5 c_D;
     Array.iter (fun pos ->
                   let stru = Cubie.corner cube pos in
                   draw_corner pos stru) corner_list;
@@ -163,15 +182,15 @@ let cube (c_U, c_L, c_F, c_R, c_B, c_D) lgth_sq angle =
                   let stru = Cubie.edge cube pos in
                   draw_edge pos stru) edge_list
 
-
+(* test function *)
 let () =
-  let test = cube (red, blue, green, white, black, yellow) 30 30 in
+  let test = cube 60 120 (red, blue, green, cyan, magenta, yellow) 30 45 in
   let c_list =
     [|Cubie.URF; Cubie.UFL; Cubie.ULB; Cubie.UBR;
-     Cubie.DFR; Cubie.DLF; Cubie.DBL; Cubie.DRB|] in
+      Cubie.DFR; Cubie.DLF; Cubie.DBL; Cubie.DRB|] in
   let e_list =
     [|Cubie.UR; Cubie.UF; Cubie.UL; Cubie.UB;
       Cubie.DR; Cubie.DF; Cubie.DL; Cubie.DB;
       Cubie.FR; Cubie.FL; Cubie.BL; Cubie.BR|] in
-  test Cubie.id c_list e_list;
+  test (Cubie.move (Move.make (B, 1))) c_list e_list;
   ignore(wait_next_event [Button_down])
