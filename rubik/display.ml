@@ -20,9 +20,15 @@ type def_face = {
 }
 
 let cube x0 y0 (c_U, c_L, c_F, c_R, c_B, c_D) lgth_sq angle =
+  let color_bg = rgb 219 219 219 in (* the back ground color *)
+  let color_struct = rgb 0 0 0 in (* the color of the structure *)
   let angle = rad angle in
-  open_graph (" " ^ string_of_int(x0 + 12 * lgth_sq)
-              ^ "x" ^  string_of_int(y0 + 9 * lgth_sq));
+  let img_width = x0 + 12 * lgth_sq in
+  let img_high = y0 + 9 * lgth_sq in
+  open_graph (" " ^ string_of_int(img_width)
+              ^ "x" ^  string_of_int(img_high));
+  set_color color_bg;
+  fill_rect 0 0 img_width img_high;
   let caract_U = { (*Defines the feature of the Upper face*)
     x0 = x0 + 3 * lgth_sq;
     y0 = y0 + 6 * lgth_sq;
@@ -67,7 +73,7 @@ let cube x0 y0 (c_U, c_L, c_F, c_R, c_B, c_D) lgth_sq angle =
     vect_u = (0, lgth_sq)
   }
   in
-  let give_from face = match  face with 
+  let give_from face = match  face with
       (*Giving the feature of the face [face]*)
     |`U -> caract_U
     |`L -> caract_L
@@ -88,13 +94,13 @@ let cube x0 y0 (c_U, c_L, c_F, c_R, c_B, c_D) lgth_sq angle =
   let draw_square face id color =
     (* Draw the square [id] of the face [face] in the color [color]
        For a face the id is define in this way
-       –––––––––––––
+       -------------
        | 1 | 2 | 3 |
-       –––––––––––––
+       -------------
        | 4 | 5 | 6 |
-       –––––––––––––
+       -------------
        | 7 | 8 | 9 |
-       ––––––––––––– *)
+       ------------- *)
     set_color (color);
     let x0 = (give_from face).x0
       + (((id-1) mod 3) * fst((give_from face).vect_r))
@@ -110,7 +116,7 @@ let cube x0 y0 (c_U, c_L, c_F, c_R, c_B, c_D) lgth_sq angle =
       (x0 + fst((give_from face).vect_r), y0 + snd((give_from face).vect_r))
     |] in
     fill_poly coord_square;
-    set_color black;
+    set_color color_struct;
     draw_poly coord_square
   in
   let def_corner c = match c with (*Attribute to each corner face and id*)
@@ -161,7 +167,7 @@ let cube x0 y0 (c_U, c_L, c_F, c_R, c_B, c_D) lgth_sq angle =
     (*Draws the rubie without color! *)
     Array.iter (fun face ->
                   Array.iter (fun id ->
-                                 draw_square face id white;
+                                 draw_square face id color_bg;
                   ) [|1; 2; 3; 4; 6; 7; 8; 9|]
     ) [|`U; `R; `L; `F; `B; `D|]
   in
@@ -184,7 +190,7 @@ let cube x0 y0 (c_U, c_L, c_F, c_R, c_B, c_D) lgth_sq angle =
 
 (* test function *)
 let () =
-  let test = cube 60 120 (red, blue, green, cyan, magenta, yellow) 30 45 in
+  let test = cube 60 120 (blue, magenta, yellow, red, white, green) 30 45 in
   let c_list =
     [|Cubie.URF; Cubie.UFL; Cubie.ULB; Cubie.UBR;
       Cubie.DFR; Cubie.DLF; Cubie.DBL; Cubie.DRB|] in
