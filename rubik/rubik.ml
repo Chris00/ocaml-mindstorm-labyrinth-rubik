@@ -115,6 +115,10 @@ struct
 
   let generator m = (generator.(m / 3), (m mod 3) + 1)
 
+  let have_same_gen m n =
+    let genM,_ = generator m in
+    let genN,_ = generator n in
+    genM = genN
 end
 
 
@@ -332,11 +336,6 @@ DEFINE INITIALIZE_PRUN =
   (* The array [taken] enables us to know whether we have already taken a
      cube to compute its value in the prun_table or not. *)
   let taken = Array.make length false in
-  (* [is_next m next] tells us if the move [next] can be applied after the
-     move [m] or not. *)
-  let is_next m next = let gen, _ = Move.generator m in
-                       next <> Move.make (gen,1) && next <> Move.make (gen,2)
-                       && next <> Move.make (gen,3) in
   prun_table.{id} <- 0; (* This is the goal state. *)
   taken.(id) <- true;
   let rec fill_table n move_allowed taken cube_coord =
@@ -351,11 +350,11 @@ DEFINE INITIALIZE_PRUN =
             prun_table.{newc} <- prun_table.{cube_coord} + 1;
             (* One more move to bring the cube back to the goal state. *)
             taken.(newc) <- true;
-            fill_table (n+1) (is_next m) taken newc
+            fill_table (n+1) (fun n  -> not(Move.have_same_gen m n)) taken newc
           )
       done in
-  fill_table 1 (fun _ -> true) taken id; (* The function [fun _ -> true] allows
-                                        us to apply all the existing moves. *)
+  fill_table 1 (fun _ -> true) taken id;(* The function [fun _ -> true] allows
+                                          us to apply all the existing moves. *)
   prun_table
 ;;
 (* This must be a macro so that the type of the tables is monomorphic and

@@ -43,6 +43,10 @@ sig
 
   val generator : t -> generator * int
     (** [generator] is the inverse function of {!Rubik.Move.make}. *)
+
+  val have_same_gen : t -> t -> bool
+    (** [has_same_gen m n] returns [true] if m and n are made with the same
+        generator. *)
 end
 
 
@@ -140,7 +144,7 @@ sig
     (** [inv g] inverse permutation. *)
 
   val is_identity : t -> bool
-    (** The premutation is the Rubik cube home state i.e., the
+    (** The permutation is the Rubik cube home state i.e., the
         identity (neutral element of the group). *)
 end
 
