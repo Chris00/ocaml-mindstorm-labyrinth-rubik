@@ -20,6 +20,12 @@ native: $(PROGRAM:.ml=.com)
 run.exe: rubik.cmo
 run.com: rubik.cmx
 
+display.cmo: rubik.cmo
+display.cmo: LIBS_CMA+= graphics.cma
+
+display.exe: rubik.cmo
+display.exe: LIBS_CMA+= graphics.cma
+
 test_ppm.exe: ppm.cmo
 test_ppm.exe: LIBS_CMA+=graphics.cma
 
