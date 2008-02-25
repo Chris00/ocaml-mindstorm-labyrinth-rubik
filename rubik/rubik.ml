@@ -116,9 +116,9 @@ struct
   let generator m = (generator.(m / 3), (m mod 3) + 1)
 
   let have_same_gen m n =
-    let genM,_ = generator m in
-    let genN,_ = generator n in
-    genM = genN
+    let mgen,_ = generator m in
+    let ngen,_ = generator n in
+    mgen = ngen
 end
 
 
@@ -331,6 +331,11 @@ DEFINE INITIALIZE_MUL(kind) =
   done;
   mul_table
 ;;
+(*  For INITIALIZE_PRUN, we assume that the following
+    values are defined:
+    - val length : int
+    - val of_cube : Cubie.t -> int
+    (val to_cube : int -> Cubie.t isn't necessary) *)
 DEFINE INITIALIZE_PRUN =
   let prun_table = Array1.create int8_unsigned c_layout length in
   (* The array [taken] enables us to know whether we have already taken a
@@ -338,23 +343,24 @@ DEFINE INITIALIZE_PRUN =
   let taken = Array.make length false in
   prun_table.{id} <- 0; (* This is the goal state. *)
   taken.(id) <- true;
-  let rec fill_table n move_allowed taken cube_coord =
+  let rec fill_table n move_allowed taken cube =
     (* n counts the number of already taken cubes and move_allowed is a
        condition to know whether a move can be applied or not.*)
     if n <= length then
-      let cube = to_cube cube_coord in
+      let cube_coord = of_cube cube in
       for m = 0 to Move.length - 1 do
         if move_allowed m then
-          let newc = of_cube (Cubie.mul cube (Cubie.move m)) in
-          if not taken.(newc) then (
-            prun_table.{newc} <- prun_table.{cube_coord} + 1;
+          let newc = Cubie.mul cube (Cubie.move m) in
+          let newc_coord = of_cube newc in
+          if not taken.(newc_coord) then (
+            prun_table.{newc_coord} <- prun_table.{cube_coord} + 1;
             (* One more move to bring the cube back to the goal state. *)
-            taken.(newc) <- true;
+            taken.(newc_coord) <- true;
             fill_table (n+1) (fun n  -> not(Move.have_same_gen m n)) taken newc
           )
       done in
-  fill_table 1 (fun _ -> true) taken id;(* The function [fun _ -> true] allows
-                                          us to apply all the existing moves. *)
+  fill_table 1 (fun _ -> true) taken Cubie.id;
+  (* The function [fun _ -> true] allows us to apply all the existing moves. *)
   prun_table
 ;;
 (* This must be a macro so that the type of the tables is monomorphic and
@@ -585,10 +591,10 @@ struct
     done;
     mul_table
 
-  let initialize_prun () =
-    Array1.create int8_unsigned c_layout length (* FIXME: to complete *)
-
-  let initialize ?file () = INITIALIZE_FILE(initialize_mul, initialize_prun)
+  let initialize ?file () = INITIALIZE_FILE(initialize_mul,
+                                           (fun _ -> INITIALIZE_PRUN))
+    (* We can take the INITIALIZE_PRUN function because it doesn't use the
+    function [to_cube] in its implementation. *)
 end
 
 
