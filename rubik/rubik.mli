@@ -44,6 +44,9 @@ sig
   val generator : t -> generator * int
     (** [generator] is the inverse function of {!Rubik.Move.make}. *)
 
+  val get : unit -> t array
+    (** [get()] returns the array of all possible moves. *)
+
   val have_same_gen : t -> t -> bool
     (** [has_same_gen m n] returns [true] if m and n are made with the same
         generator. *)

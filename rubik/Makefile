@@ -23,6 +23,9 @@ run.com: rubik.cmx
 display.cmo: rubik.cmo
 display.cmo: LIBS_CMA+= graphics.cma
 
+solver.cmo: rubik.cmo
+solver.exe: rubik.cmo
+
 display.exe: rubik.cmo
 display.exe: LIBS_CMA+= graphics.cma
 

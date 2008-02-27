@@ -115,6 +115,8 @@ struct
 
   let generator m = (generator.(m / 3), (m mod 3) + 1)
 
+  let get () = Array.init length (fun i -> i)
+
   let have_same_gen m n =
     let mgen,_ = generator m in
     let ngen,_ = generator n in
@@ -712,7 +714,6 @@ struct
     and prun (c,e,u) = max3 (prunC c) (prunE e) (prunU u) in
     (mul, prun)
 end
-
 
 
 (* Local Variables: *)
