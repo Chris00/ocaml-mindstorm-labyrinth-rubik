@@ -29,6 +29,8 @@ display.exe: LIBS_CMA+= graphics.cma
 test_ppm.exe: ppm.cmo
 test_ppm.exe: LIBS_CMA+=graphics.cma
 
+test_RS.exe: rubik_solver.cmo
+
 # Generate HTML documentation for these modules only
 .PHONY: doc
 doc: $(INTERFACES:.mli=.cmi)
