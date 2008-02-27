@@ -98,9 +98,8 @@ sig
     | BR                                (** Back Right *)
 
   type t
-    (** Construct a scrambling of the Rubik cube (i.e. a permutation
-        of the home state, i.e. an element of the Rubik group).  It is
-        immutable. *)
+    (** A scrambling of the Rubik cube (i.e. a permutation of the home
+        state, i.e. an element of the Rubik group).  It is immutable. *)
 
   val make : corner: (corner * int) list -> edge: (edge * bool) list -> t
     (** Construct a permutation of the Rubik cube.
@@ -122,11 +121,13 @@ sig
         permuation of the cube.  *)
 
   val corner : t -> corner -> corner * int
-    (** [corner cube c] returns the corner and its orientation by which
-        [c] is replaced in the [cube]. *)
-  val edge : t -> edge -> edge * bool
-    (** [edge cube e] returns the edge and its flip state by which [e]
-        is replaced in the [cube]. *)
+    (** [corner cube c] returns the corner and its orientation (= [0],
+        [1], pr [2] CW rotations) by which [c] is replaced in the
+        [cube]. *)
+  val edge : t -> edge -> edge * int
+    (** [edge cube e] returns the edge and its flip state ([0]: not
+        flipped, ot [1]: flipped) by which [e] is replaced in the
+        [cube]. *)
 
   val move : Move.t -> t
     (** [move g] the  generator [g] expressed at the cubie level. *)

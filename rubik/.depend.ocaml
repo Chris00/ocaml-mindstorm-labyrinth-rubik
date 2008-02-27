@@ -1,3 +1,5 @@
+display.cmo: rubik.cmi display.cmi 
+display.cmx: rubik.cmx display.cmi 
 ppm.cmo: ppm.cmi 
 ppm.cmx: ppm.cmi 
 rubik.cmo: rubik.cmi 
@@ -8,3 +10,4 @@ snapshot.cmo: snapshot.cmi
 snapshot.cmx: snapshot.cmi 
 test_ppm.cmo: ppm.cmi 
 test_ppm.cmx: ppm.cmx 
+display.cmi: rubik.cmi 

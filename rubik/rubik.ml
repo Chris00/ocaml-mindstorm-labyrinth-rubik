@@ -214,7 +214,7 @@ struct
     (corner_int.(cube.corner_perm.(ci)), cube.corner_rot.(ci))
   let edge cube e =
     let ei = int_of_edge e in
-    (edge_int.(cube.edge_perm.(ei)), cube.edge_flip.(ei) <> 0)
+    (edge_int.(cube.edge_perm.(ei)), cube.edge_flip.(ei))
 
   (* Group operations *)
   let id = {
