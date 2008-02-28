@@ -68,13 +68,13 @@ struct
   let set_cog bool k =
     if(bool = true) then(
       if !cog_is_left then k()
-      else (Robot.event_is running_pf (fun _  -> k());
+      else (Robot.event_is idle_pf (fun _  -> k());
             cog_is_left := true ;
-            speed motor_pf (-1)))
+            speed motor_pf ~tach_limit:40 (-3)))
     else(
-      if  !cog_is_left then (Robot.event_is running_pf (fun _  -> k());
+      if  !cog_is_left then (Robot.event_is idle_pf (fun _  -> k());
                              cog_is_left := false;
-                             speed motor_pf 1)
+                             speed motor_pf ~tach_limit:40 3)
       else k())
 
   (** Move the hand to hold the cube *)
@@ -118,8 +118,8 @@ struct
                    speed motor_pf ~tach_limit:(-tl100) (-100))
                  else(
                    Robot.event_is idle_pf(fun _ -> turn_pf_17 tl17 17 k);
-                   speed motor_pf ~tach_limit:tl100 100)))in
-    if qt>0 then set_cog true turn
+                   speed motor_pf ~tach_limit:tl100 90)))in
+    if qt>0  then set_cog true turn
     else set_cog false turn
 
   (** Rectify the platform after having turned the cube because there is a
@@ -141,10 +141,10 @@ struct
                  speed motor_pf ~tach_limit:tl100 v100)
 
   let turn_rubik_left k =
-    set_cog true (fun _ -> turn_rubik true 450 281 100 (-70) (-20) (10) k)
+    set_cog true (fun _ -> turn_rubik true 450 275 94 (-70) (-20) (10) k)
   let turn_rubik_right k =
-    set_cog false (fun _ -> turn_rubik false 450 171 45 (70) (20) (-10) k)
+    set_cog false (fun _ -> turn_rubik false 450 220 39 (70) (20) (-10) k)
   let turn_rubik_half k =
-    set_cog true (fun _ -> turn_rubik true 900 462 100 (-70) (-20) (10) k)
+    set_cog true (fun _ -> turn_rubik true 900 456 94 (-70) (-20) (10) k)
 
 end
