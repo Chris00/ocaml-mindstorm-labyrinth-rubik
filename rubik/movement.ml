@@ -99,7 +99,7 @@ struct
                                           k()));
     speed motor_fighter (-14)
 
-  let kick k =
+  let kick int k =
     hold_rubik (fun _ -> (Robot.event_is idle_fighter (fun _ -> init_fighter k);
                           speed motor_fighter ~tach_limit:90 100))
 
@@ -146,5 +146,6 @@ struct
     set_cog false (fun _ -> turn_rubik false 450 220 39 (70) (20) (-10) k)
   let turn_rubik_half k =
     set_cog true (fun _ -> turn_rubik true 900 456 94 (-70) (-20) (10) k)
-
+      
+  let initialize k = hold_rublik(set_cog true k) 
 end

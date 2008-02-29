@@ -38,4 +38,6 @@ sig
   val turn_rubik_half : (unit -> unit) -> unit
     (** Turn the 3th line of the cube of half turn *)
 
+  val initialize : (unit -> unit) -> unit
+    (** Give a good position to the robot for it to begin its operations *)
 end
