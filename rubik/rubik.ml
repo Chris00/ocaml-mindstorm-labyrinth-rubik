@@ -609,6 +609,8 @@ struct
   let of_cube c =
     (CornerO.of_cube c, EdgeO.of_cube c, UDSlice.of_cube c)
 
+  let max_moves = 12
+
   let in_G1 (c,e,u) = c = 0 && e = 0 && u = 0
 
   (* FIXME: lazy initialize so they share the same matrices? *)
@@ -697,6 +699,8 @@ struct
 
   let of_cube c =
     (CornerP.of_cube c, EdgeP2.of_cube c, UDSlice2.of_cube c)
+
+  let max_moves = 18
 
   let is_identity (c,e,u) =
     c = CornerP.id && e = EdgeP2.id && u = UDSlice2.id
