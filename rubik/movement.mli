@@ -1,4 +1,22 @@
-(* File: rubik_solver.mli *)
+(* File: movement.mli
+
+   Copyright (C) 2008
+
+     Dany Maslowski <dan_86@users.sourceforge.net>
+
+     Christophe Troestler <chris_77@users.sourceforge.net>
+     WWW: http://math.umh.ac.be/an/software/
+
+   This library is free software; you can redistribute it and/or modify
+   it under the terms of the GNU General Public License version 2.1 or
+   later as published by the Free Software Foundation, with the special
+   exception on linking described in the file LICENSE.
+
+   This library is distributed in the hope that it will be useful, but
+   WITHOUT ANY WARRANTY; without even the implied warranty of
+   MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the file
+   LICENSE for more details. *)
+
 
 module Make(C: sig
               val conn : Mindstorm.bluetooth Mindstorm.conn
@@ -15,29 +33,33 @@ module Make(C: sig
                 (** The port of the fighter switch. *)
             end):
 sig
+  type cont = unit -> unit
+    (** Type of continuations.  Many functions below take a parameter
+        of this type.  The continuation is executed after the current
+        action is finished. *)
 
   val stop : unit  -> unit
-    (** Stop the event loop when the rubik is solved. *)
+    (** Stop the event loop (to be used when the rubik is solved). *)
 
   val run_loop : unit -> unit
-    (** Launch the robot. *)
+    (** Launch the robot (must be issued last). *)
 
-  val kick : (unit -> unit)-> unit
-    (** Kick the rubik's cube to turn him of quart. *)
+  val kick : cont -> unit
+    (** Kick the rubik's cube to turn it by 90 degrees. *)
 
-  val turn_pf : int  -> (unit -> unit) -> unit
-    (** [turn_pf t k] turn the platform of t quaters of turn
-        (if t is negative, it turn in the other way round. *)
+  val turn_pf : int -> cont -> unit
+    (** [turn_pf t k] turn the platform of [t] quarters of turn (if
+        [t] is negative, it turn in the other way round. *)
 
-  val turn_rubik_left : (unit -> unit)-> unit
-    (** Turn the 3th line of the cube of 90 degrees in clockwize. *)
+  val turn_rubik_left : cont -> unit
+    (** Turn the bottom row of the cube by 90 degrees clockwise. *)
 
-  val turn_rubik_right : (unit -> unit) -> unit
-    (** Turn the 3th line of the cube of 90 degrees in opposite clockwize*)
+  val turn_rubik_right : cont -> unit
+    (** Turn the bottom row of the cube by 90 degrees counter clockwise. *)
 
-  val turn_rubik_half : (unit -> unit) -> unit
-    (** Turn the 3th line of the cube of half turn *)
+  val turn_rubik_half : cont -> unit
+    (** Turn the bottom row of the cube by half a turn. *)
 
-  val initialize : (unit -> unit) -> unit
-    (** Give a good position to the robot for it to begin its operations *)
+  val initialize : cont -> unit
+    (** Give a good position to the robot for it to begin its operations. *)
 end

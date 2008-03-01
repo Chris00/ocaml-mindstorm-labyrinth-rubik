@@ -1,4 +1,22 @@
-(* File: rubik_solver.ml *)
+(* File: movement.ml
+
+   Copyright (C) 2008
+
+     Dany Maslowski <dan_86@users.sourceforge.net>
+
+     Christophe Troestler <chris_77@users.sourceforge.net>
+     WWW: http://math.umh.ac.be/an/software/
+
+   This library is free software; you can redistribute it and/or modify
+   it under the terms of the GNU General Public License version 2.1 or
+   later as published by the Free Software Foundation, with the special
+   exception on linking described in the file LICENSE.
+
+   This library is distributed in the hope that it will be useful, but
+   WITHOUT ANY WARRANTY; without even the implied warranty of
+   MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the file
+   LICENSE for more details. *)
+
 
 open Mindstorm
 
@@ -17,6 +35,7 @@ struct
   open C
   open Printf
 
+  type cont = unit -> unit
 
   let stop () =
     Motor.set conn Motor.all (Motor.speed 0);
@@ -26,119 +45,119 @@ struct
 
   let run_loop () = Robot.run r
 
+  (* State of the rubik robot *)
 
   let cube_is_held = ref true
-    (** To know if the cube is held or not by the hand. *)
+    (** Indicates whether the cube is is not held by the "hand". *)
 
   let cog_is_left = ref true
-    (** To know if cogs are placed to turn left or right.
-        This variable is used because there is a large space between the teeth 
-        of cogs (we lose about 30 degrees when we chande the way of the 
-        platform). *)
+    (** To know if cogs are placed to turn left or right.  This
+        variable is used because there is a large space between the
+        teeth of cogs (we lose about 30 degrees when we change the
+        direction of rotations of the platform). *)
 
   let speed motor ?tach_limit sp =
     Motor.set conn motor (Motor.speed ?tach_limit (sp))
 
-  let get_tc_pf ()= let (x,_,_,_) = Motor.get conn motor_pf in x
+  let get_tc_pf () = let (x,_,_,_) = Motor.get C.conn motor_pf in x
 
-  let idle_hand =
+  let motor_is motor state =
     Robot.meas r (fun () ->
-                    let (state,_,_,_) = Motor.get conn motor_hand in
-                    state.Motor.run_state = `Idle)
+                    let (st,_,_,_) = Motor.get C.conn motor in
+                    st.Motor.run_state = state)
 
-  let idle_fighter =
-    Robot.meas r (fun () ->
-                    let (state,_,_,_) = Motor.get conn motor_fighter in
-                    state.Motor.run_state = `Idle)
-  let idle_pf =
-    Robot.meas r (fun () ->
-                    let (state,_,_,_) = Motor.get C.conn motor_pf in
-                    state.Motor.run_state = `Idle)
-
-  let running_pf =
-    Robot.meas r (fun () ->
-                    let (state,_,_,_) = Motor.get C.conn motor_pf in
-                    state.Motor.run_state = `Running)
+  let idle_hand    = motor_is motor_hand `Idle
+  let idle_fighter = motor_is motor_fighter `Idle
+  let idle_pf      = motor_is motor_pf `Idle
+  let running_pf   = motor_is motor_pf `Running
 
   let hand_push = Robot.touch C.conn push_hand_port r
   let fighter_push = Robot.touch C.conn push_fighter_port r
 
-  (** Give an appropriate position to the cogs to turn left if the boolean 
-      bool is true or to turn rigth otherwise. *)
-  let set_cog bool k =
-    if(bool = true) then(
+  (** Give an appropriate position to the cogs to turn left if the
+      boolean bool is true or to turn rigth otherwise. *)
+  let set_cog turn_left k =
+    if turn_left then
       if !cog_is_left then k()
-      else (Robot.event_is idle_pf (fun _  -> k());
+      else (Robot.event_is idle_pf k;
             cog_is_left := true ;
-            speed motor_pf ~tach_limit:40 (-3)))
-    else(
-      if  !cog_is_left then (Robot.event_is idle_pf (fun _  -> k());
-                             cog_is_left := false;
-                             speed motor_pf ~tach_limit:40 3)
-      else k())
+            speed motor_pf ~tach_limit:40 (-3))
+    else
+      if !cog_is_left then (Robot.event_is idle_pf k;
+                            cog_is_left := false;
+                            speed motor_pf ~tach_limit:40 3)
+      else k()
 
   (** Move the hand to hold the cube *)
   let hold_rubik k =
     if !cube_is_held then k()
-    else (Robot.event_is idle_hand (fun _  -> k());
+    else (Robot.event_is idle_hand k;
           cube_is_held := true;
           speed motor_hand ~tach_limit:110 (-40))
 
   (** Move the hand to free the cube *)
   let free_rubik k =
-    if !cube_is_held then (Robot.event_is hand_push
-                             (fun _ -> (speed motor_hand 0;
-                                        k()));
-                           cube_is_held := false;
-                           speed motor_hand (15))
+    if !cube_is_held then begin
+      Robot.event_is hand_push (fun _ -> speed motor_hand 0;  k());
+      cube_is_held := false;
+      speed motor_hand 15
+    end
     else k()
 
-  (** Initialize the position of the fighther after having kicked the cube*)
-  let init_fighter k =
-    Robot.event_is fighter_push (fun _ -> (speed motor_fighter 0;
-                                          k()));
+  (** Reset the position of the fighter after having kicked the cube *)
+  let reset_fighter k =
+    Robot.event_is fighter_push (fun _ -> speed motor_fighter 0;  k());
     speed motor_fighter (-14)
 
   let kick int k =
-    hold_rubik (fun _ -> (Robot.event_is idle_fighter (fun _ -> init_fighter k);
-                          speed motor_fighter ~tach_limit:90 100))
+    hold_rubik begin fun _ ->
+      Robot.event_is idle_fighter (fun _ -> reset_fighter k);
+      speed motor_fighter ~tach_limit:90 100
+    end
 
   (** Turn the platform slowly to adjust it with precision *)
-  let rec turn_pf_17 tl v k =
-    Robot.event_is idle_pf (fun _ -> (speed motor_pf 0;
-                                       k()));
-    speed motor_pf ~tach_limit:tl v
+  let turn_pf_slowly tach_limit v k =
+    Robot.event_is idle_pf (fun _ -> speed motor_pf 0; k());
+    speed motor_pf ~tach_limit v
+
+  (* How many degrees the motor must rotate for the cube platform to
+     make the fourth of a turn.  *)
+  let degree_per_quarter = 300
 
   let turn_pf qt k =
-    let turn () = free_rubik (
-      fun _  -> (let tl100 = qt*(-300) in
-                 let tl17 = qt*(-331) in
-                 if qt>0 then(
-                   Robot.event_is idle_pf(fun _ -> turn_pf_17 (-tl17) (-17) k);
-                   speed motor_pf ~tach_limit:(-tl100) (-100))
-                 else(
-                   Robot.event_is idle_pf(fun _ -> turn_pf_17 tl17 17 k);
-                   speed motor_pf ~tach_limit:tl100 90)))in
-    if qt>0  then set_cog true turn
-    else set_cog false turn
+    let turn () = free_rubik begin fun _  ->
+      let tl17 = qt*(-331) in
+      if qt > 0 then (
+        Robot.event_is idle_pf (fun _ -> turn_pf_slowly (-tl17) (-17) k);
+        speed motor_pf ~tach_limit:(qt * degree_per_quarter) (-100))
+      else (
+        Robot.event_is idle_pf (fun _ -> turn_pf_slowly tl17 17 k);
+        speed motor_pf ~tach_limit:(-qt * degree_per_quarter) 90)
+    end in
+    set_cog (qt > 0) turn
 
   (** Rectify the platform after having turned the cube because there is a
-      small error caused by a space between the cube and the hand *)
-  let rectif_pf bool tl10 v10 k =
-    set_cog (not bool) (fun _ -> (Robot.event_is idle_pf (fun _  -> k());
-                                   speed motor_pf ~tach_limit:tl10 v10))
+      small error caused by a space between the cube and the "hand". *)
+  let rectif_pf turn_left tl10 v10 k =
+    set_cog (not turn_left) begin fun _ ->
+      Robot.event_is idle_pf k;
+      speed motor_pf ~tach_limit:tl10 v10
+    end
 
   (** Turn the platform slowly (the cube is held) to have a good precision *)
-  let turn_rubik_30 bool tl30 tl10 v30 v10 k =
-    set_cog bool (fun _ -> (Robot.event_is idle_pf
-                              (fun _ -> rectif_pf bool tl10 v10 k);
-                            speed motor_pf ~tach_limit:tl30 v30))
+  let turn_rubik_slowly turn_left tl30 tl10 v30 v10 k =
+    set_cog turn_left begin fun _ ->
+      Robot.event_is idle_pf (fun _ -> rectif_pf turn_left tl10 v10 k);
+      speed motor_pf ~tach_limit:tl30 v30
+    end
 
   (** Turn the platform (the cube is held) *)
-  let turn_rubik bool tl100 tl30 tl10 v100 v30 v10 k =
-    hold_rubik(fun _ -> Robot.event_is idle_pf
-                 (fun _ -> turn_rubik_30 bool tl30 tl10 v30 v10 k);
-                 speed motor_pf ~tach_limit:tl100 v100)
+  let turn_rubik turn_left tach_limit tl30 tl10 v100 v30 v10 k =
+    hold_rubik begin fun _ ->
+      Robot.event_is idle_pf
+        (fun _ -> turn_rubik_slowly turn_left tl30 tl10 v30 v10 k);
+      speed motor_pf ~tach_limit v100
+    end
 
   let turn_rubik_left k =
     set_cog true (fun _ -> turn_rubik true 450 275 94 (-70) (-20) (10) k)
@@ -146,6 +165,11 @@ struct
     set_cog false (fun _ -> turn_rubik false 450 220 39 (70) (20) (-10) k)
   let turn_rubik_half k =
     set_cog true (fun _ -> turn_rubik true 900 456 94 (-70) (-20) (10) k)
-      
-  let initialize k = hold_rublik(set_cog true k) 
+
+  let initialize (k:cont) = hold_rubik(set_cog true k)
 end
+
+
+(* Local Variables: *)
+(* compile-command: "make -k movement.cmo" *)
+(* End: *)
