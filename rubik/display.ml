@@ -22,7 +22,7 @@ open Rubik
 
 type color6 = color * color * color * color * color * color
 
-let pi = 4. *. atan(1.) (* returns pi *)
+let pi = 4. *. atan(1.)
 
 let radians_of_degrees angle = float_of_int(angle) *. pi /. 180.
 

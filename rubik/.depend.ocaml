@@ -1,13 +1,19 @@
 display.cmo: rubik.cmi display.cmi 
 display.cmx: rubik.cmx display.cmi 
+movement.cmo: movement.cmi 
+movement.cmx: movement.cmi 
 ppm.cmo: ppm.cmi 
 ppm.cmx: ppm.cmi 
+priority_queue.cmo: priority_queue.cmi 
+priority_queue.cmx: priority_queue.cmi 
 rubik.cmo: rubik.cmi 
 rubik.cmx: rubik.cmi 
 run.cmo: rubik.cmi 
 run.cmx: rubik.cmx 
 snapshot.cmo: snapshot.cmi 
 snapshot.cmx: snapshot.cmi 
+solver.cmo: rubik.cmi priority_queue.cmi 
+solver.cmx: rubik.cmx priority_queue.cmx 
 test_ppm.cmo: ppm.cmi 
 test_ppm.cmx: ppm.cmx 
 display.cmi: rubik.cmi 
