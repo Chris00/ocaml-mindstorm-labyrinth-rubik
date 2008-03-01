@@ -115,7 +115,7 @@ struct
 
   let generator m = (generator.(m / 3), (m mod 3) + 1)
 
-  let get () = Array.init length (fun i -> i)
+  let all = [0; 1; 2; 3; 4; 5; 6; 7; 8; 9; 10; 11; 12; 13; 14; 15; 16; 17; 18]
 
   let have_same_gen m n =
     let mgen,_ = generator m in
@@ -163,6 +163,7 @@ struct
     edge_flip: int array;               (* 0: not flipped, 1: flipped *)
   }
 
+  (* @see make *)
   let unsafe_make corners edges =
     let corner_perm = Array.make ncorners (-1)
     and corner_rot = Array.make ncorners 0 in
@@ -184,7 +185,7 @@ struct
       invalid_arg "Rubik.Cubie.make: 8 corners!";
     if List.length edge <> nedges then
       invalid_arg "Rubik.Cubie.make: 12 edges!";
-    (* Check injectivity & orientations valuesa *)
+    (* Check injectivity & orientations values *)
     let corner_seen = Array.make ncorners false in
     List.iter (fun (c,o) ->
                  let ci = int_of_corner c in
@@ -304,6 +305,7 @@ sig
   val of_cube : Cubie.t -> t
     (** Returns the coordinate of a cube. *)
   val initialize : ?file:string -> unit -> (t -> move -> t) * (t -> int)
+  val compare : t -> t -> int
 end
 
 (* Common coordinates structure.
@@ -333,8 +335,7 @@ DEFINE INITIALIZE_MUL(kind) =
   done;
   mul_table
 ;;
-(*  For INITIALIZE_PRUN, we assume that the following
-    values are defined:
+(*  For INITIALIZE_PRUN, we assume that the following values are defined:
     - val length : int
     - val of_cube : Cubie.t -> int
     (val to_cube : int -> Cubie.t isn't necessary) *)
@@ -404,6 +405,7 @@ struct
   type t = int                         (* 0 .. 2186 = 2^7 - 1 *)
   let length = 2187
   type move = Move.t
+  let compare p q = compare (p:int) q
 
   let of_cube cube =
     let n = ref 0 in
@@ -436,6 +438,7 @@ struct
   type t = int                          (* 0 .. 2047 = 2^11 - 1 *)
   let length = 2048
   type move = Move.t
+  let compare p q = compare (p:int) q
 
   let of_cube cube =
     let n = ref 0 in
@@ -499,6 +502,7 @@ struct
   type t = int
   let length = 40_320                  (* = 8! *)
   type move = Move.t
+  let compare p q = compare (p:int) q
 
   let of_cube cube = int_of_perm cube.Cubie.corner_perm Cubie.ncorners
 
@@ -520,6 +524,7 @@ struct
     (* WARNING: This module is implemented for the record.  The
        [length] is too large to actually build the multiplication array. *)
   type move = Move.t
+  let compare p q = compare (p:int) q
 
   let of_cube cube = int_of_perm cube.Cubie.edge_perm Cubie.nedges
 
@@ -540,6 +545,7 @@ struct
   type t = int                          (* 0 .. 494 = 12*11*10*9/4! - 1 *)
   let length = 495
   type move = Move.t
+  let compare p q = compare (p:int) q
 
   (* Assume: FR < FL < BL < BR and to be after all other edges
      (for [Cubie.int_of_edge].  *)
@@ -606,6 +612,16 @@ struct
       (* 2187 * 2048 * 495 = 2_217_093_120 possibilities *)
   type move = Move.t
 
+  (* lexicographical order *)
+  let compare (c1,e1,u1) (c2,e2,u2) =
+    let c = CornerO.compare c1 c2 in
+    if c < 0 then -1 else if c > 0 then 1
+    else (* c = 0 *)
+      let e = EdgeO.compare e1 e2 in
+      if e < 0 then -1 else if e > 0 then 1
+      else (* e = 0 *)
+        UDSlice.compare u1 u2
+
   let of_cube c =
     (CornerO.of_cube c, EdgeO.of_cube c, UDSlice.of_cube c)
 
@@ -647,6 +663,7 @@ struct
   type t = int                          (* 0 .. 40319 *)
   let length = 40320
   type move = Move2.t
+  let compare p q = compare (p:int) q
 
   let nedges = Cubie.nedges - 4         (* U & D edges only *)
 
@@ -669,6 +686,7 @@ struct
   type t = int                          (* 0 .. 23 *)
   let length = 24
   type move = Move2.t
+  let compare p q = compare (p:int) q
 
   let fr = Cubie.int_of_edge Cubie.FR
   let first = 0
@@ -696,6 +714,15 @@ struct
       (* 40320 * 40320 * 24 = 39_016_857_600 possibilities *)
   type move = Move2.t
   external to_move : move -> Move.t = "%identity"
+
+  let compare (c1,e1,u1) (c2,e2,u2) =
+    let c = CornerP.compare c1 c2 in
+    if c < 0 then -1 else if c > 0 then 1
+    else (* c = 0 *)
+      let e = EdgeP2.compare e1 e2 in
+      if e < 0 then -1 else if e > 0 then 1
+      else (* e = 0 *)
+        UDSlice2.compare u1 u2
 
   let of_cube c =
     (CornerP.of_cube c, EdgeP2.of_cube c, UDSlice2.of_cube c)

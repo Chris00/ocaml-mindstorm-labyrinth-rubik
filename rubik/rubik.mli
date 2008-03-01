@@ -44,8 +44,8 @@ sig
   val generator : t -> generator * int
     (** [generator] is the inverse function of {!Rubik.Move.make}. *)
 
-  val get : unit -> t array
-    (** [get()] returns the array of all possible moves. *)
+  val all : t list
+    (** [all] returns the array of all possible moves. *)
 
   val have_same_gen : t -> t -> bool
     (** [has_same_gen m n] returns [true] if m and n are made with the same
@@ -185,6 +185,9 @@ sig
         - [prun c]
         returns a lower bound for the number of moves to bring the
         cube [c] back to the goal state.  *)
+
+  val compare : t -> t -> int
+    (** Comparison function on permutations. *)
 end
 
 
@@ -217,7 +220,7 @@ sig
   include Coordinate with type move = Move.t
 
   val max_moves : int
-    (** Number maximum  of moves to get into G1. *)
+    (** Number maximum of moves to get into G1. *)
 
   val in_G1 : t -> bool
     (** Tells whether the coordinates define a cube in the subgroup G1
