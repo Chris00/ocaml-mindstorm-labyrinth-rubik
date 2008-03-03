@@ -115,7 +115,7 @@ struct
 
   let generator m = (generator.(m / 3), (m mod 3) + 1)
 
-  let all = [0; 1; 2; 3; 4; 5; 6; 7; 8; 9; 10; 11; 12; 13; 14; 15; 16; 17; 18]
+  let all = [0; 1; 2; 3; 4; 5; 6; 7; 8; 9; 10; 11; 12; 13; 14; 15; 16; 17]
 
   let have_same_gen m n =
     let mgen,_ = generator m in
@@ -344,25 +344,50 @@ DEFINE INITIALIZE_PRUN =
   (* The array [taken] enables us to know whether we have already taken a
      cube to compute its value in the prun_table or not. *)
   let taken = Array.make length false in
+  let module Cube = struct
+    type t = Cubie.t * (Move.t -> bool)
+        (* A cube and a function that is a condition to know whether a move
+           can be applied on this cube, or not. *)
+    let compare (c1,_) (c2,_) =
+      let c1 = of_cube c1 in
+      let c2 = of_cube c2 in
+      if c1 < c2 then -1
+      else if c1 = c2 then 0
+      else 1
+        (* Compares two coordinates of cube, no matter the associated
+           function. *)
+  end in
+  let module S = Set.Make(Cube)in
   prun_table.{id} <- 0; (* This is the goal state. *)
   taken.(id) <- true;
-  let rec fill_table n move_allowed taken cube =
-    (* n counts the number of already taken cubes and move_allowed is a
-       condition to know whether a move can be applied or not.*)
+  let rec fill_table n taken cubes =
+    (* [n] counts the number of already taken cubes. *)
     if n <= length then
-      let cube_coord = of_cube cube in
-      for m = 0 to Move.length - 1 do
-        if move_allowed m then
-          let newc = Cubie.mul cube (Cubie.move m) in
-          let newc_coord = of_cube newc in
-          if not taken.(newc_coord) then (
-            prun_table.{newc_coord} <- prun_table.{cube_coord} + 1;
-            (* One more move to bring the cube back to the goal state. *)
-            taken.(newc_coord) <- true;
-            fill_table (n+1) (fun n  -> not(Move.have_same_gen m n)) taken newc
-          )
-      done in
-  fill_table 1 (fun _ -> true) taken Cubie.id;
+      (* Searches for a new depth-step in the tree of permutations. *)
+      let new_depth (cube,move_allowed) (cubes_curr,n_curr) =
+        let cube_coord = of_cube cube in
+        (* Searches for all children of [cube] that make a part of the new
+           depth-step. *)
+        let get_children (cubes_curr,n_curr) m =
+          if move_allowed m then
+            let newc = Cubie.mul cube (Cubie.move m) in
+            let newc_coord = of_cube newc in
+            if not taken.(newc_coord) then (
+              prun_table.{newc_coord} <- prun_table.{cube_coord} + 1;
+              (* One more move to bring the cube back to the goal state. *)
+              taken.(newc_coord) <- true;
+              (S.add (newc,fun n -> not(Move.have_same_gen m n)) cubes_curr,
+              n_curr+1)
+            )
+            else (cubes_curr,n_curr)
+          else (cubes_curr,n_curr)
+        in
+        List.fold_left get_children (cubes_curr,n_curr) Move.all
+      in
+      let (cubes_new,n_new) = S.fold new_depth cubes (S.empty,n) in
+      fill_table n_new taken cubes_new
+  in
+  fill_table 1 taken (S.singleton (Cubie.id, fun _ -> true));
   (* The function [fun _ -> true] allows us to apply all the existing moves. *)
   prun_table
 ;;
