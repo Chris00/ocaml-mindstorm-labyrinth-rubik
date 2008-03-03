@@ -28,7 +28,12 @@ val make : int -> 'a t
 
 val add : int -> 'a -> 'a t -> unit
   (** [add priority v pq] adds the element [v] to the priority queue
-      [pq] with the given [priority]. *)
+      [pq] with the given [priority].  If [v] is already present in
+      the queue, it is not affected by the insertion of the new
+      element. *)
+
+val push : int -> 'a -> 'a t -> unit
+  (** [push] is a synonym for [add]. *)
 
 val take : 'a t -> 'a
   (** [take pq] removes and returns the element in priority queue [pq]
@@ -43,6 +48,12 @@ val peek : 'a t -> 'a
       without removing it from the queue, or raises [Empty] if the
       queue is empty. *)
 
+val top : 'a t -> 'a
+  (** [top] is a synonym for [peek]. *)
+
 val is_empty : 'a t -> bool
   (** [is_empty pq] tells whether the priority queue [pq] is empty or
       not. *)
+
+val length : 'a t -> int
+  (** Return the number of elements in a queue. *)

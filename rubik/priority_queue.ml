@@ -36,6 +36,8 @@ let add priority v t =
   Queue.add v t.pq.(priority);
   t.p <- min t.p priority
 
+let push = add
+
 let rec move_to_nonempty t =
   if t.p = Array.length t.pq then raise Empty;
   if Queue.is_empty t.pq.(t.p) then begin
@@ -53,9 +55,15 @@ let peek t =
   move_to_nonempty t;                   (* or raise Empty *)
   Queue.peek t.pq.(t.p)
 
+let top = peek
+
 let is_empty t =
   try move_to_nonempty t; false with Empty -> true
 
+
+(* Expected to be seldom used => do not charge for it at every insertion *)
+let length t =
+  Array.fold_left (fun s p -> s + Queue.length p) 0 t.pq
 
 
 (* Local Variables: *)
