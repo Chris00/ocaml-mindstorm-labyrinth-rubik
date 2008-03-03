@@ -349,11 +349,7 @@ DEFINE INITIALIZE_PRUN =
         (* A cube and a function that is a condition to know whether a move
            can be applied on this cube, or not. *)
     let compare (c1,_) (c2,_) =
-      let c1 = of_cube c1 in
-      let c2 = of_cube c2 in
-      if c1 < c2 then -1
-      else if c1 = c2 then 0
-      else 1
+      compare (of_cube c1) (of_cube c2)
         (* Compares two coordinates of cube, no matter the associated
            function. *)
   end in
