@@ -354,11 +354,8 @@ DEFINE INITIALIZE_MUL(kind) =
 ;;
 
 exception Finished
-(*  For INITIALIZE_PRUN, we assume that the following values are defined:
-    - val length : int
-    - val of_cube : Cubie.t -> int
-    (val to_cube : int -> Cubie.t isn't necessary) *)
-DEFINE INITIALIZE_PRUN(mul) =
+
+let initialize_prun id mul length =
   let prun_table = Array1.create int8_signed c_layout length in
   Array1.fill prun_table (-1);
   (* The initialisation is such that [prun_table.{i} < 0] iff the
@@ -399,13 +396,16 @@ DEFINE INITIALIZE_PRUN(mul) =
 ;;
 
 (* This must be a macro so that the type of the tables is monomorphic and
-   the compiler generates efficient access to them. *)
+   the compiler generates efficient access to them. Assume that
+   - id
+   - length
+   are defined in the context the macro.*)
 DEFINE INITIALIZE_FILE(initialize_mul, initialize_prun) =
   let mul, prun_table = match file with
     | None ->
         let mul_table = initialize_mul() in
         let mul o m = mul_table.{o,m} in
-        (mul, initialize_prun mul)
+        (mul, initialize_prun id mul length)
     | Some fname ->
         if Sys.file_exists fname then begin
           let fh = open_in_bin fname in
@@ -419,7 +419,7 @@ DEFINE INITIALIZE_FILE(initialize_mul, initialize_prun) =
           (* Compute and save the table *)
           let mul_table = initialize_mul() in
           let mul o m = mul_table.{o,m} in
-          let prun_table = initialize_prun mul in
+          let prun_table = initialize_prun id mul length in
           let fh = open_out_bin fname in
           output_value fh mul_table;
           output_value fh prun_table;
@@ -432,7 +432,6 @@ DEFINE INITIALIZE_FILE(initialize_mul, initialize_prun) =
 
 DEFINE INITIALIZE(kind) =
   let initialize_mul () = INITIALIZE_MUL(kind) in
-  let initialize_prun mul = INITIALIZE_PRUN(mul) in
   INITIALIZE_FILE(initialize_mul, initialize_prun)
 ;;
 
@@ -636,10 +635,9 @@ struct
     done;
     mul_table
 
-  let initialize ?file () = INITIALIZE_FILE(initialize_mul,
-                                           (fun mul -> INITIALIZE_PRUN(mul)))
+  let initialize ?file () = INITIALIZE_FILE(initialize_mul,initialize_prun)
     (* We can take the INITIALIZE_PRUN function because it doesn't use the
-    function [to_cube] in its implementation. *)
+       function [to_cube] in its implementation. *)
 end
 
 
@@ -689,6 +687,7 @@ struct
     (* We do not distinguish them from Move for now because memory is
        not an issue.  (If we ever need more memory, move the phase 2
        moves first in Move.t.) *)
+  let move = Cubie.move
 end
 
 
