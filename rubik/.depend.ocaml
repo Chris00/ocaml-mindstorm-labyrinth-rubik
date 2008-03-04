@@ -1,7 +1,9 @@
-display.cmo: rubik.cmi display.cmi 
-display.cmx: rubik.cmx display.cmi 
+display.cmo: rubik.cmi move.cmi display.cmi 
+display.cmx: rubik.cmx move.cmx display.cmi 
 movement.cmo: movement.cmi 
 movement.cmx: movement.cmi 
+move.cmo: rubik.cmi movement.cmi move.cmi 
+move.cmx: rubik.cmx movement.cmx move.cmi 
 ppm.cmo: ppm.cmi 
 ppm.cmx: ppm.cmi 
 priority_queue.cmo: priority_queue.cmi 
@@ -12,8 +14,11 @@ run.cmo: rubik.cmi
 run.cmx: rubik.cmx 
 snapshot.cmo: snapshot.cmi 
 snapshot.cmx: snapshot.cmi 
-solver.cmo: rubik.cmi priority_queue.cmi 
-solver.cmx: rubik.cmx priority_queue.cmx 
+solver.cmo: rubik.cmi priority_queue.cmi move.cmi 
+solver.cmx: rubik.cmx priority_queue.cmx move.cmx 
+test_movement.cmo: movement.cmi 
+test_movement.cmx: movement.cmx 
 test_ppm.cmo: ppm.cmi 
 test_ppm.cmx: ppm.cmx 
 display.cmi: rubik.cmi 
+move.cmi: rubik.cmi 

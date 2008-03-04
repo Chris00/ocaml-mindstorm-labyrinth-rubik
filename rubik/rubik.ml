@@ -129,6 +129,7 @@ module Sym =
 struct
   type t = int
 
+(* Not needed at this time *)
 end
 
 
@@ -310,11 +311,13 @@ end
 (* Common coordinates structure.
    ----------------------------------------------------------------------
 
-   We first wanted to functorize it but, apart from the possible
-   performance penalty (this part of the code is critical), it is a
-   bit heavy to parametrize by the Bigarray.kind -- no existential
-   types => have to abstract (int,_,c_layout) Array.2 and redefine
-   the needed needed array operations on the new type...
+   We want the access to multiplications tables to be monomorphic in
+   order for the compiler to generrate efficient code.  We first
+   wanted to functorize it but, apart from the possible performance
+   penalty (this part of the code is critical), it is a bit heavy to
+   parametrize by the Bigarray.kind -- no existential types => have to
+   abstract (int, kind, c_layout) Array.2 and redefine the needed
+   needed array operations on the new type...
 
    Since eventually, only the initialize function is shared, a macro
    was deemed simpler.  For INITIALIZE_MUL, we assume that the following
@@ -322,7 +325,7 @@ end
    - val length : int
    - val of_cube : Cubie.t -> int
    - val to_cube : int -> Cubie.t
-     (* Generate a cube with the orientation represented by the number. *)
+  (* Generate a cube with the orientation represented by the number. *)
 *)
 DEFINE INITIALIZE_MUL(kind) =
   let mul_table = Array2.create kind c_layout length Move.length in
@@ -348,7 +351,7 @@ DEFINE INITIALIZE_PRUN(mul) =
   prun_table.{id} <- 0; (* This is the goal state. *)
   let rec fill_table n cubes depth =
     let lg = List.length cubes in
-    Printf.printf "Depth: %i; Lg list: %i\n%!" depth lg;
+    Printf.eprintf "Depth: %i; Lg list: %i\n%!" depth lg;
     (* [n] counts the number of already taken cubes. *)
     if n <= length && cubes <> [] then
       (* Searches for a new depth-step in the tree of permutations. *)
@@ -373,18 +376,19 @@ DEFINE INITIALIZE_PRUN(mul) =
       let (cubes_new,n_new) = List.fold_left new_depth ([],n) cubes in
       fill_table n_new cubes_new (depth + 1)
     else
-      Printf.printf "# pruning entries = %i =? %i = #perms\n%!" n length
+      Printf.eprintf "# pruning entries = %i =? %i = #perms\n%!" n length
   in
   begin
     try
       fill_table 1 [(id, fun _ -> true)] 0
     (* The function [fun _ -> true] allows us to apply all the existing moves. *)
     with
-    | Finished -> Printf.printf "# all pruning entries filled\n%!"
+    | Finished -> Printf.eprintf ">>> All pruning entries filled\n%!"
     | e -> raise e
   end;
   prun_table
 ;;
+
 (* This must be a macro so that the type of the tables is monomorphic and
    the compiler generates efficient access to them. *)
 DEFINE INITIALIZE_FILE(initialize_mul, initialize_prun) =
@@ -416,7 +420,14 @@ DEFINE INITIALIZE_FILE(initialize_mul, initialize_prun) =
   mul,          (* [mul] function hiding the table *)
   (fun o -> prun_table.{o})              (* pruning function *)
 ;;
+
 DEFINE INITIALIZE(kind) =
+  (* Test conversion functions *)
+  Printf.eprintf ">>> Elements i s.t. of_cube(to_cube i) <> i:";
+  for i = 0 to length - 1 do
+    if of_cube(to_cube i) <> i then Printf.eprintf " %i" i
+  done;
+  Printf.eprintf "\n";
   let initialize_mul () = INITIALIZE_MUL(kind) in
   let initialize_prun mul = INITIALIZE_PRUN(mul) in
   INITIALIZE_FILE(initialize_mul, initialize_prun)
@@ -473,12 +484,13 @@ struct
   let to_cube o =
     let edge_flip = Array.make Cubie.nedges (-1) in
     let o = ref o and s = ref 0 in
-    for i = Cubie.ncorners - 2 downto 0 do
+    for i = Cubie.nedges - 2 downto 0 do
       let d = !o land 0x1 in         (* mod 2 *)
       edge_flip.(i) <- d;
       s := !s + d;
-      o := !o lsr 2                  (* div 2 *)
+      o := !o lsr 1                  (* div 2 *)
     done;
+    assert(!o = 0);
     (* (the sum of all orientations) mod 2 = 0 *)
     edge_flip.(Cubie.nedges - 1) <- !s land 0x1; (* -x = x in Z/2Z *)
     { Cubie.id with Cubie.edge_flip = edge_flip }
