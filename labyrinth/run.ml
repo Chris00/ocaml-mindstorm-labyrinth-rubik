@@ -28,7 +28,11 @@ module Solver = Solver.Make(C)
 let () =
   Sys.set_signal Sys.sigint (Sys.Signal_handle (fun _ -> Solver.stop()));
   printf "Press Ctrl-c to quit.\n%!";
-  let rec solve () = Solver.follow_path look (Solver.next_case_to_explore())
-  and look () = Solver.look_walls solve in
+  (* Define the strategy to follow *)
+  let rec solve () =
+    Solver.follow_path look (Solver.next_square_to_explore())
+  and look () =
+    Solver.look_walls solve
+  in
   Solver.look_wall_back look;
   Solver.run_loop()
