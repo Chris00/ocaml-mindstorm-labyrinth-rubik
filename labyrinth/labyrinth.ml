@@ -92,6 +92,8 @@ let current_pos = ref (0, 0)
 
 let robot_orient = ref `N
 
+
+
 let lab_coord (x,y) =
   let i = i0 + x and j = j0 + y in
   if i > Array.length lab || i < 0 || j > Array.length lab.(0) || j < 0

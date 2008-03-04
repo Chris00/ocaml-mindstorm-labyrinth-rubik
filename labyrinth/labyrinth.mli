@@ -18,12 +18,18 @@
 
 (** Current knowledge of the labyrinth and of the robot position. *)
 
-(** The signature of a "Labyrinth" module. *)
+(** The signature of a "Labyrinth" module.  This module posseses an
+    inner state that knows the position and orientation of the robot
+    as well as the currently known part of the labyrinth. *)
 module type T =
 sig
   type dir = [`N | `S | `E | `W]
+      (** Absolute directions, i.e. directions fixed w.r.t. the labyrinth. *)
   type dir_rel = [`Left | `Front | `Right | `Back]
+      (** Relative directions, i.e. directions relatiove to the robot
+          orientation. *)
 
+  (** Coordinates of the squares of the labyrinth. *)
   module Coord :
   sig
     type t = int * int
@@ -39,9 +45,24 @@ sig
   end
 
   val nbh_explored : Coord.t -> (dir * Coord.t) list
+    (** [nbh_explored xy] returns a list of accessible neighbors that
+        the robot has already visited (i.e. [`Explored] or
+        [`Cross_roads]). *)
   val nbh_unexplored : Coord.t -> (dir * Coord.t) list
+    (** [nbh_explored xy] returns the list of neighbors which are not
+        known to be are accessible or not (one does not know whether
+        there is a all) or that are known to have never been visited
+        by the robot. *)
   val wall_on : Coord.t -> dir -> [`True | `False | `Unknown]
+    (** [wall_on xy d] tells whether there is a wall in the direction
+        [d] on the square [xy]. *)
   val status : Coord.t -> [`Explored | `Cross_roads | `Non_explored]
+    (** [status xy] tells whether the square [xy]
+        - is fully [`Explored], meaning all its accessible neighbors
+        (i.e. without wall in between) are explored;
+        - is [`Cross_roads] meaning the robot has been there but one
+        of its accessible neighbors that has not yet been explored;
+        - [`Non_explored] meaning the robot has not been there. *)
 
   val robot_pos : unit -> Coord.t
     (** [robot_pos()] returns the current position [(x,y)] of the
@@ -50,7 +71,9 @@ sig
     (** [robot_dir()] returns the current orientation of the front of
         the robot.  *)
   val rel_dir : dir -> dir_rel
+    (** Converts an absolute direction into a relative one. *)
   val abs_dir : dir_rel -> dir
+    (** Converts a relative direction into an absolute one. *)
 
   val set_wall : dir_rel -> bool -> unit
     (** [set_wall d] store in the labyrinth whether or not there is a
@@ -58,6 +81,8 @@ sig
         robot.  *)
 
   val move : dir_rel -> unit
+    (** [move d] update the status of the robot given that it executes
+        a move in the direction [d]. *)
 end
 
 include T
