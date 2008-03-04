@@ -158,18 +158,37 @@ let set_wall (d:dir_rel) w =
   | `W -> lab.(i).(j).wall_W <- w
   | `E -> lab.(i+1).(j).wall_W <- w
 
+let opposite dir = match dir with
+  | `N -> `S
+  | `S -> `N
+  | `E -> `W
+  | `W -> `E
+
+
+(* return [true] if neighboor are all explored, [dir_to_dont_check]
+   is the absolute direction of the square to don't check. For the leaving
+   square function it's the square where the robot is going to and for
+   updating x-road fuction it's the square where the robot is.
+
+   If a neighboor of [xy] is not explored the robot will return to the [xy]
+   to explore the not explored neighboor. *)
+let fully_explored xy dir_to_dont_check =
+  let explored (dir,xy_e) =
+    dir = dir_to_dont_check || wall_on xy dir = `True
+    || status xy_e <> `Non_explored in
+  List.fold_left (fun hist dir_xy -> hist && explored dir_xy) true (Coord.nbh xy)
+
 let move d =
   let d_abs = abs_dir d in
-  (* [explored d] tells whether the neighbor square [d] needs not be
-     explored in the future.  If a neighbor square should be explored,
-     we want come back at a later date to the current square to do it. *)
-  let explored (dir,xy) =
-    dir = d_abs || wall_on !current_pos dir = `True
-    || status xy <> `Non_explored in
-  let fully_explored =
-    List.fold_left (fun a d -> a && explored d) true (Coord.nbh !current_pos) in
   let (i,j) = lab_coord !current_pos in
-  lab.(i).(j).s_state <- if fully_explored then `Explored else `Cross_roads;
+  lab.(i).(j).s_state <-
+    if fully_explored !current_pos d_abs then `Explored else `Cross_roads;
+  List.iter (fun (d, xy) ->
+               let(i,j) = lab_coord xy in
+               lab.(i).(j).s_state <-
+                 if fully_explored xy (opposite d) then `Explored 
+                 else `Cross_roads;
+            ) (Coord.nbh !current_pos);
   robot_orient := d_abs;
   current_pos := Coord.pos !current_pos d_abs
 

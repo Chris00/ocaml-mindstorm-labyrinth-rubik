@@ -40,8 +40,8 @@ sig
     val compare : t -> t -> int
       (** Lexicographic comparison function. *)
     val nbh : t -> (dir * t) list
-      (** [Coord.nbh xy] return the directions and coordinates of all
-          neighbors of [xy]. *)
+      (** [Coord.nbh xy] return absolute directions (relative to [xy])
+          and coordinates of all neighbors of [xy]. *)
   end
 
   val nbh_explored : Coord.t -> (dir * Coord.t) list
