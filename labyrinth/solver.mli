@@ -35,7 +35,10 @@ module Make(C: sig
                     floor). *)
               val ultra_port : Mindstorm.Sensor.port
                 (** The ultrasonic "head" port. *)
-              val switch_port : Mindstorm.Sensor.port
+              val switch_port1 : Mindstorm.Sensor.port
+                (** The port of the switch used to indicate that the
+                    goal square has been reached. *)
+              val switch_port2 : Mindstorm.Sensor.port
                 (** The port of the switch used to indicate that the
                     goal square has been reached. *)
               module Labyrinth : Display.T

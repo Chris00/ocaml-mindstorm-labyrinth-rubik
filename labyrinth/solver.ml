@@ -30,7 +30,8 @@ module Make(C: sig
               val motor_ultra : Motor.port
               val light_port : Sensor.port
               val ultra_port : Sensor.port
-              val switch_port : Sensor.port
+              val switch_port1 : Sensor.port
+              val switch_port2 : Sensor.port
 
               module Labyrinth : Display.T
             end) =
@@ -147,7 +148,11 @@ struct
 
   let color = Robot.light conn light_port r
   let ultra = Robot.ultrasonic conn ultra_port r
-  let touch = Robot.touch conn switch_port r
+  let touch  =
+    Mindstorm.Sensor.set conn switch_port1 `Switch `Bool; (* Transition_cnt?? *)
+    Mindstorm.Sensor.set conn switch_port2 `Switch `Bool;
+    let get port = (Mindstorm.Sensor.get conn port).Mindstorm.Sensor.scaled in
+    Robot.meas r (fun () -> (get switch_port1) = 1 || (get switch_port2) = 1)
 
   let idle = Robot.meas r begin fun () ->
     let (state,_,_,_) = Motor.get conn motor_left in
@@ -174,7 +179,7 @@ struct
     Robot.event_is touch (*if wall_on robot_pos() robot_dir() = false*)found_exit;
     Robot.event color is_crossing (fun _ -> k());
     let sp = if Random.bool() then 20 else -20 in
-    Robot.event color is_floor (fun _ -> rectif k 40 sp);
+    Robot.event color is_floor (fun _ -> rectif k 30 sp);
     speed motor_left 30;
     speed motor_right 30
 
