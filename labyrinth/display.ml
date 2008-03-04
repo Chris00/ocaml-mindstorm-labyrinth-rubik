@@ -126,7 +126,10 @@ struct
     let old_pos = robot_pos() in
     L.move d;
     draw_square old_pos;                (* clear current square *)
-    draw_square (robot_pos());
+    (* draw_square (robot_pos()); *)
+    (* We need to redraw all neighboring squares because they may have
+       been updated by the move. *)
+    List.iter (fun (_, p) -> draw_square p) (Coord.nbh old_pos);
     draw_robot();
   ;;
 
