@@ -237,7 +237,7 @@ struct
        Array.init ncorners o);
     edge_perm = Array.init nedges (fun x -> a.edge_perm.(b.edge_perm.(x)));
     edge_flip =
-      (let o x = (a.edge_flip.(a.edge_perm.(x)) + b.edge_flip.(x)) land 0x1 in
+      (let o x = (a.edge_flip.(b.edge_perm.(x)) + b.edge_flip.(x)) land 0x1 in
        Array.init nedges o);
   }
 
@@ -256,8 +256,9 @@ struct
       edge_flip = cube.edge_flip;       (* in Z/2Z, -x = x *)
     }
 
-  (* The elements corresponding to the generators (a clockwise move of
-     the corresponding face). *)
+  (* The elements (corners and edges: permutation and orientation)
+     corresponding to the generators (a clockwise move of the
+     corresponding face). *)
   let move_F =
     unsafe_make [UFL,1; DLF,2; ULB,0; UBR,0; URF,2; DFR,1; DBL,0; DRB,0]
       [UR,0;  FL,1;  UL,0;UB,0;DR,0;  FR,1;  DL,0;DB,0;  UF,1; DF,1;  BL,0;BR,0]
@@ -328,6 +329,12 @@ end
   (* Generate a cube with the orientation represented by the number. *)
 *)
 DEFINE INITIALIZE_MUL(kind) =
+  (* Test conversion functions *)
+(*  Printf.eprintf ">>> Elements i s.t. of_cube(to_cube i) <> i:";
+  for i = 0 to length - 1 do
+    if of_cube(to_cube i) <> i then Printf.eprintf " %i" i
+  done;
+  Printf.eprintf "\n"; *)
   let mul_table = Array2.create kind c_layout length Move.length in
   for o = 0 to length - 1 do
     let cube = to_cube o in
@@ -345,43 +352,37 @@ exception Finished
     (val to_cube : int -> Cubie.t isn't necessary) *)
 DEFINE INITIALIZE_PRUN(mul) =
   let prun_table = Array1.create int8_signed c_layout length in
-  (* The array [taken] enables us to know whether we have already taken a
-     cube to compute its value in the prun_table or not. *)
   Array1.fill prun_table (-1);
+  (* The initialisation is such that [prun_table.{i} < 0] iff the
+     permutation numbered [i] has not been computed yet. *)
   prun_table.{id} <- 0; (* This is the goal state. *)
-  let rec fill_table n cubes depth =
-    let lg = List.length cubes in
-    Printf.eprintf "Depth: %i; Lg list: %i\n%!" depth lg;
-    (* [n] counts the number of already taken cubes. *)
-    if n <= length && cubes <> [] then
-      (* Searches for a new depth-step in the tree of permutations. *)
-      let new_depth (cubes_curr,n_curr) (cube,move_allowed) =
-        (* Searches for all children of [cube] that make a part of the new
+  let rec fill_table (cubes, n) depth =
+    (* [n] counts the number of already computed cubes. *)
+    let len = List.length cubes in
+    Printf.eprintf "Depth: %i => length list: %i\n%!" depth len;
+    if n < length && cubes <> [] then
+      (* Search a new depth-step in the tree of permutations. *)
+      let depth = depth + 1 in
+      let new_depth cubes_new_n cube =
+        (* Search for all children of [cube] that are part of the new
            depth-step. *)
-        let get_children ((cubes_curr,n_curr) as curr) m =
+        let add_children ((cubes_new, n_curr) as curr) m =
           if n_curr >= length then raise Finished
-          else if move_allowed m then
-            (let newc = mul cube m in
-             if prun_table.{newc} < 0 then (
-                prun_table.{newc} <- prun_table.{cube} + 1;
-              (* One more move to bring the cube back to the goal state. *)
-              ((newc,fun n -> not(Move.have_same_gen m n))::cubes_curr,
-              n_curr+1)
+          else
+            let newc = mul cube m in
+            if prun_table.{newc} < 0 then (
+              prun_table.{newc} <- depth;
+              (newc :: cubes_new, n_curr+1)
             )
-            else curr)
-          else curr
-        in
-        List.fold_left get_children (cubes_curr,n_curr) Move.all
+            else curr in
+        List.fold_left add_children cubes_new_n Move.all
       in
-      let (cubes_new,n_new) = List.fold_left new_depth ([],n) cubes in
-      fill_table n_new cubes_new (depth + 1)
+      fill_table (List.fold_left new_depth ([],n) cubes) depth
     else
       Printf.eprintf "# pruning entries = %i =? %i = #perms\n%!" n length
   in
   begin
-    try
-      fill_table 1 [(id, fun _ -> true)] 0
-    (* The function [fun _ -> true] allows us to apply all the existing moves. *)
+    try fill_table ([id], 1) 0
     with
     | Finished -> Printf.eprintf ">>> All pruning entries filled\n%!"
     | e -> raise e
@@ -422,12 +423,6 @@ DEFINE INITIALIZE_FILE(initialize_mul, initialize_prun) =
 ;;
 
 DEFINE INITIALIZE(kind) =
-  (* Test conversion functions *)
-  Printf.eprintf ">>> Elements i s.t. of_cube(to_cube i) <> i:";
-  for i = 0 to length - 1 do
-    if of_cube(to_cube i) <> i then Printf.eprintf " %i" i
-  done;
-  Printf.eprintf "\n";
   let initialize_mul () = INITIALIZE_MUL(kind) in
   let initialize_prun mul = INITIALIZE_PRUN(mul) in
   INITIALIZE_FILE(initialize_mul, initialize_prun)
@@ -490,7 +485,6 @@ struct
       s := !s + d;
       o := !o lsr 1                  (* div 2 *)
     done;
-    assert(!o = 0);
     (* (the sum of all orientations) mod 2 = 0 *)
     edge_flip.(Cubie.nedges - 1) <- !s land 0x1; (* -x = x in Z/2Z *)
     { Cubie.id with Cubie.edge_flip = edge_flip }
