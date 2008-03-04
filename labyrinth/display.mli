@@ -21,6 +21,9 @@ sig
 
   val success : unit -> unit
     (** Call this function when the robot is on the final square.  *)
+
+  val close_when_clicked : unit -> unit
+    (** Pause until the graphic windows in clicked. *)
 end
 
 (** This functor add some visualisation (in an OCaml graphics window)

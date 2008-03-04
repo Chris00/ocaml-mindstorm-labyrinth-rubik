@@ -19,6 +19,7 @@ module type T =
 sig
   include Labyrinth.T
   val success : unit -> unit
+  val close_when_clicked : unit -> unit
 end
 
 open Graphics
@@ -139,6 +140,8 @@ struct
     let (w,h) = text_size text_success in
     moveto x0 y0;  rmoveto (-w / 2) (-h /2);  draw_string text_success
 
+  let close_when_clicked () =
+    ignore(wait_next_event [Button_down])
 end
 
 
