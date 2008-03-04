@@ -166,7 +166,8 @@ let run r =
     List.iter (fun f -> try f() with _ -> ()) r.at_exit;
     match e with
     | Exit -> () (* considered as an acceptable way to stop. *)
-    | Unix.Unix_error(Unix.ENOTCONN, _, _) -> failwith "Robot disconnected"
+    | Unix.Unix_error(Unix.ENOTCONN, _, _)
+    | Unix.Unix_error(Unix.ECONNRESET, _, _) -> failwith "Robot disconnected"
     | Failure _ as e -> raise e
     | e ->
         Printf.eprintf "Uncaught exception: %s\n%!" (Printexc.to_string e)
