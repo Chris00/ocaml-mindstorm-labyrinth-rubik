@@ -88,6 +88,14 @@ type generator = F | B | L | R | U | D
 
 let generator = [| F; B; L; R; U; D |]
 
+module type MoveT =
+sig
+  type t
+  val make : generator * int -> t
+  val generator : t -> generator * int
+  val all : t list
+  val have_same_gen : t -> t -> bool
+end
 
 module Move =
 struct
@@ -302,10 +310,10 @@ end
 module type Coordinate =
 sig
   type t
-  type move
+  module Move : MoveT
   val of_cube : Cubie.t -> t
     (** Returns the coordinate of a cube. *)
-  val initialize : ?file:string -> unit -> (t -> move -> t) * (t -> int)
+  val initialize : ?file:string -> unit -> (t -> Move.t -> t) * (t -> int)
   val compare : t -> t -> int
 end
 
@@ -433,7 +441,7 @@ module CornerO =
 struct
   type t = int                         (* 0 .. 2186 = 2^7 - 1 *)
   let length = 2187
-  type move = Move.t
+  module Move = Move
   let compare p q = compare (p:int) q
 
   let of_cube cube =
@@ -466,7 +474,7 @@ module EdgeO =
 struct
   type t = int                          (* 0 .. 2047 = 2^11 - 1 *)
   let length = 2048
-  type move = Move.t
+  module Move = Move
   let compare p q = compare (p:int) q
 
   let of_cube cube =
@@ -530,7 +538,7 @@ module CornerP =
 struct
   type t = int
   let length = 40_320                  (* = 8! *)
-  type move = Move.t
+  module Move = Move
   let compare p q = compare (p:int) q
 
   let of_cube cube = int_of_perm cube.Cubie.corner_perm Cubie.ncorners
@@ -552,7 +560,7 @@ struct
   let length = 479_001_600             (* = 12! *)
     (* WARNING: This module is implemented for the record.  The
        [length] is too large to actually build the multiplication array. *)
-  type move = Move.t
+  module Move = Move
   let compare p q = compare (p:int) q
 
   let of_cube cube = int_of_perm cube.Cubie.edge_perm Cubie.nedges
@@ -573,7 +581,7 @@ module UDSlice =
 struct
   type t = int                          (* 0 .. 494 = 12*11*10*9/4! - 1 *)
   let length = 495
-  type move = Move.t
+  module Move = Move
   let compare p q = compare (p:int) q
 
   (* Assume: FR < FL < BL < BR and to be after all other edges
@@ -639,7 +647,7 @@ module Phase1 =
 struct
   type t = CornerO.t * EdgeO.t * UDSlice.t
       (* 2187 * 2048 * 495 = 2_217_093_120 possibilities *)
-  type move = Move.t
+  module Move = Move
 
   (* lexicographical order *)
   let compare (c1,e1,u1) (c2,e2,u2) =
@@ -681,8 +689,6 @@ struct
     (* We do not distinguish them from Move for now because memory is
        not an issue.  (If we ever need more memory, move the phase 2
        moves first in Move.t.) *)
-
-  external to_move : t -> Move.t = "%identity"
 end
 
 
@@ -691,7 +697,7 @@ module EdgeP2 =
 struct
   type t = int                          (* 0 .. 40319 *)
   let length = 40320
-  type move = Move2.t
+  module Move = Move2
   let compare p q = compare (p:int) q
 
   let nedges = Cubie.nedges - 4         (* U & D edges only *)
@@ -714,7 +720,7 @@ module UDSlice2 =
 struct
   type t = int                          (* 0 .. 23 *)
   let length = 24
-  type move = Move2.t
+  module Move = Move2
   let compare p q = compare (p:int) q
 
   let fr = Cubie.int_of_edge Cubie.FR
@@ -741,8 +747,7 @@ module Phase2 =
 struct
   type t = CornerP.t * EdgeP2.t * UDSlice2.t
       (* 40320 * 40320 * 24 = 39_016_857_600 possibilities *)
-  type move = Move2.t
-  external to_move : move -> Move.t = "%identity"
+  module Move = Move2
 
   let compare (c1,e1,u1) (c2,e2,u2) =
     let c = CornerP.compare c1 c2 in
