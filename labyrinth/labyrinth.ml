@@ -26,6 +26,7 @@ sig
   sig
     type t = int*int
     val compare : t -> t -> int
+    val move :  t -> dir -> t
     val nbh : t -> (dir*t) list
   end
 
@@ -91,8 +92,6 @@ let lab =
 let current_pos = ref (0, 0)
 
 let robot_orient = ref `N
-
-
 
 let lab_coord (x,y) =
   let i = i0 + x and j = j0 + y in
@@ -183,15 +182,15 @@ let move d =
   let (i,j) = lab_coord !current_pos in
   lab.(i).(j).s_state <-
     if fully_explored !current_pos d_abs then `Explored else `Cross_roads;
+  robot_orient := d_abs;
+  current_pos := Coord.move !current_pos d_abs;
   List.iter (fun (d, xy) ->
                let(i,j) = lab_coord xy in
-               lab.(i).(j).s_state <-
-                 if fully_explored xy (opposite d) then `Explored 
-                 else `Cross_roads;
-            ) (Coord.nbh !current_pos);
-  robot_orient := d_abs;
-  current_pos := Coord.move !current_pos d_abs
-
+               if status xy = `Cross_roads then
+                 lab.(i).(j).s_state <-
+                   if fully_explored xy (opposite d) then `Explored
+                   else `Cross_roads;
+            ) (Coord.nbh !current_pos)
 
 
 (* Local Variables: *)
