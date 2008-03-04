@@ -58,7 +58,7 @@ struct
           (* We update the set [opened] with the children of [p]. *)
           let opened =
             List.fold_left begin fun opened (child,m) ->
-              let fchild = (pcost+1) + (prun child) in
+              let fchild = pcost+1 + prun child in
               if fchild <= P.max_moves then (* The path is not too long. *)
                 let c = (child, m::seq, pcost+1) in
                 PQ.add fchild c opened;
