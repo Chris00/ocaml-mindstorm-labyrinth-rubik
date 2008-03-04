@@ -21,4 +21,7 @@ open Rubik
 let () =
   let mul1, prun1 = Phase1.initialize()
   and mul2, prun2 = Phase2.initialize() in
-  ()
+  Gc.full_major();
+  Gc.print_stat stdout;
+  flush stdout;
+  Unix.sleep 10
