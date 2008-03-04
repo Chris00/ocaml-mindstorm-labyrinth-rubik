@@ -334,63 +334,65 @@ DEFINE INITIALIZE_MUL(kind) =
   done;
   mul_table
 ;;
+
+exception Finished
 (*  For INITIALIZE_PRUN, we assume that the following values are defined:
     - val length : int
     - val of_cube : Cubie.t -> int
     (val to_cube : int -> Cubie.t isn't necessary) *)
-DEFINE INITIALIZE_PRUN =
-  let prun_table = Array1.create int8_unsigned c_layout length in
+DEFINE INITIALIZE_PRUN(mul) =
+  let prun_table = Array1.create int8_signed c_layout length in
   (* The array [taken] enables us to know whether we have already taken a
      cube to compute its value in the prun_table or not. *)
-  let taken = Array.make length false in
-  let module Cube = struct
-    type t = Cubie.t * (Move.t -> bool)
-        (* A cube and a function that is a condition to know whether a move
-           can be applied on this cube, or not. *)
-    let compare (c1,_) (c2,_) =
-      compare (of_cube c1) (of_cube c2)
-        (* Compares two coordinates of cube, no matter the associated
-           function. *)
-  end in
-  let module S = Set.Make(Cube)in
+  Array1.fill prun_table (-1);
   prun_table.{id} <- 0; (* This is the goal state. *)
-  taken.(id) <- true;
-  let rec fill_table n taken cubes =
+  let rec fill_table n cubes depth =
+    let lg = List.length cubes in
+    Printf.printf "Depth: %i; Lg list: %i\n%!" depth lg;
     (* [n] counts the number of already taken cubes. *)
-    if n <= length then
+    if n <= length && cubes <> [] then
       (* Searches for a new depth-step in the tree of permutations. *)
-      let new_depth (cube,move_allowed) (cubes_curr,n_curr) =
-        let cube_coord = of_cube cube in
+      let new_depth (cubes_curr,n_curr) (cube,move_allowed) =
         (* Searches for all children of [cube] that make a part of the new
            depth-step. *)
-        let get_children (cubes_curr,n_curr) m =
-          if move_allowed m then
-            let newc = Cubie.mul cube (Cubie.move m) in
-            let newc_coord = of_cube newc in
-            if not taken.(newc_coord) then (
-              prun_table.{newc_coord} <- prun_table.{cube_coord} + 1;
+        let get_children ((cubes_curr,n_curr) as curr) m =
+          if n_curr >= length then raise Finished
+          else if move_allowed m then
+            (let newc = mul cube m in
+             if prun_table.{newc} < 0 then (
+                prun_table.{newc} <- prun_table.{cube} + 1;
               (* One more move to bring the cube back to the goal state. *)
-              taken.(newc_coord) <- true;
-              (S.add (newc,fun n -> not(Move.have_same_gen m n)) cubes_curr,
+              ((newc,fun n -> not(Move.have_same_gen m n))::cubes_curr,
               n_curr+1)
             )
-            else (cubes_curr,n_curr)
-          else (cubes_curr,n_curr)
+            else curr)
+          else curr
         in
         List.fold_left get_children (cubes_curr,n_curr) Move.all
       in
-      let (cubes_new,n_new) = S.fold new_depth cubes (S.empty,n) in
-      fill_table n_new taken cubes_new
+      let (cubes_new,n_new) = List.fold_left new_depth ([],n) cubes in
+      fill_table n_new cubes_new (depth + 1)
+    else
+      Printf.printf "# pruning entries = %i =? %i = #perms\n%!" n length
   in
-  fill_table 1 taken (S.singleton (Cubie.id, fun _ -> true));
-  (* The function [fun _ -> true] allows us to apply all the existing moves. *)
+  begin
+    try
+      fill_table 1 [(id, fun _ -> true)] 0
+    (* The function [fun _ -> true] allows us to apply all the existing moves. *)
+    with
+    | Finished -> Printf.printf "# all pruning entries filled\n%!"
+    | e -> raise e
+  end;
   prun_table
 ;;
 (* This must be a macro so that the type of the tables is monomorphic and
    the compiler generates efficient access to them. *)
 DEFINE INITIALIZE_FILE(initialize_mul, initialize_prun) =
-  let mul_table, prun_table = match file with
-    | None -> (initialize_mul(), initialize_prun())
+  let mul, prun_table = match file with
+    | None ->
+        let mul_table = initialize_mul() in
+        let mul o m = mul_table.{o,m} in
+        (mul, initialize_prun mul)
     | Some fname ->
         if Sys.file_exists fname then begin
           let fh = open_in_bin fname in
@@ -398,24 +400,25 @@ DEFINE INITIALIZE_FILE(initialize_mul, initialize_prun) =
           let prun_table : (int, _, c_layout) Array1.t = input_value fh in
           (* may segfault if the file does not contain the right values! *)
           close_in fh;
-          (mul_table, prun_table)
+          ((fun o m -> mul_table.{o,m}), prun_table)
         end
         else begin
           (* Compute and save the table *)
           let mul_table = initialize_mul() in
-          let prun_table = initialize_prun() in
+          let mul o m = mul_table.{o,m} in
+          let prun_table = initialize_prun mul in
           let fh = open_out_bin fname in
           output_value fh mul_table;
           output_value fh prun_table;
           close_out fh;
-          (mul_table, prun_table)
+          (mul, prun_table)
         end in
-  (fun o m -> mul_table.{o,m}),          (* [mul] function hiding the table *)
+  mul,          (* [mul] function hiding the table *)
   (fun o -> prun_table.{o})              (* pruning function *)
 ;;
 DEFINE INITIALIZE(kind) =
   let initialize_mul () = INITIALIZE_MUL(kind) in
-  let initialize_prun () = INITIALIZE_PRUN in
+  let initialize_prun mul = INITIALIZE_PRUN(mul) in
   INITIALIZE_FILE(initialize_mul, initialize_prun)
 ;;
 
@@ -620,7 +623,7 @@ struct
     mul_table
 
   let initialize ?file () = INITIALIZE_FILE(initialize_mul,
-                                           (fun _ -> INITIALIZE_PRUN))
+                                           (fun mul -> INITIALIZE_PRUN(mul)))
     (* We can take the INITIALIZE_PRUN function because it doesn't use the
     function [to_cube] in its implementation. *)
 end
