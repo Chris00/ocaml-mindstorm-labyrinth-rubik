@@ -38,10 +38,20 @@ struct
   open C
   open Printf
 
-  let stop _ =
+  let stop () =
     Motor.set conn Motor.all (Motor.speed 0);
     Sensor.set conn light_port `Light_inactive `Pct_full_scale;
-    Mindstorm.close conn
+    Mindstorm.close conn;
+    exit 0
+
+  (** If the robot finds the exit of the labyrinth, it will call this
+      function. *)
+  let found_exit () =
+    printf "found issue\n%!";
+    Labyrinth.success();
+    (* Leave the graph displayed (=> do not exit immediately) *)
+    Labyrinth.close_when_clicked();
+    stop()
 
   (** If the robot determines that there is no exit to the labyrinth,
       it will call this function. *)
@@ -50,19 +60,9 @@ struct
     Unix.sleep 3;
     Mindstorm.Sound.stop C.conn;*)
     printf "no issue\n%!";
+    Labyrinth.failure();
     Labyrinth.close_when_clicked();
-    stop();
-    exit 1
-
-  (** If the robot finds the exit of the labyrinth, it will call this
-      function. *)
-  let found_exit () =
-    printf "found issue\n%!";
-    (* Labyrinth.success();*)
-    (* Leave the graph displayed (=> do not exit immediately) *)
-    Labyrinth.close_when_clicked();
-    stop();
-    exit 0
+    stop()
 
   (** Continuations taken by the fonctions. *)
   type cont = unit -> unit
