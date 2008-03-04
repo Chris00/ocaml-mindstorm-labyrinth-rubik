@@ -22,6 +22,9 @@ sig
   val success : unit -> unit
     (** Call this function when the robot is on the final square.  *)
 
+  val failure : unit -> unit
+    (** Call this function when the robot thinks there is no exit.  *)
+
   val draw_path : dir list -> unit
     (** [draw_path] draw the path [p] from the current position on top
         of the labyrinth. *)

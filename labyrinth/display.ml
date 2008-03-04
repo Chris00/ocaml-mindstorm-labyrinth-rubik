@@ -19,6 +19,7 @@ module type T =
 sig
   include Labyrinth.T
   val success : unit -> unit
+  val failure : unit -> unit
   val draw_path : dir list -> unit
   val close_when_clicked : unit -> unit
 end
@@ -34,9 +35,11 @@ let explored_color = rgb 166 227 147    (* green *)
 let cross_road_color = red
 let path_color = rgb 49 147 192
 let laby_structure = rgb 171 183 227
-let goal_color = yellow
 let text_font = "-*-times new roman-medium-r-normal--100-0-0-0-p-0-iso8859-1"
+let goal_color = yellow
 let text_success = "Trouvé !"
+let failure_color = red
+let text_failure = "Pas de sortie !"
 
 let dx = square_length + 2 * wall_thickness
 let dy = dx
@@ -139,18 +142,23 @@ struct
     draw_robot();
   ;;
 
-  (* New functions *)
-  let success () =
+  (* New functions
+   ***********************************************************************)
+
+  let draw_final color text =
     let (x,y) = robot_pos() in
     let px = x0 + x * dx + wall_thickness
     and py = y0 + y * dy + wall_thickness in
-    set_color goal_color;
+    set_color color;
     fill_rect px py square_length square_length;
     draw_robot();
     set_font text_font;
     set_color black;
-    let (w,h) = text_size text_success in
+    let (w,h) = text_size text in
     moveto x0 y0;  rmoveto (-w / 2) (-h /2);  draw_string text_success
+
+  let success () = draw_final goal_color text_success
+  let failure () = draw_final failure_color text_failure
 
   let draw_path dirs =
     let pos = robot_pos() in
