@@ -41,7 +41,7 @@ struct
   let stop _ =
     Motor.set conn Motor.all (Motor.speed 0);
     Sensor.set conn light_port `Light_inactive `Pct_full_scale;
-    close conn
+    Mindstorm.close conn
 
   (** If the robot determines that there is no exit to the labyrinth,
       it will call this function. *)
@@ -58,13 +58,17 @@ struct
   let found_exit () =
     Labyrinth.success();
     (* Leave the graph displayed (=> do not exit immediately) *)
-    Unix.sleep 60;                      (* FIXME *)
+    Labyrinth.close_when_clicked();
     stop();
     exit 0
 
   (** Continuations taken by the fonctions. *)
   type cont = unit -> unit
 
+  (** Search the closest visited squares satisfying a condition
+   ***********************************************************************)
+
+  (* Node and the path from the stating node leading to it *)
   module CoordAndPath =
   struct
     type t = Labyrinth.Coord.t * Labyrinth.dir list
@@ -81,7 +85,7 @@ struct
     let mem p set = mem (p, []) set
       (* We want to find whether [p] is in [set], no matter what the
          associated path is (since the comparison function does not
-         care about the path, we can a use dummy []). *)
+         care about the path, we can a use the dummy []). *)
   end
 
   (** [path_to_closer pos cond] search for a square [p] satisfying
@@ -89,6 +93,7 @@ struct
       in the square already visited.  If no such square [p] exists,
       return [[]].  Otherwise, return a list of directions to reach it. *)
   let rec path_to_closer pos cond =
+    assert(Labyrinth.status pos <> `Cross_roads);
     let init = S.singleton (pos,[]) in
     search cond init init
 
@@ -96,36 +101,39 @@ struct
       until a square [p] satisfying [cond p] is found or there is no
       more squares to explore.  [n] is the set of squares that are
       reached from the initial position by a minimal path of k moves
-      (where k is the number of times [search] was called) and [v] are
-      all previous squares reachable from the initial position in k
-      moves or less.  *)
+      (where k is the number of times [search] was recursively called)
+      and [v] are all previous squares reachable from the initial
+      position in k moves or less.  *)
   and search cond n v =
     if S.is_empty n then []
     else
-      let sq_of_cond = S.filter cond n in
-      if S.is_empty sq_of_cond then begin
-        let nbh_of_n (q,path) ((n_curr,v_curr) as curr) =
+      let n_cond = S.filter cond n in
+      if S.is_empty n_cond then begin
+        let nbh_of_n (q,path) curr =
           let nbh_q ((n_curr,v_curr) as curr) (dir,pos) =
             if S.mem pos v_curr then curr
-            else let newp = (pos, dir :: path) in
-                 (S.add newp n_curr, S.add newp v_curr) in
+            else
+              let newp = (pos, dir :: path) in
+              (S.add newp n_curr, S.add newp v_curr) in
           List.fold_left nbh_q curr (Labyrinth.nbh_explored q)
         in
         let (n_new,v_new) = S.fold nbh_of_n n (S.empty, v) in
         search cond n_new v_new
       end
-      else List.rev(snd(S.choose sq_of_cond))
+      else List.rev(snd(S.choose n_cond))
 
-  let next_case_to_explore ()  =
+  let next_square_to_explore ()  =
     let pos = Labyrinth.robot_pos() in
-    let unexpl = Labyrinth.nbh_unexplored pos in
-    match unexpl with
+    match Labyrinth.nbh_unexplored pos with
     | (dir,_) :: _ -> [dir]
     | [] ->
         let is_x_roads (sq,_) = Labyrinth.status sq = `Cross_roads in
         match path_to_closer pos is_x_roads with
         | [] -> no_exit_exists()
         | p -> p
+
+  (** Explore the labyrinth
+   ***********************************************************************)
 
   let is_crossing a = a < 30
   let is_path a = a < 45 && a > 30

@@ -52,8 +52,9 @@ sig
     (** Stop the event loop -- presumably because the exit was found
         or it was determined that there is no way out. *)
 
-  val next_case_to_explore : unit -> Labyrinth.dir list
-    (** [next_case_to_explore()] returns the possible directions... *)
+  val next_square_to_explore : unit -> Labyrinth.dir list
+    (** [next_case_to_explore()] returns a list of directions leading
+        to the next square to explore. *)
 
   type cont = unit -> unit
     (** Continuations taken by the fonctions. *)
