@@ -81,7 +81,7 @@ struct
   let () =
     (* Initialize the graphic window *)
     open_graph " 700x700";
-    set_window_title "Labyrinth";
+    set_window_title "Labyrinth - visualisation";
     (* Draw lines to suggest the labyrinth *)
     set_color laby_structure;
     for x = -7 to 7 do
@@ -91,6 +91,7 @@ struct
       moveto (x0 - 7 * dx) (y0 + y * dy);  rlineto (14 * dx) 0
     done;
     (* Draw initial robot *)
+    set_line_width 1;
     draw_square (robot_pos());
     draw_robot()
 
@@ -159,8 +160,10 @@ struct
     let xy = List.map (fun (x,y) ->
                          (x0 + x * dx + mid_square, y0 + y * dy + mid_square)
                       ) squares in
+    set_line_width 3;
     set_color path_color;
-    draw_poly (Array.of_list xy)
+    draw_poly (Array.of_list xy);
+    set_line_width 1
 
 
 
