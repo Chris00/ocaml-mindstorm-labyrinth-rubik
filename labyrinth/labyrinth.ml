@@ -190,7 +190,7 @@ let move d =
                  else `Cross_roads;
             ) (Coord.nbh !current_pos);
   robot_orient := d_abs;
-  current_pos := Coord.pos !current_pos d_abs
+  current_pos := Coord.move !current_pos d_abs
 
 
 
