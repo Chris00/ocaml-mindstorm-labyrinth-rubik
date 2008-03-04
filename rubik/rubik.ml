@@ -93,10 +93,10 @@ module Move =
 struct
 
   type t = int
-    (* F -> 0, F^2 -> 1, F^3 -> 2, B -> 3, B^2 -> 4,..., D^3 -> 17.
-       It is important that the fact that is is an int is known by the
-       submodules because it will be used as an index of move
-       tables. *)
+      (* F -> 0, F^2 -> 1, F^3 -> 2, B -> 3, B^2 -> 4,..., D^3 -> 17.
+         It is important that the representation as an int is known by
+         the submodules because it will be used as an index of move
+         tables. *)
 
   let length = 18                         (* to iterate on the moves *)
 
@@ -118,9 +118,8 @@ struct
   let all = [0; 1; 2; 3; 4; 5; 6; 7; 8; 9; 10; 11; 12; 13; 14; 15; 16; 17]
 
   let have_same_gen m n =
-    let mgen,_ = generator m in
-    let ngen,_ = generator n in
-    mgen = ngen
+    (* fst(generator m) = fst(generator n) *)
+    m / 3 = n / 3
 end
 
 
