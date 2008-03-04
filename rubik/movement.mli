@@ -31,6 +31,9 @@ module Make(C: sig
                 (** The port of the hand switch. *)
               val push_fighter_port : Mindstorm.Sensor.port
                 (** The port of the fighter switch. *)
+              val cog_is_set_left : bool
+                (** True if cogs are placed to turn platform in clockwise
+                    False if cogs are placed to turn plaftform in clockwis. *)
             end):
 sig
   type cont = unit -> unit
@@ -38,11 +41,11 @@ sig
         of this type.  The continuation is executed after the current
         action is finished. *)
 
-  val stop : unit  -> unit
-    (** Stop the event loop (to be used when the rubik is solved). *)
+  val execute : unit -> unit
+    (** Launch the robot to do a task. *)
 
-  val run_loop : unit -> unit
-    (** Launch the robot (must be issued last). *)
+  val end_cont : unit -> unit
+    (** Stop the Robot momentary after the end of one task*)
 
   val kick : cont -> unit
     (** Kick the rubik's cube to turn it by 90 degrees. *)
@@ -51,15 +54,12 @@ sig
     (** [turn_pf t k] turn the platform of [t] quarters of turn (if
         [t] is negative, it turn in the other way round. *)
 
-  val turn_rubik_left : cont -> unit
+  val turn_rubik_left : cont:cont -> unit
     (** Turn the bottom row of the cube by 90 degrees clockwise. *)
 
-  val turn_rubik_right : cont -> unit
-    (** Turn the bottom row of the cube by 90 degrees counter clockwise. *)
+  val turn_rubik_right : cont:cont -> unit
+    (** Tx2urn the bottom row of the cube by 90 degrees counter clockwise. *)
 
-  val turn_rubik_half : cont -> unit
+  val turn_rubik_half : cont:cont -> unit
     (** Turn the bottom row of the cube by half a turn. *)
-
-  val initialize : cont -> unit
-    (** Give a good position to the robot for it to begin its operations. *)
 end

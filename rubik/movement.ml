@@ -29,6 +29,7 @@ module Make(C: sig
               val motor_pf : Motor.port
               val push_hand_port : Sensor.port
               val push_fighter_port : Sensor.port
+              val cog_is_set_left : bool
             end) =
 
 struct
@@ -37,20 +38,18 @@ struct
 
   type cont = unit -> unit
 
-  let stop () =
-    Motor.set conn Motor.all (Motor.speed 0);
-    close conn
-
   let r = Robot.make()
 
-  let run_loop () = Robot.run r
+  let execute() = Robot.run r
+
+  let end_cont () = Robot.stop r
 
   (* State of the rubik robot *)
 
   let cube_is_held = ref true
     (** Indicates whether the cube is is not held by the "hand". *)
 
-  let cog_is_left = ref true
+  let cog_is_left = ref (C.cog_is_set_left)
     (** To know if cogs are placed to turn left or right.  This
         variable is used because there is a large space between the
         teeth of cogs (we lose about 30 degrees when we change the
@@ -106,7 +105,7 @@ struct
 
   (** Reset the position of the fighter after having kicked the cube *)
   let reset_fighter k =
-    Robot.event_is fighter_push (fun _ -> speed motor_fighter 0;  k());
+    Robot.event_is fighter_push (fun _ -> speed motor_fighter 0; k());
     speed motor_fighter (-14)
 
   let kick k =
@@ -125,7 +124,7 @@ struct
   let degree_per_quarter = 300
 
   let turn_pf qt k =
-    let turn () = free_rubik begin fun _  ->
+    let turn () = free_rubik begin fun _ ->
       let tl17 = qt*(-331) in
       if qt > 0 then (
         Robot.event_is idle_pf (fun _ -> turn_pf_slowly (-tl17) (-17) k);
@@ -138,7 +137,7 @@ struct
 
   (** Rectify the platform after having turned the cube because there is a
       small error caused by a space between the cube and the "hand". *)
-  let rectif_pf turn_left tl10 v10 k =
+  let rectif_pf turn_left tl10 v10 k=
     set_cog (not turn_left) begin fun _ ->
       Robot.event_is idle_pf k;
       speed motor_pf ~tach_limit:tl10 v10
@@ -159,14 +158,17 @@ struct
       speed motor_pf ~tach_limit v100
     end
 
-  let turn_rubik_left k =
-    set_cog true (fun _ -> turn_rubik true 450 275 94 (-70) (-20) (10) k)
-  let turn_rubik_right k =
-    set_cog false (fun _ -> turn_rubik false 450 220 39 (70) (20) (-10) k)
-  let turn_rubik_half k =
-    set_cog true (fun _ -> turn_rubik true 900 456 94 (-70) (-20) (10) k)
+  let turn_rubik_left ~cont =
+    set_cog true (fun _ -> turn_rubik true 450 266 85 (-70) (-20) (10) cont)
+  let turn_rubik_right ~cont =
+    set_cog false (fun _ -> turn_rubik false 450 220 39 (70) (20) (-10) cont)
+  let turn_rubik_half ~cont =
+    set_cog true (fun _ -> turn_rubik true 900 447 85 (-70) (-20) (10) cont)
 
-  let initialize (k:cont) = hold_rubik(fun _ -> set_cog true k)
+  let () =
+    reset_fighter(fun _ -> free_rubik (end_cont));
+    execute()
+
 end
 
 
