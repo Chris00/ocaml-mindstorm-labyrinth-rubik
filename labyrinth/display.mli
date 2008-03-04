@@ -22,6 +22,10 @@ sig
   val success : unit -> unit
     (** Call this function when the robot is on the final square.  *)
 
+  val draw_path : dir list -> unit
+    (** [draw_path] draw the path [p] from the current position on top
+        of the labyrinth. *)
+
   val close_when_clicked : unit -> unit
     (** Pause until the graphic windows in clicked. *)
 end

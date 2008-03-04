@@ -39,6 +39,12 @@ sig
 
     val compare : t -> t -> int
       (** Lexicographic comparison function. *)
+
+    val move : t -> dir -> t
+      (** [move pos dir] returns the coordinates the the position
+          reached by starting from [pos] and executing a move in the
+          direction [dir].  *)
+
     val nbh : t -> (dir * t) list
       (** [Coord.nbh xy] return absolute directions (relative to [xy])
           and coordinates of all neighbors of [xy]. *)

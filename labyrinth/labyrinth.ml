@@ -63,14 +63,14 @@ struct
     else if (a = c) && (b = d) then 0
     else 1
 
-  let pos (x,y) = function
+  let move (x,y) = function
     | `N -> (x, y+1)
     | `S -> (x, y-1)
     | `W -> (x-1, y)
     | `E -> (x+1, y)
 
   let nbh xy =
-    let c = pos xy in [(`N, c `N); (`S, c `S); (`E, c `E); (`W, c `W)]
+    let c = move xy in [(`N, c `N); (`S, c `S); (`E, c `E); (`W, c `W)]
 end
 
 (* For the current realisation, it is enough but in general a more

@@ -19,6 +19,7 @@ module type T =
 sig
   include Labyrinth.T
   val success : unit -> unit
+  val draw_path : dir list -> unit
   val close_when_clicked : unit -> unit
 end
 
@@ -31,6 +32,7 @@ let wall_thickness = 2 (* pixels; wall are twice as thick *)
 let wall_color = black
 let explored_color = rgb 166 227 147    (* green *)
 let cross_road_color = red
+let path_color = rgb 49 147 192
 let laby_structure = rgb 171 183 227
 let goal_color = yellow
 let text_font = "-*-times new roman-medium-r-normal--100-0-0-0-p-0-iso8859-1"
@@ -51,6 +53,7 @@ struct
                | `Non_explored ->  background);
     fill_rect px py square_length square_length;
     if status xy = `Cross_roads then begin
+      (* Add a special mark on "crossroads" *)
       set_color cross_road_color;
       moveto px py;  rlineto square_length square_length;
       moveto px (py + square_length);  rlineto square_length (- square_length)
@@ -139,6 +142,19 @@ struct
     set_color black;
     let (w,h) = text_size text_success in
     moveto x0 y0;  rmoveto (-w / 2) (-h /2);  draw_string text_success
+
+  let draw_path dirs =
+    let pos = robot_pos() in
+    let path (l,p) d = let p' = Coord.move p d in (p' :: l, p') in
+    let squares, _ = List.fold_left path ([pos], pos) dirs in
+    let mid_square = wall_thickness + square_length / 2 in
+    let xy = List.map (fun (x,y) ->
+                         (x0 + x * dx + mid_square, y0 + y * dy + mid_square)
+                      ) squares in
+    set_color path_color;
+    draw_poly (Array.of_list xy)
+
+
 
   let close_when_clicked () =
     ignore(wait_next_event [Button_down])
