@@ -132,7 +132,7 @@ struct
         let is_x_roads (sq,_) = Labyrinth.status sq = `Cross_roads in
         match path_to_closer pos is_x_roads with
         | [] -> no_exit_exists()
-        | p -> p
+        | p -> Labyrinth.draw_path p; p
 
   (** Explore the labyrinth
    ***********************************************************************)
