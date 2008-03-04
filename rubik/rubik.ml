@@ -687,6 +687,11 @@ struct
     (* We do not distinguish them from Move for now because memory is
        not an issue.  (If we ever need more memory, move the phase 2
        moves first in Move.t.) *)
+
+  (* @override *)
+  (* F^2, B^2, L^2, R^2, U^i, D^i *)
+  let all = [1; 4; 7; 10;  12; 13; 14;  15; 16; 17]
+
   let move = Cubie.move
 end
 
