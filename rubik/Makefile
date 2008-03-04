@@ -9,7 +9,7 @@ PP=camlp4o pa_macro.cmo #Camlp4MacroParser.cmo
 
 INTERFACES=$(wildcard *.mli)
 PROGRAM=run.ml
-LIBS_CMA=unix.cma bigarray.cma mindstorm.cma robot.cma
+LIBS_CMA=unix.cma bigarray.cma mindstorm.cma robot.cma 
 LIBS_CMXA=$(patsubst %cmo,%.cmx, $(patsubst %.cma,%.cmxa, $(LIBS_CMA)))
 
 .PHONY: all byte native
@@ -32,7 +32,12 @@ display.exe: LIBS_CMA+= graphics.cma
 test_ppm.exe: ppm.cmo
 test_ppm.exe: LIBS_CMA+=graphics.cma
 
-test_RS.exe: rubik_solver.cmo
+test_movement.exe: movement.cmo
+
+movement.cmo : rubik.cmo
+
+move.cmo : rubik.cmo
+move.cmo : movement.cmo
 
 # Generate HTML documentation for these modules only
 .PHONY: doc
