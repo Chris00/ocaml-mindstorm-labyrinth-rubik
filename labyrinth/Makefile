@@ -7,13 +7,15 @@ OCAMLC_FLAGS = -g -dtypes -dllpath .. -custom -I $(MINDSTORM_PATH) -I ..
 OCAMLOPT_FLAGS = -dtypes -I $(MINDSTORM_PATH) -I ..
 
 INTERFACES=$(wildcard *.mli)
-PROGRAM=
-LIBS_CMA=unix.cma mindstorm.cma robot.cmo
+PROGRAM=run.ml
+LIBS_CMA=unix.cma mindstorm.cma robot.cmo graphics.cma
 LIBS_CMXA=$(LIBS_CMA:.cma=.cmxa) robot.cmx
 
 .PHONY: byte native
 byte: $(PROGRAM:.ml=.exe)
 native: $(PROGRAM:.ml=.com)
+
+run.exe: labyrinth.cmo display.cmo solver.cmo
 
 
 # Generate HTML documentation for these modules only
