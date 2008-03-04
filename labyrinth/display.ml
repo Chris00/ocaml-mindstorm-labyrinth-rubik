@@ -94,15 +94,10 @@ struct
     draw_square (robot_pos());
     draw_robot()
 
-  (* Redefine some functions of [L] to add a graphical animation *)
-
-  (* @override *)
-  let set_wall (d: dir_rel) b =
-    L.set_wall d b;
+  let draw_wall (rx,ry) (d: dir) b =
     set_color (if b then wall_color else explored_color);
-    let (rx,ry) = robot_pos() in
     let px = x0 + rx * dx and py = y0 + ry * dy in
-    match abs_dir d with
+    match d with
     | `N ->
         let x = px + wall_thickness
         and y = py + wall_thickness + square_length in
@@ -120,16 +115,26 @@ struct
         and y = py + wall_thickness in
         fill_rect x y (2 * wall_thickness) square_length
 
+  (* Redefine some functions of [L] to add a graphical animation *)
 
   (* @override *)
-  let move (d: dir_rel) =
+  let set_wall (d: dir_rel) b =
+    L.set_wall d b;
+    draw_wall (robot_pos()) (abs_dir d) b
+
+  (* @override *)
+  let move (dir: dir_rel) =
     let old_pos = robot_pos() in
-    L.move d;
+    L.move dir;
     draw_square old_pos;                (* clear current square *)
     (* draw_square (robot_pos()); *)
     (* We need to redraw all neighboring squares because they may have
-       been updated by the move. *)
-    List.iter (fun (_, p) -> draw_square p) (Coord.nbh old_pos);
+       been updated by the move.  Redraw also the non-walls paths in
+       order to erase a possible path. *)
+    let redraw (d,p) =
+      draw_square p;
+      if wall_on old_pos d = `False then draw_wall old_pos d false in
+    List.iter redraw (Coord.nbh old_pos);
     draw_robot();
   ;;
 
