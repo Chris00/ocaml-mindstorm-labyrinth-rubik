@@ -120,8 +120,8 @@ let () =
   (*let cube = Solver1.mul (Phase1.of_cube Cubie.id) (Move.make(F,3)) in*)
   (*let cube = Solver1.mul
     (Solver1.mul (Phase1.of_cube Cubie.id) (Move.make(F,3))) (Move.make(R,2)) in*)
-  let moves = [F,3; R,2; U,1; B,3; D,1; L,2; R,3; U,2; F,2(*; B,1; L,3; F,1;
-               R,1; U,3; B,1; D,2; L,3; B,2*)] in
+  let moves = [F,3; R,2; U,1; B,3; D,1; L,2; R,3; U,2; F,2; B,1; L,3; F,1;
+               R,1; U,3; B,1; D,2; L,3; B,2] in
   let moves = List.map (fun m -> Cubie.move (Move.make m)) moves in
   let cube = List.fold_left Cubie.mul Cubie.id moves in
   let cubeP1 = Phase1.of_cube cube in
@@ -153,9 +153,10 @@ let () =
     | m :: tl -> apply (Cubie.mul cube (Cubie.move m)) tl
   in
   let cube2 = apply cube seq1 in
+  Gc.major();
   let cubeP2 = Phase2.of_cube cube2 in
-  let seq2 = Solver2.search_seq_to_goal cubeP2 Phase2.is_identity in
   Printf.printf "Sequence phase 2: \n%!";
+  let seq2 = Solver2.search_seq_to_goal cubeP2 Phase2.is_identity in
   print2 seq2;
   let rec apply2 cube seq =
     match seq with
