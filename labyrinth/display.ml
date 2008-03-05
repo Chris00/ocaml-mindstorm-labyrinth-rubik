@@ -20,7 +20,8 @@ sig
   include Labyrinth.T
   val success : unit -> unit
   val failure : unit -> unit
-  val draw_path : dir list -> unit
+  val set_current_path : dir list -> unit
+  val get_current_path : unit -> dir list
   val close_when_clicked : unit -> unit
 end
 
@@ -124,6 +125,30 @@ struct
         and y = py + wall_thickness in
         fill_rect x y (2 * wall_thickness) square_length
 
+  (* Add a notion of "current path" that the robot is following to go
+     back to a crossroad.  It is necessary to keep it in memory
+     because one also updates neighboring squares. *)
+
+  let current_path = ref []
+
+  let set_current_path p = current_path := p
+
+  let get_current_path () = !current_path
+
+  let draw_current_path() =
+    let pos = robot_pos() in
+    let path (l,p) d = let p' = Coord.move p d in (p' :: l, p') in
+    let squares, _ = List.fold_left path ([pos], pos) !current_path in
+    let mid_square = wall_thickness + square_length / 2 in
+    let xy = List.map (fun (x,y) ->
+                         (x0 + x * dx + mid_square, y0 + y * dy + mid_square)
+                      ) squares in
+    set_line_width 3;
+    set_color path_color;
+    draw_poly_line (Array.of_list xy);
+    set_line_width 1
+
+
   (* Redefine some functions of [L] to add a graphical animation *)
 
   (* @override *)
@@ -144,6 +169,7 @@ struct
       draw_square p;
       if wall_on old_pos d = `False then draw_wall old_pos d false in
     List.iter redraw (Coord.nbh old_pos);
+    draw_current_path();
     draw_robot();
   ;;
 
@@ -164,21 +190,6 @@ struct
 
   let success () = draw_final goal_color text_success
   let failure () = draw_final failure_color text_failure
-
-  let draw_path dirs =
-    let pos = robot_pos() in
-    let path (l,p) d = let p' = Coord.move p d in (p' :: l, p') in
-    let squares, _ = List.fold_left path ([pos], pos) dirs in
-    let mid_square = wall_thickness + square_length / 2 in
-    let xy = List.map (fun (x,y) ->
-                         (x0 + x * dx + mid_square, y0 + y * dy + mid_square)
-                      ) squares in
-    set_line_width 3;
-    set_color path_color;
-    draw_poly_line (Array.of_list xy);
-    set_line_width 1
-
-
 
   let close_when_clicked () =
     ignore(wait_next_event [Button_down])

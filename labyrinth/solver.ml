@@ -133,7 +133,7 @@ struct
         let is_x_roads (sq,_) = Labyrinth.status sq = `Cross_roads in
         match path_to_closer pos is_x_roads with
         | [] -> no_exit_exists()
-        | p -> Labyrinth.draw_path p; p
+        | p -> p
 
   (** Explore the labyrinth
    ***********************************************************************)
@@ -271,7 +271,9 @@ struct
     go_straight_before_do 180 (fun _ -> turn 360 25
       (fun _  -> go_straight_before_do 100 (fun _ -> go_next_square k)))
 
-  let rec follow_path k path = match path with
+  let rec follow_path k path =
+    Labyrinth.set_current_path path;
+    match path with
     | [] -> k()
     | d :: tl -> match (Labyrinth.rel_dir d) with
       | `Left -> go_left (fun _ -> follow_path k tl)

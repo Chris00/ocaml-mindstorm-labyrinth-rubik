@@ -25,9 +25,13 @@ sig
   val failure : unit -> unit
     (** Call this function when the robot thinks there is no exit.  *)
 
-  val draw_path : dir list -> unit
-    (** [draw_path] draw the path [p] from the current position on top
-        of the labyrinth. *)
+  val set_current_path : dir list -> unit
+    (** [set_current_path p] set a path [p] (from the current
+        position) to be drawn on top of the labyrinth.  It is the
+        responsability of the caller to update the path. *)
+
+  val get_current_path : unit -> dir list
+    (** [get_current_path()] returns the path currently stored.  *)
 
   val close_when_clicked : unit -> unit
     (** Pause until the graphic windows in clicked. *)
