@@ -35,7 +35,8 @@ let explored_color = rgb 166 227 147    (* green *)
 let cross_road_color = red
 let path_color = rgb 49 147 192
 let laby_structure = rgb 171 183 227
-let text_font = "-*-times new roman-medium-r-normal--100-0-0-0-p-0-iso8859-1"
+let text_fonts =
+  [ "-*-times new roman-medium-r-normal--100-*-*-*-p-*-iso8859-1" ]
 let goal_color = yellow
 let text_success = "Trouvé !"
 let failure_color = red
@@ -47,6 +48,10 @@ let dy = dx
 module Make(L : Labyrinth.T) : T =
 struct
   include L
+
+  let rec try_set_font = function
+    | [] -> ()
+    | font :: tl -> (try set_font font with _ -> try_set_font tl)
 
   let draw_square ((x,y) as xy) =
     let px = x0 + x * dx + wall_thickness
@@ -152,7 +157,7 @@ struct
     set_color color;
     fill_rect px py square_length square_length;
     draw_robot();
-    (try set_font text_font with _ -> ()); (* ignore nonexistent font *)
+    try_set_font text_fonts; (* ignore nonexistent font *)
     set_color black;
     let (w,h) = text_size text in
     moveto x0 y0;  rmoveto (-w / 2) (-h /2);  draw_string text_success
