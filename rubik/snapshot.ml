@@ -35,7 +35,58 @@ let vlc_remote =
    remote-control interface, so no display is shown and we have an
    easy way to quit.  *)
 let vlc_remote =
+IFDEF WIN THEN
+  "vlc -I rc dshow:// -V image --image-out-replace --image-out-format png \
+	--image-out-prefix "
+ELSE
   "vlc -I rc v4l:// -V image --image-out-replace --image-out-format png \
-	--image-out-prefix ocaml"
+	--image-out-prefix "
+ENDIF
 
-(** Command : vlc dshow:// :dshow-adev="none" -I rc -V image --image-out-replace --image-out-format png --image-out-prefix ocaml **)
+let imagemagick_convert = "convert"
+
+let copy fname1 fname2 =
+  let buf = String.create 8192 in
+  let fin = open_in_bin fname1 in
+  let fout = open_out_bin fname2 in
+  let read = ref(-1) in
+  while !read <> 0 do
+    read := input fin buf 0 8192;
+    output fout buf 0 !read;
+  done;
+  close_in fin;
+  close_out fout
+
+let convert fname1 fname2 =
+  ignore(Sys.command(imagemagick_convert ^ " " ^ fname1 ^ " " ^ fname2))
+
+
+type color = int
+
+type webcam = {
+  in_chan : in_channel;
+  out_chan : out_channel;
+  png : string
+}
+
+let start () =
+  let fname = Filename.temp_file "rubik" "" in
+  let (in_chan, out_chan) = Unix.open_process (vlc_remote ^ fname) in
+  { in_chan = in_chan;  out_chan = out_chan;  png = fname ^ ".png" }
+
+let stop w =
+  ignore(Unix.close_process (w.in_chan, w.out_chan))
+
+
+let take w =
+  let png = Filename.temp_file "rubikS" ".png" in
+  copy w.png png;
+  let ppm = Filename.temp_file "rubikS" ".ppm" in
+  convert png ppm;
+  Ppm.as_matrix_exn ppm
+
+
+
+(* Local Variables: *)
+(* compile-command: "make -k snapshot.cmo" *)
+(* End: *)

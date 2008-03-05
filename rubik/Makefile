@@ -17,11 +17,8 @@ all: byte native
 byte: $(PROGRAM:.ml=.exe)
 native: $(PROGRAM:.ml=.com)
 
-run.exe: rubik.cmo
+run.exe: LIBS_CMA+= graphics.cma
 run.com: rubik.cmx
-
-display.cmo: rubik.cmo
-display.cmo: LIBS_CMA+= graphics.cma
 
 solver.cmo: rubik.cmo priority_queue.cmo
 solver.exe: rubik.cmo movement.cmo translator.cmo priority_queue.cmo
@@ -36,10 +33,6 @@ test_movement.exe: movement.cmo
 
 test_translator.exe : movement.cmo translator.cmo
 
-movement.cmo : rubik.cmo
-
-translator.cmo : rubik.cmo
-translator.cmo : movement.cmo
 
 # Generate HTML documentation for these modules only
 .PHONY: doc
