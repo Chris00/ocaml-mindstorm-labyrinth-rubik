@@ -23,8 +23,8 @@ run.com: rubik.cmx
 display.cmo: rubik.cmo
 display.cmo: LIBS_CMA+= graphics.cma
 
-solver.cmo: rubik.cmo
-solver.exe: rubik.cmo
+solver.cmo: rubik.cmo priority_queue.cmo
+solver.exe: rubik.cmo movement.cmo translator.cmo priority_queue.cmo
 
 display.exe: rubik.cmo
 display.exe: LIBS_CMA+= graphics.cma
