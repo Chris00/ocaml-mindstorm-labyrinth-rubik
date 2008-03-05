@@ -175,7 +175,7 @@ struct
                       ) squares in
     set_line_width 3;
     set_color path_color;
-    draw_poly (Array.of_list xy);
+    draw_poly_line (Array.of_list xy);
     set_line_width 1
 
 
