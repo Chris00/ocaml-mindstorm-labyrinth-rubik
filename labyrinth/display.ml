@@ -152,7 +152,7 @@ struct
     set_color color;
     fill_rect px py square_length square_length;
     draw_robot();
-    set_font text_font;
+    (try set_font text_font with _ -> ()); (* ignore nonexistent font *)
     set_color black;
     let (w,h) = text_size text in
     moveto x0 y0;  rmoveto (-w / 2) (-h /2);  draw_string text_success
