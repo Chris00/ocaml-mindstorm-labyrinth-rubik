@@ -1,4 +1,4 @@
-(* File move.ml *)
+(* File Translator.ml *)
 
 open Rubik
 open Mindstorm
@@ -49,7 +49,7 @@ struct
       permut_kick[i]=j say that the face who was in position i relative to
       the fighter before the kick will be in position j relative to the
       fighter after the kick. *)
-  let permut_kick = [|4;1;5;3;2;5|]
+  let permut_kick = [|4;1;5;3;2;0|]
 
   (** This table represent the permutation of the cube after a kick. *)
   let permut_rot = [|3;0;1;2;4;5|]
@@ -101,15 +101,15 @@ struct
     M.execute()
 
   let face_iter f =
-    f F;
+    f L 3;
     M.kick(
-      fun _ -> f B; M.kick(
-        fun _ -> f R; M.kick(
-          fun _ -> f F; M.turn_pf 1(
+      fun _ -> f B 3; M.kick(
+        fun _ -> f R 3; M.kick(
+          fun _ -> f F 3; M.turn_pf 1(
             fun _ -> M.kick(
-              fun _ -> f D; M.kick(
+              fun _ -> f D 0; M.kick(
                 fun _ -> M.kick(
-                  fun _ -> f U; M.end_cont())))))));
+                  fun _ -> f U 0; M.end_cont())))))));
     M.execute()
 
 end

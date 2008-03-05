@@ -34,10 +34,12 @@ test_ppm.exe: LIBS_CMA+=graphics.cma
 
 test_movement.exe: movement.cmo
 
+test_translator.exe : movement.cmo translator.cmo
+
 movement.cmo : rubik.cmo
 
-move.cmo : rubik.cmo
-move.cmo : movement.cmo
+translator.cmo : rubik.cmo
+translator.cmo : movement.cmo
 
 # Generate HTML documentation for these modules only
 .PHONY: doc

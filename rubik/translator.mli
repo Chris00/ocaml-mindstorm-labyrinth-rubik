@@ -1,4 +1,4 @@
-(* File: move.mli *)
+(* File: translator.mli *)
 
 module Make(C: sig
               val conn : Mindstorm.bluetooth Mindstorm.conn
@@ -24,8 +24,11 @@ sig
     (** make[g r] Create the physical movement associeted to the
         movement (g*r). (See rubik)*)
 
-  val face_iter : (Rubik.generator -> unit) -> unit
+  val face_iter : (Rubik.generator -> int -> unit) -> unit
     (** Put succecively each face of the cube on top to take a snapshot.
+        face_iter [g i] ask to take a snapshot of the face g, which is in the
+        position i (See the documentation of init_color.ml).
         Here we choise the letters associates to faces (see the documentation
-        of the fonction 'transform_gen')so that the initial state is correct.*)
+        of the fonction 'transform_gen')so that the initial state is correct
+        after all snapshot.*)
 end
