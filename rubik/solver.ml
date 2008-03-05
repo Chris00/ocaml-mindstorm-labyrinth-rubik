@@ -81,6 +81,7 @@ end
 module Solver1 = Make(Rubik.Phase1)
 module Solver2 = Make(Rubik.Phase2)
 open Rubik
+open Printf
 
 let rec print1 s = (match s with
   | [] -> ()
@@ -108,25 +109,44 @@ let rec print2 s = (match s with
     | D -> print_gen "D");
     print2 tl))
 
-let corner = [(Cubie.UFL,1); (Cubie.DLF,2);(Cubie.ULB,0); (Cubie.UBR,0);
-              (Cubie.URF,2); (Cubie.DFR,1); (Cubie.DBL,0); (Cubie.DRB,0)]
-
-let edge = [(Cubie.UF,false); (Cubie.UL,false); (Cubie.UB,false);
-            (Cubie.DR,false); (Cubie.DF,false); (Cubie.DL,false);
-            (Cubie.DB,false); (Cubie.FR,false); (Cubie.FL,false);
-            (Cubie.BL,false); (Cubie.BR,false); (Cubie.UR,false)]
-
 let () =
-  (*let cube = Cubie.make corner edge in*)
+  (*let corner = [(Cubie.UFL,1); (Cubie.DLF,2);(Cubie.ULB,0); (Cubie.UBR,0);
+    (Cubie.URF,2); (Cubie.DFR,1); (Cubie.DBL,0); (Cubie.DRB,0)]
+    let edge = [(Cubie.UF,false); (Cubie.UL,false); (Cubie.UB,false);
+    (Cubie.DR,false); (Cubie.DF,false); (Cubie.DL,false);
+    (Cubie.DB,false); (Cubie.FR,false); (Cubie.FL,false);
+    (Cubie.BL,false); (Cubie.BR,false); (Cubie.UR,false)]
+    let cube = Cubie.make corner edge in*)
   (*let cube = Solver1.mul (Phase1.of_cube Cubie.id) (Move.make(F,3)) in*)
   (*let cube = Solver1.mul
     (Solver1.mul (Phase1.of_cube Cubie.id) (Move.make(F,3))) (Move.make(R,2)) in*)
-  let moves = [F,3; R,2; U,1; B,3; D,1; L,2; R,3; U,2] in
+  let moves = [F,3; R,2; U,1; B,3; D,1; L,2; R,3; U,2; F,2(*; B,1; L,3; F,1;
+               R,1; U,3; B,1; D,2; L,3; B,2*)] in
   let moves = List.map (fun m -> Cubie.move (Move.make m)) moves in
   let cube = List.fold_left Cubie.mul Cubie.id moves in
   let cubeP1 = Phase1.of_cube cube in
   let seq1 = Solver1.search_seq_to_goal cubeP1 Phase1.in_G1 in
+  Printf.printf "Sequence phase 1: \n%!";
   print1 seq1;
+ (* let module Motor = Mindstorm.Motor in
+  let conn = let bt =
+    if Array.length Sys.argv < 2 then (
+      printf "%s <bluetooth addr>\n" Sys.argv.(0);
+      exit 1;
+    )
+    else Sys.argv.(1) in Mindstorm.connect_bluetooth bt in
+  let module C =
+  struct
+    let conn = conn
+    let motor_fighter = Motor.a
+    let motor_hand = Motor.b
+    let motor_pf = Motor.c
+    let push_hand_port = `S2
+    let push_fighter_port = `S1
+    let cog_is_set_left = true
+  end in
+  let module M = Translator.Make(C) in
+  List.iter M.make (List.map Phase1.Move.generator seq1);*)
   let rec apply cube seq =
     match seq with
     | [] -> cube
@@ -135,6 +155,7 @@ let () =
   let cube2 = apply cube seq1 in
   let cubeP2 = Phase2.of_cube cube2 in
   let seq2 = Solver2.search_seq_to_goal cubeP2 Phase2.is_identity in
+  Printf.printf "Sequence phase 2: \n%!";
   print2 seq2;
   let rec apply2 cube seq =
     match seq with
