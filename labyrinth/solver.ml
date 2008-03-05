@@ -57,12 +57,12 @@ struct
   (** If the robot determines that there is no exit to the labyrinth,
       it will call this function. *)
   let no_exit_exists () =
-    (* Mindstorm.Sound.play C.conn "Woops.rso" ~loop:true;
-    Unix.sleep 3;
-    Mindstorm.Sound.stop C.conn;*)
-    printf "no issue\n%!";
     Labyrinth.failure();
+    Mindstorm.Sound.play C.conn "Woops.rso" ~loop:true;
+    Unix.sleep 3;
+    Mindstorm.Sound.stop C.conn;
     Labyrinth.close_when_clicked();
+    printf "no issue\n%!";
     stop()
 
   (** Continuations taken by the fonctions. *)
@@ -149,7 +149,7 @@ struct
   let color = Robot.light conn light_port r
   let ultra = Robot.ultrasonic conn ultra_port r
   let touch  =
-    Mindstorm.Sensor.set conn switch_port1 `Switch `Bool; (* Transition_cnt?? *)
+    Mindstorm.Sensor.set conn switch_port1 `Switch `Bool;
     Mindstorm.Sensor.set conn switch_port2 `Switch `Bool;
     let get port = (Mindstorm.Sensor.get conn port).Mindstorm.Sensor.scaled in
     Robot.meas r (fun () -> (get switch_port1) = 1 || (get switch_port2) = 1)
@@ -169,7 +169,6 @@ struct
   (** The robot goes straight a little bit without testing if it is on a
       crossing. *)
   let go_straight_before_do tl k =
-    (*Robot.event_is touch found_exit;*)
     Robot.event_is idle (fun _ -> k());
     speed motor_left ~tach_limit:tl 25;
     speed motor_right ~tach_limit:tl 25
@@ -179,7 +178,7 @@ struct
     Robot.event_is touch (*if wall_on robot_pos() robot_dir() = false*)found_exit;
     Robot.event color is_crossing (fun _ -> k());
     let sp = if Random.bool() then 20 else -20 in
-    Robot.event color is_floor (fun _ -> rectif k 30 sp);
+    Robot.event color is_floor (fun _ -> rectif k 20 sp);
     speed motor_left 30;
     speed motor_right 30
 
@@ -213,6 +212,9 @@ struct
     let v = Robot.read ultra in Labyrinth.set_wall `Front (v <= 25);
     k()
 
+  let look_wall_back k =
+    see_ultra (-420) (fun a -> Labyrinth.set_wall `Back (a <= 25); k())
+
   (** The robot turns on itself. *)
   let turn tl sp k =
     Robot.event_is idle k;
@@ -229,13 +231,6 @@ struct
     Robot.event_is idle (fun _ -> k());
     speed motor_left ~tach_limit:180 (-20);
     speed motor_right ~tach_limit:180 (-20)
-
-  let look_wall_back k =
-    (*search_crossing 20 30 (fun _ -> go_straight_before_do (fun _ -> turn 340 30
-      (fun _ -> Labyrinth.set_wall `Back ((Robot.read ultra) <= 20);
-        turn 340 30 (fun _ -> go_back_before_do
-          (fun _ -> search_crossing 20 30 k)))))*)
-    see_ultra (-420) (fun a -> Labyrinth.set_wall `Back (a <= 25); k())
 
   let look_walls k =
     speed motor_left 0;

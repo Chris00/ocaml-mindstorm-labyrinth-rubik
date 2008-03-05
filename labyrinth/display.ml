@@ -37,7 +37,8 @@ let cross_road_color = red
 let path_color = rgb 49 147 192
 let laby_structure = rgb 171 183 227
 let text_fonts =
-  [ "-*-times new roman-medium-r-normal--100-*-*-*-p-*-iso8859-1" ]
+  [ "-*-times new roman-medium-r-normal--100-*-*-*-p-*-iso8859-1";
+    "lucidasans-bolditalic-24"]
 let goal_color = yellow
 let text_success = "Trouvé !"
 let failure_color = red
@@ -186,7 +187,7 @@ struct
     try_set_font text_fonts; (* ignore nonexistent font *)
     set_color black;
     let (w,h) = text_size text in
-    moveto x0 y0;  rmoveto (-w / 2) (-h /2);  draw_string text_success
+    moveto x0 y0;  rmoveto (-w / 2) (-h /2);  draw_string text
 
   let success () = draw_final goal_color text_success
   let failure () = draw_final failure_color text_failure
