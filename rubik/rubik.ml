@@ -388,9 +388,7 @@ let initialize_prun id mul length =
   in
   begin
     try fill_table ([id], 1) 0
-    with
-    | Finished -> Printf.eprintf ">>> All pruning entries filled\n%!"
-    | e -> raise e
+    with Finished -> Printf.eprintf ">>> All pruning entries filled\n%!"
   end;
   prun_table
 ;;
