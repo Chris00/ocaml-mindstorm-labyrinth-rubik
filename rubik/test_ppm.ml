@@ -1,7 +1,8 @@
 open Printf
 open Graphics
 
-let snapshot_file = "/tmp/ocaml.ppm"
+let snapshot_file = "/Users/marku/Desktop/ocaml.ppm"
+(* let snapshot_file = "/tmp/ocaml.ppm" *)
 
 let take_snapshot () =
   Sys.command ("gqcam -w 0 -c 128 -b 255 --type PPM --dump " ^ snapshot_file)
@@ -21,8 +22,8 @@ let map f img =
 
 
 let () =
-  take_snapshot();
-  let img = Ppm.as_matrix_exn snapshot_file ~bgr:true in
+  (* take_snapshot(); *)
+  let img = Ppm.as_matrix_exn snapshot_file in
   let height = Array.length img
   and width = Array.length img.(0) in
   open_graph (sprintf " %ix%i" (4 * width) height);
