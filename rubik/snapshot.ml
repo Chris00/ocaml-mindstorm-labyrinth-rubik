@@ -37,3 +37,5 @@ let vlc_remote =
 let vlc_remote =
   "vlc -I rc v4l:// -V image --image-out-replace --image-out-format png \
 	--image-out-prefix ocaml"
+
+(** Command : vlc dshow:// :dshow-adev="none" -I rc -V image --image-out-replace --image-out-format png --image-out-prefix ocaml **)
