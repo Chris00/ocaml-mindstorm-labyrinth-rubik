@@ -80,11 +80,11 @@ struct
       if !cog_is_left then k()
       else (Robot.event_is idle_pf k;
             cog_is_left := true ;
-            speed motor_pf ~tach_limit:40 (-3))
+            speed motor_pf ~tach_limit:38 (-3))
     else
       if !cog_is_left then (Robot.event_is idle_pf k;
                             cog_is_left := false;
-                            speed motor_pf ~tach_limit:40 3)
+                            speed motor_pf ~tach_limit:38 3)
       else k()
 
   (** Move the hand to hold the cube *)
@@ -92,7 +92,7 @@ struct
     if !cube_is_held then k()
     else (Robot.event_is idle_hand k;
           cube_is_held := true;
-          speed motor_hand ~tach_limit:110 (-40))
+          speed motor_hand ~tach_limit:110 (-30))
 
   (** Move the hand to free the cube *)
   let free_rubik k =
@@ -127,10 +127,10 @@ struct
     let turn () = free_rubik begin fun _ ->
       let tl17 = qt*(-331) in
       if qt > 0 then (
-        Robot.event_is idle_pf (fun _ -> turn_pf_slowly (-tl17) (-17) k);
+        Robot.event_is idle_pf (fun _ -> turn_pf_slowly (-tl17) (-15) k);
         speed motor_pf ~tach_limit:(qt * degree_per_quarter) (-100))
       else (
-        Robot.event_is idle_pf (fun _ -> turn_pf_slowly tl17 17 k);
+        Robot.event_is idle_pf (fun _ -> turn_pf_slowly tl17 15 k);
         speed motor_pf ~tach_limit:(-qt * degree_per_quarter) 90)
     end in
     set_cog (qt > 0) turn
@@ -159,11 +159,11 @@ struct
     end
 
   let turn_rubik_left ~cont =
-    set_cog true (fun _ -> turn_rubik true 450 266 85 (-70) (-20) (10) cont)
+    set_cog true (fun _ -> turn_rubik true 450 264 83 (-70) (-20) (10) cont)
   let turn_rubik_right ~cont =
-    set_cog false (fun _ -> turn_rubik false 450 220 39 (70) (20) (-10) cont)
+    set_cog false (fun _ -> turn_rubik false 450 229 48 (70) (20) (-10) cont)
   let turn_rubik_half ~cont =
-    set_cog true (fun _ -> turn_rubik true 900 447 85 (-70) (-20) (10) cont)
+    set_cog true (fun _ -> turn_rubik true 900 445 81 (-70) (-20) (10) cont)
 
   let () =
     reset_fighter(fun _ -> free_rubik (end_cont));
