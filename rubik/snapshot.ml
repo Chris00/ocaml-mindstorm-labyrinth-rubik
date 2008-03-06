@@ -65,7 +65,9 @@ let copy fname1 fname2 =
   close_out fout
 
 let convert fname1 fname2 =
-  ignore(Sys.command(imagemagick_convert ^ " " ^ fname1 ^ " " ^ fname2))
+  let cmd = imagemagick_convert ^ " " ^ fname1 ^ " " ^ fname2 in
+  Printf.eprintf "### %s\n%!" cmd;
+  ignore(Sys.command cmd)
 
 
 type color = int
@@ -86,9 +88,9 @@ let stop w =
 
 
 let take w =
-  let png = Filename.temp_file "rubikS" ".png" in
+  let png = Filename.temp_file "rubik_" ".png" in
   copy w.png png;
-  let ppm = Filename.temp_file "rubikS" ".ppm" in
+  let ppm = Filename.temp_file "rubik_" ".ppm" in
   convert png ppm;
   Ppm.as_matrix_exn ppm
 
