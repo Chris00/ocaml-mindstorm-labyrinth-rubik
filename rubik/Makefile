@@ -5,7 +5,7 @@ DOC_DIR = doc
 
 OCAMLC_FLAGS = -g -dtypes -dllpath .. -custom -I $(MINDSTORM_PATH) -I ..
 OCAMLOPT_FLAGS = -dtypes -I $(MINDSTORM_PATH) -I ..
-PP=camlp4o pa_macro.cmo #Camlp4MacroParser.cmo
+PP=camlp4o pa_macro.cmo $(OS) #Camlp4MacroParser.cmo
 
 INTERFACES=$(wildcard *.mli)
 PROGRAM=run.ml
@@ -45,6 +45,10 @@ doc: $(INTERFACES:.mli=.cmi)
 
 include ../Makefile.ocaml
 include ../Makefile.latex
+# Define the OS type for the Camlp4 preprocessor
+.os_type: make_os_type.exe
+	./$< > $@
+include .os_type
 
 # Images -> talk (requires ImageMagick)
 images/Rubik_cube.jpg: images/Rubik_cube.svg
