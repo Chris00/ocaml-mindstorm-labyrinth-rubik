@@ -81,6 +81,7 @@ type webcam = {
 let start () =
   let fname = Filename.temp_file "rubik" ".png" in
   let (in_chan, out_chan) = Unix.open_process (vlc_remote ^ fname) in
+  Unix.sleep 2;
   { in_chan = in_chan;  out_chan = out_chan;  png = fname }
 
 let stop w =
