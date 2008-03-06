@@ -29,6 +29,9 @@ type generator =
   | U     (** 90° CW turn of the {i up} face *)
   | D     (** 90° CW turn of the {i down} face *)
 
+val char_of_generator : generator -> char
+  (** Returns the generator as a character. *)
+
 (** Abstract vision of moves. *)
 module type MoveT =
 sig

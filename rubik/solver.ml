@@ -83,31 +83,17 @@ module Solver2 = Make(Rubik.Phase2)
 open Rubik
 open Printf
 
-let rec print1 s = (match s with
-  | [] -> ()
-  | m :: tl -> (let (g,i) = Phase1.Move.generator m in
-    let print_gen g = Printf.printf "Move: %s , %i \n%!" g i in
-    (match g with
-    | F -> print_gen "F"
-    | B -> print_gen "B"
-    | L -> print_gen "L"
-    | R -> print_gen "R"
-    | U -> print_gen "U"
-    | D -> print_gen "D");
-    print1 tl))
+let rec print1 l =
+  let string_of_move m =
+    let (g,i) = Phase1.Move.generator m in
+    sprintf "%c%i" (char_of_generator g) i in
+  String.concat " " (List.map string_of_move l)
 
-let rec print2 s = (match s with
-  | [] -> ()
-  | m :: tl -> (let (g,i) = Phase2.Move.generator m in
-    let print_gen g = Printf.printf "Move: %s , %i \n%!" g i in
-    (match g with
-    | F -> print_gen "F"
-    | B -> print_gen "B"
-    | L -> print_gen "L"
-    | R -> print_gen "R"
-    | U -> print_gen "U"
-    | D -> print_gen "D");
-    print2 tl))
+let rec print2 l =
+  let string_of_move m =
+    let (g,i) = Phase2.Move.generator m in
+    sprintf "%c%i" (char_of_generator g) i in
+  String.concat " " (List.map string_of_move l)
 
 let () =
   (*let corner = [(Cubie.UFL,1); (Cubie.DLF,2);(Cubie.ULB,0); (Cubie.UBR,0);
@@ -147,23 +133,15 @@ let () =
   end in
   let module M = Translator.Make(C) in
   List.iter M.make (List.map Phase1.Move.generator seq1);*)
-  let rec apply cube seq =
-    match seq with
-    | [] -> cube
-    | m :: tl -> apply (Cubie.mul cube (Cubie.move m)) tl
-  in
-  let cube2 = apply cube seq1 in
+  let cube2 =
+    List.fold_left (fun c m -> Cubie.mul c (Cubie.move m)) cube seq1 in
   Gc.major();
   let cubeP2 = Phase2.of_cube cube2 in
   Printf.printf "Sequence phase 2: \n%!";
   let seq2 = Solver2.search_seq_to_goal cubeP2 Phase2.is_identity in
   print2 seq2;
-  let rec apply2 cube seq =
-    match seq with
-    | [] -> cube
-    | m :: tl -> apply2 (Cubie.mul cube (Phase2.Move.move m)) tl
-  in
-  let goal = apply2 cube2 seq2 in
+  let goal =
+    List.fold_left (fun c m -> Cubie.mul c (Phase2.Move.move m)) cube2 seq2 in
   if Cubie.is_identity goal then Printf.printf "Wouhouuu!! \n%!"
 
 

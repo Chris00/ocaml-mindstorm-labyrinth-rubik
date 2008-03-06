@@ -82,11 +82,15 @@ let choose n k =
     done;
     truncate(!acc +. 0.5)               (* round *)
 
-(************************************************************************)
+(** General cube representation
+ ***********************************************************************)
 
 type generator = F | B | L | R | U | D
 
 let generator = [| F; B; L; R; U; D |]
+
+let char_of_generator = function
+  | F -> 'F' | B -> 'B' | L -> 'L' | R -> 'R' | U -> 'U' | D -> 'D'
 
 module type MoveT =
 sig
@@ -130,15 +134,6 @@ struct
     m / 3 = n / 3
 end
 
-
-(** Symmetry group of the cube.  Some Rubik cube coordinates are
-    "reduced" using this symmetry group. *)
-module Sym =
-struct
-  type t = int
-
-(* Not needed at this time *)
-end
 
 
 (** The Cubies level is a simple way of describing a cube position
@@ -218,6 +213,7 @@ struct
     let edge = List.map (fun (e,o) -> (e, if o then 1 else 0)) edge in
     if (List.fold_left (fun s (_,o) -> s + o) 0 edge) land 0x1 <> 0 then
       invalid_arg "Rubik.Cubie.make: incoherent orientation of edge cubies";
+    (* FIXME: coherence edge/corners? (1/2 of the above is possible) *)
     unsafe_make corner edge
 
   let corner cube c =
@@ -306,6 +302,22 @@ struct
   let () = assert(Array.length cube_of_move = Move.length)
 end
 
+
+(** Summetries
+ ***********************************************************************)
+
+(** The group of the 16 symmetries of the cube that preserve the U-D
+    axis.  Some Rubik cube coordinates are "reduced" using this
+    symmetry group. *)
+module UDSym =
+struct
+  type t = int
+
+end
+
+
+(** Coordinates
+ ***********************************************************************)
 
 module type Coordinate =
 sig
