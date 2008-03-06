@@ -2,19 +2,25 @@ open Graphics
 open Printf
 open Ppm
 open Rubik
+open Snapshot
 
 (** Initialize the rubik state taking snapshot of the real rubik!*)
 
 type colorf = Red | Green | Yellow | White | Orange | Blue
 
 module Face =
-
 struct
   type t = colorf array array
 
-  let coord_abs id = id mod 3, 2 - id / 3
+  let coord id = id mod 3, 2 - id / 3
 
   let id (x,y) = x + y * 3
+
+  let rotate (x,y) rot = match (rot mod 4) with
+    |0 -> x, y
+    |1 -> y, 2-x
+    |2 -> 2-x, 2-y
+    |_ -> 2-y, x
 
   (* array of all representing the upper face *)
   let u = Array.make_matrix 3 3 Red
@@ -25,51 +31,102 @@ struct
   let b = Array.make_matrix 3 3 Red
 end
 
-(*where the snapshot file is saved *)
-let snapshot_file = "/Users/marku/Desktop/ocaml.ppm"
+module Color =
+struct
+  let rgb_components (c:Graphics.color) =
+    (c lsr 16) land 0xFF,
+    (c lsr 8) land 0xFF,
+    c land 0xFF
 
-(*return for a Graphics.color the rgb components*)
-let rgb_components c =
-  (c lsr 16) land 0xFF,
-  (c lsr 8) land 0xFF,
-  c land 0xFF
+  let name rgb =
+    let (r,g,b) = rgb in
+    if r > 130
+    then (* we have red orange white or yellow *)
+      if b > (r / 5)
+      then White
+      else if g < (r / 5)
+      then Red
+      else if g < 3 * (r / 5)
+      then  Orange
+      else Yellow
+    else
+      if b < 10 then Green
+      else Blue
 
-(*returns from the rgb components the colorf *)
-let color_name x =
-  let (r,g,b) = x in
-  if r > 130
-  then (* we have red orange white or yellow *)
-    if b > (r / 5)
-    then White
-    else if g < (r / 5)
-    then Red
-    else if g < 3 * (r / 5)
-    then  Orange
-    else Yellow
-  else
-    if b < 10 then Green
-    else Blue
+  let color_of face = match face with
+    |U -> Face.u.(1).(1)
+    |R -> Face.r.(1).(1)
+    |F -> Face.f.(1).(1)
+    |L -> Face.l.(1).(1)
+    |D -> Face.d.(1).(1)
+    |B -> Face.b.(1).(1)
 
-(* returns the color of a face *)
-let color_of face = match face with
-  |U -> Face.u.(1).(1)
-  |R -> Face.r.(1).(1)
-  |F -> Face.f.(1).(1)
-  |L -> Face.l.(1).(1)
-  |D -> Face.d.(1).(1)
-  |B -> Face.b.(1).(1)
+  (* returns the color of the element [id] of the face [face] *)
+  let color_fid (face,id) =
+    let f = (match face with
+             |U -> Face.u
+             |R -> Face.r
+             |F -> Face.f
+             |L -> Face.l
+             |D -> Face.d
+             |B -> Face.b) in
+    let (x,y) = Face.coord id in
+    f.(x).(y)
+end
 
-(* returns the color of the element [id] of the face [face] *)
-let color_fid (face,id) =
-  let f = (match face with
-         |U -> Face.u
-         |R -> Face.r
-         |F -> Face.f
-         |L -> Face.l
-         |D -> Face.d
-         |B -> Face.b) in
-  let (x,y) = Face.coord_abs id in
-  f.(x).(y)
+
+module Pick =
+struct
+  let abs x =
+    43 + 30 * x
+
+  let ord y =
+    23 + 30 * y
+
+  let pick_point snapshot x0 y0 =
+    let rec pick_y y ret =
+      let rec pick_x x retour = match x with
+        |3 -> retour
+        |_ ->
+           pick_x (x+1)
+             (Color.rgb_components
+                (snapshot.(x0 + 8 + x*7).(y0 + 8 + y*7)) :: retour
+             )
+      in
+      match y with
+      |3 -> ret
+      |_ -> pick_y (y+1) ((pick_x 0 []) :: ret) in
+    List.concat (pick_y 0 [])
+
+  let ( +! ) (x1,y1,z1) (x2,y2,z2) = (x1 + x2, y1 + y2, z1 + z2)
+
+  let ( /! ) (x,y,z) a = (x/a ,y/a, z/a)
+
+  (* compute the average vector of a vector list *)
+  let average list_color =
+    let rec itern lc sum number_el = match lc with
+      |[] -> sum /! number_el
+      |el :: li -> itern li (sum +! el) (number_el+1)
+    in itern list_color (0,0,0) 0
+
+  let take_face webcam face orient =
+    let snapshot = Snapshot.take webcam in
+    let f = (match face with
+           |U -> Face.u
+           |R -> Face.r
+           |F -> Face.f
+           |L -> Face.l
+           |D -> Face.d
+           |B -> Face.b) in
+    let fill_matrix_square x y =
+      let (i,j) = Face.rotate (x,y) orient in
+      f.(i).(j) <- Color.name
+        (average (pick_point snapshot (abs x) (ord y)));
+    in
+    Array.iter (fun x ->
+                  Array.iter (fun y -> fill_matrix_square x y) [|0;1;2|]
+               ) [|0;1;2|]
+end
 
 (* list of all the corner of the cube *)
 let corner_list = [ Cubie.URF; Cubie.UFL; Cubie.ULB; Cubie.UBR;
@@ -172,101 +229,31 @@ let order list_to_find place_list  =
 let corner_list_replacement _ =
   let color_place = List.map (fun corner ->
                                 Array.map (fun face ->
-                                             color_of face)
+                                             Color.color_of face)
                                   (corner_set corner), corner) corner_list in
   let color_corner = List.map (fun corner ->
                                  Array.map (fun face_id ->
-                                              color_fid face_id)
+                                              Color.color_fid face_id)
                                    (corner_def corner)) corner_list in
   order color_corner color_place
 
 let edge_list_replacement _ =
   let color_place = List.map (fun edge ->
                                 Array.map (fun face ->
-                                             color_of face)
+                                             Color.color_of face)
                                   (edge_set edge), edge) edge_list in
   let color_corner = List.map (fun edge ->
                                  Array.map (fun face_id ->
-                                              color_fid face_id)
+                                              Color.color_fid face_id)
                                    (edge_def edge)) edge_list in
   order color_corner color_place
 
-let take_cube_color _ =
+let create_rubik _ =
+  let webcam = Snapshot.start () in
+  (*Translator.face_iter (take_face webcam);*)
+  Snapshot.stop webcam;
   let corner_list_ordered = corner_list_replacement () in
   let edge_list_ordered = edge_list_replacement () in
   let elo = List.map (fun (a,i) -> (a, (i = 1))) edge_list_ordered in
   let cubie = Cubie.make corner_list_ordered elo in
   cubie
-
-(* coordinate of the left bottom picking color squares *)
-let coord x =
-  43 + 30 * x
-
-(* absissa of the left bottom picking color squares *)
-let abs y =
-  23 + 30 * y
-
-let set_up_web_cam _ =
-  let img = Ppm.as_matrix_exn snapshot_file in
-  let height = Array.length img
-  and width = Array.length img.(0) in
-  open_graph (sprintf " %ix%i"  width height);
-  set_color (rgb 0 255 242);
-  print_endline "press a key when it's ok!";
-  let fill_checking_zone x y =
-    fill_rect (coord x) (abs y) 14 14 in
-
-  (* refreshing function drawing blue squares on the cubie. *)
-  let rec refresh () =
-    (* take a new snapshot *)
-    let img = Ppm.as_matrix_exn snapshot_file in
-    draw_image (make_image img) 0 0;
-    Array.iter (fun x ->
-                  Array.iter (fun y -> fill_checking_zone x y) [|0;1;2|]
-               ) [|0;1;2|];
-    Unix.sleep 1;
-    if not (key_pressed ()) then refresh ()
-  in refresh ()
-
-(* picking the color on (x0,y0) on the snapshot *)
-let pick_point x0 y0 =
-  let rec pcy y ret =
-    let rec pcx x retour = match x with
-      |3 -> retour
-      |_ ->
-         pcx (x+1) (rgb_components (point_color (x0 + 8 + x*7) (y0 + 8 + y*7))
-                    :: retour)
-    in
-    match y with
-    |3 -> ret
-    |_ -> pcy (y+1) ((pcx 0 []) :: ret) in
-  List.concat (pcy 0 [])
-
-let ( +! ) (x1,y1,z1) (x2,y2,z2) = (x1 + x2, y1 + y2, z1 + z2)
-
-let ( /! ) (x,y,z) a = (x/a ,y/a, z/a)
-
-let average list_color =
-  let rec itern lc sum number_el = match lc with
-    |[] -> sum /! number_el
-    |el :: li -> itern li (sum +! el) (number_el+1)
-  in itern list_color (0,0,0) 0
-
-(* taking the color of a face *)
-let take_face face =
-  let f = (match face with
-         |U -> Face.u
-         |R -> Face.r
-         |F -> Face.f
-         |L -> Face.l
-         |D -> Face.d
-         |B -> Face.b) in
-  let fill_matrix_square x y =
-    f.(x).(y) <-color_name (average (pick_point (coord x) (abs y)));
-  in
-  Array.iter (fun x ->
-                Array.iter (fun y -> fill_matrix_square x y) [|0;1;2|]
-             ) [|0;1;2|]
-
-let take_rubik_color () =
-  ()
