@@ -65,6 +65,9 @@ sig
         square. [x0] is the absissa of the left bottom corner of the square
         and [y0] the ordinate. [snapshot] is a matrix representing the image.*)
 
+  val average : (int * int * int) list -> int * int * int
+    (** Return the average of the list *)
+
   val take_face : Snapshot.webcam -> generator -> int -> unit
     (** Take the color of the face [face] with the orientation [orient]
         from the [snapshot] and save the data! *)
