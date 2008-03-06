@@ -19,8 +19,6 @@
 (** Return the platform on stdout for conditional statements in the
     Makefile. *)
 
-#load "unix.cma";;
-
 let () =
   let os = match Sys.os_type with
   | "Win32" | "Cygwin" -> "WIN32"

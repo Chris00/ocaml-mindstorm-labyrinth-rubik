@@ -18,12 +18,11 @@ byte: $(PROGRAM:.ml=.exe)
 native: $(PROGRAM:.ml=.com)
 
 run.exe: LIBS_CMA+= graphics.cma
-run.exe: rubik.cmo
+run.exe: rubik.cmo priority_queue.cmo a_star.cmo movement.cmo translator.cmo
 run.com: LIBS_CMXA+= graphics.cmxa
 run.com: rubik.cmx
 
-solver.cmo: rubik.cmo priority_queue.cmo
-solver.exe: rubik.cmo movement.cmo translator.cmo priority_queue.cmo
+a_star.cmo: rubik.cmo priority_queue.cmo
 
 display.exe: rubik.cmo
 display.exe: LIBS_CMA+= graphics.cma
