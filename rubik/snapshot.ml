@@ -38,11 +38,11 @@ let vlc_remote =
 IFDEF WIN32 THEN
   "vlc -I rc dshow:// -V image --image-out-replace --image-out-format png \
 	--image-out-prefix "
+ELSE
 IFDEF MACOS THEN
   (* FIXME: url ? *)
   "vlc -I rc ???:// -V image --image-out-replace --image-out-format png \
 	--image-out-prefix "
-ELSE
 ELSE
   (* Unix *)
   "vlc -I rc v4l:// -V image --image-out-replace --image-out-format png \
