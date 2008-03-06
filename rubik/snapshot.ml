@@ -35,12 +35,19 @@ let vlc_remote =
    remote-control interface, so no display is shown and we have an
    easy way to quit.  *)
 let vlc_remote =
-IFDEF WIN THEN
+IFDEF WIN32 THEN
   "vlc -I rc dshow:// -V image --image-out-replace --image-out-format png \
 	--image-out-prefix "
+IFDEF MACOS THEN
+  (* FIXME: url ? *)
+  "vlc -I rc ???:// -V image --image-out-replace --image-out-format png \
+	--image-out-prefix "
 ELSE
+ELSE
+  (* Unix *)
   "vlc -I rc v4l:// -V image --image-out-replace --image-out-format png \
 	--image-out-prefix "
+ENDIF
 ENDIF
 
 let imagemagick_convert = "convert"

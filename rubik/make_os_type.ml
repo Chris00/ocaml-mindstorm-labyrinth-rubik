@@ -22,18 +22,17 @@
 #load "unix.cma";;
 
 let () =
-  match Sys.os_type with
-  | "Win32" | "Cygwin" -> print_string "OS=-DWIN32\n"
+  let os = match Sys.os_type with
+  | "Win32" | "Cygwin" -> "WIN32"
   | _ ->
       (* Distinguish between Unix and MacOS using uname *)
       let fh = Unix.open_process_in "uname -s" in
       let name = input_line fh in
       let os = if name = "Darwin" then "MACOS" else "UNIX" in
-      let status = Unix.close_process_in fh in
-      print_string("OS=-D" ^ os ^ "\n");
-      exit(match status with
-           | Unix.WEXITED e -> e
-           | _ -> -1)
+      ignore(Unix.close_process_in fh);
+      os  in
+  print_endline("OS=" ^ os);
+  print_endline("D_OS=-D" ^ os)
 
 
 (* Local Variables: *)
