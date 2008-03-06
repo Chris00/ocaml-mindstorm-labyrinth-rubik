@@ -18,34 +18,29 @@
 open Printf
 open Rubik
 
-module Solver1 = A_star.Make(Rubik.Phase1)
-module Solver2 = A_star.Make(Rubik.Phase2)
+module Search = A_star
+module Solver1 = Search.Make(Rubik.Phase1)
+module Solver2 = Search.Make(Rubik.Phase2)
 
 (********* Helpers *********)
-let genP1 m = Phase1.Move.generator m
-let genP2 m = Phase2.Move.generator m
 
-let print_move (g,i) =
-  let print_gen g = Printf.printf "Move: %s , %i \n%!" g i in
-  match g with
-  | F -> print_gen "F"
-  | B -> print_gen "B"
-  | L -> print_gen "L"
-  | R -> print_gen "R"
-  | U -> print_gen "U"
-  | D -> print_gen "D"
+let print gen s =
+  let string_of_move (g,i) = sprintf "%c%i" (char_of_generator g) i in
+  let s = String.concat " " (List.map (fun m -> string_of_move(gen m)) s) in
+  printf "Moves: %s\n%!" s
 
-let print gen s = List.iter (fun m -> print_move (gen m)) s
 
 (********* Modules for the physical part *********)
 module Motor = Mindstorm.Motor
 
-let conn = let bt =
-  if Array.length Sys.argv < 2 then (
-    printf "%s <bluetooth addr>\n" Sys.argv.(0);
-    exit 1;
-  )
-  else Sys.argv.(1) in Mindstorm.connect_bluetooth bt
+let conn =
+  let bt =
+    if Array.length Sys.argv < 2 then (
+      printf "%s <bluetooth addr>\n" Sys.argv.(0);
+      exit 1;
+    )
+    else Sys.argv.(1) in
+  Mindstorm.connect_bluetooth bt
 
 module C =
 struct
@@ -70,9 +65,9 @@ let () =
   (********* Phase 1 *********)
   let cubeP1 = Phase1.of_cube cube in
 
-  Printf.printf "Sequence phase 1: \n%!";
+  printf "Sequence phase 1: \n%!";
   let seq1 = Solver1.search_seq_to_goal cubeP1 Phase1.max_moves in
-  print genP1 seq1;
+  print Phase1.Move.generator seq1;
 
 
   let cube2 =
@@ -83,14 +78,14 @@ let () =
   (********* Phase 2 *********)
   let cubeP2 = Phase2.of_cube cube2 in
 
-  Printf.printf "Sequence phase 2: \n%!";
+  printf "Sequence phase 2: \n%!";
   let seq2 = Solver2.search_seq_to_goal cubeP2 Phase2.max_moves in
-  print genP2 seq2;
+  print Phase2.Move.generator seq2;
 
   let goal =
     List.fold_left (fun c m -> Cubie.mul c (Phase2.Move.move m)) cube2 seq2 in
 
-  if Cubie.is_identity goal then Printf.printf "Wouhouuu!! \n%!";
+  if Cubie.is_identity goal then printf "Wouhouuu!! \n%!";
 
   (********* Physical part *********)
   List.iter M.make (List.map Phase1.Move.generator seq1);
