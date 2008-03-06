@@ -47,7 +47,7 @@ include ../Makefile.ocaml
 include ../Makefile.latex
 # Define the OS type for the Camlp4 preprocessor
 .os_type: make_os_type.exe
-	./$< > $@
+	"./$<" > $@
 include .os_type
 
 # Images -> talk (requires ImageMagick)
