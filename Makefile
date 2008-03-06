@@ -36,6 +36,7 @@ robot.cmxa: robot.cmx
 # Generate HTML documentation
 .PHONY: doc
 doc: $(INTERFACES:.mli=.cmi)
+	-$(MKDIR) $(DOC_DIR)
 	$(OCAMLDOC) -d $(DOC_DIR) -colorize-code -stars -html \
 	  $(INTERFACES) -I $(MINDSTORM_PATH) -I labyrinth/ -I rubik/
 
@@ -52,6 +53,6 @@ include Makefile.ocaml
 
 clean::
 	$(RM) *.exe *.com
-	-cd $(DOC_DIR); $(RM) *~ *.html *.css
+	-$(CD) $(DOC_DIR); $(RM) *~ *.html *.css
 	$(CD) labyrinth/ &&  $(MAKE) clean
 	$(CD) rubik/ &&  $(MAKE) clean
