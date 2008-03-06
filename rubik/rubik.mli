@@ -177,22 +177,29 @@ sig
         that this function is (usually) not one-to-one, i.e. these
         coordinates only give a partial characterization of a cube.  *)
 
-  val initialize : ?file:string -> unit -> (t -> Move.t -> t) * (t -> int)
-    (** [initialize()] return a [mul] function and a [prun] function.
+  val initialize_mul : ?file:string -> unit -> (t -> Move.t -> t)
+    (** [initialize_mul()] return a [mul] function.
+
+        @param file if the file exists, assumes it contains the table
+        computed by a previous run.  If it does not exist, create it
+        and save the computed table.
+
+        [let mul = initialize_mul()] defines a function such that
+        [mul c m] applies the move [m] to the coordinate [c] i.e. right
+        multiply the element [c] of the group by [m] ([c] represents a
+        coset so any element of the group with coordinate [c] will give
+        the same coordinates for [c * m]). *)
+
+  val initialize_pruning : ?file:string  -> (t -> Move.t -> t) -> (t -> int)
+    (** [initialize_pruning mul] return a [prun] function.
 
         @param file if the file exists, assumes it contains the tables
         computed by a previous run.  If it does not exist, create it
         and save the computed tables.
 
-        [let (mul, prun) = initialize()] define two functions such that
-        - [mul c m]
-        applies the move [m] to the coordinate [c] i.e. right multiply
-        the element [c] of the group by [m] ([c] represents a coset so
-        any element of the group with coordinate [c] will give the
-        same coordinates for [c * m]);
-        - [prun c]
-        returns a lower bound for the number of moves to bring the
-        cube [c] back to the goal state.  *)
+        [let prun = initialize_pruning mul] defines a function such that
+        [prun c] returns a lower bound for the number of moves to bring
+        the cube [c] back to the goal state.  *)
 
   val compare : t -> t -> int
     (** Comparison function on permutations. *)

@@ -26,7 +26,8 @@ module Make(P:
     module Move : Rubik.MoveT
     val compare : t -> t -> int
     val max_moves : int
-    val initialize : ?file:string -> unit -> (t -> Move.t -> t) * (t -> int)
+    val initialize_mul : ?file:string -> unit -> (t -> Move.t -> t)
+    val initialize_pruning : ?file:string -> (t -> Move.t -> t) ->  (t -> int)
   end) =
 struct
 
@@ -34,7 +35,8 @@ struct
 
   module PQ = Priority_queue
 
-  let (mul,prun) = P.initialize()
+  let mul = P.initialize_mul()
+  let prun = P.initialize_pruning mul
 
   (** [search_seq_to_goal p in_goal] returns a list of moves that lead
       to the a permutation [q] (such that [in_goal q] is true) from
@@ -83,29 +85,22 @@ module Solver2 = Make(Rubik.Phase2)
 open Rubik
 open Printf
 
-let rec print1 l =
-  let string_of_move m =
-    let (g,i) = Phase1.Move.generator m in
-    sprintf "%c%i" (char_of_generator g) i in
-  print_endline(String.concat " " (List.map string_of_move l))
+let genP1 m = Phase1.Move.generator m
+let genP2 m = Phase2.Move.generator m
 
-let rec print2 l =
-  let string_of_move m =
-    let (g,i) = Phase2.Move.generator m in
-    sprintf "%c%i" (char_of_generator g) i in
-  print_endline(String.concat " " (List.map string_of_move l))
+let print_move (g,i) =
+  let print_gen g = Printf.printf "Move: %s , %i \n%!" g i in
+  match g with
+  | F -> print_gen "F"
+  | B -> print_gen "B"
+  | L -> print_gen "L"
+  | R -> print_gen "R"
+  | U -> print_gen "U"
+  | D -> print_gen "D"
+
+let rec print gen s = List.iter (fun m -> print_move (gen m)) s
 
 let () =
-  (*let corner = [(Cubie.UFL,1); (Cubie.DLF,2);(Cubie.ULB,0); (Cubie.UBR,0);
-    (Cubie.URF,2); (Cubie.DFR,1); (Cubie.DBL,0); (Cubie.DRB,0)]
-    let edge = [(Cubie.UF,false); (Cubie.UL,false); (Cubie.UB,false);
-    (Cubie.DR,false); (Cubie.DF,false); (Cubie.DL,false);
-    (Cubie.DB,false); (Cubie.FR,false); (Cubie.FL,false);
-    (Cubie.BL,false); (Cubie.BR,false); (Cubie.UR,false)]
-    let cube = Cubie.make corner edge in*)
-  (*let cube = Solver1.mul (Phase1.of_cube Cubie.id) (Move.make(F,3)) in*)
-  (*let cube = Solver1.mul
-    (Solver1.mul (Phase1.of_cube Cubie.id) (Move.make(F,3))) (Move.make(R,2)) in*)
   let moves = [F,3; R,2; U,1; B,3; D,1; L,2; R,3; U,2; F,2; B,1; L,3; F,1;
                R,1; U,3; B,1; D,2; L,3; B,2] in
   let moves = List.map (fun m -> Cubie.move (Move.make m)) moves in
@@ -113,7 +108,7 @@ let () =
   let cubeP1 = Phase1.of_cube cube in
   let seq1 = Solver1.search_seq_to_goal cubeP1 Phase1.in_G1 in
   Printf.printf "Sequence phase 1: \n%!";
-  print1 seq1;
+  print genP1 seq1;
  (* let module Motor = Mindstorm.Motor in
   let conn = let bt =
     if Array.length Sys.argv < 2 then (
@@ -139,7 +134,7 @@ let () =
   let cubeP2 = Phase2.of_cube cube2 in
   Printf.printf "Sequence phase 2: \n%!";
   let seq2 = Solver2.search_seq_to_goal cubeP2 Phase2.is_identity in
-  print2 seq2;
+  print genP2 seq2;
   let goal =
     List.fold_left (fun c m -> Cubie.mul c (Phase2.Move.move m)) cube2 seq2 in
   if Cubie.is_identity goal then Printf.printf "Wouhouuu!! \n%!"

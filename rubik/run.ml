@@ -19,8 +19,10 @@
 open Rubik
 
 let () =
-  let mul1, prun1 = Phase1.initialize()
-  and mul2, prun2 = Phase2.initialize() in
+  let mul1 = Phase1.initialize_mul() in
+  let prun1 = Phase1.initialize_pruning mul1 in
+  let mul2 = Phase2.initialize_mul() in
+  let prun2 = Phase2.initialize_pruning mul2 in
 
   Gc.full_major();
   Gc.print_stat stdout;

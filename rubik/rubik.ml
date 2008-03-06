@@ -325,7 +325,8 @@ sig
   module Move : MoveT
   val of_cube : Cubie.t -> t
     (** Returns the coordinate of a cube. *)
-  val initialize : ?file:string -> unit -> (t -> Move.t -> t) * (t -> int)
+  val initialize_mul : ?file:string -> unit -> (t -> Move.t -> t)
+  val initialize_pruning : ?file:string  -> (t -> Move.t -> t) -> (t -> int)
   val compare : t -> t -> int
 end
 
@@ -410,41 +411,60 @@ let initialize_prun id mul length =
    - id
    - length
    are defined in the context the macro.*)
-DEFINE INITIALIZE_FILE(initialize_mul, initialize_prun) =
-  let mul, prun_table = match file with
+DEFINE INITIALIZE_FILE_MUL(initialize_mul) =
+  let mul = match file with
     | None ->
         let mul_table = initialize_mul() in
         let mul o m = mul_table.{o,m} in
-        (mul, initialize_prun id mul length)
+        mul
     | Some fname ->
         if Sys.file_exists fname then begin
           let fh = open_in_bin fname in
           let mul_table : (int, _, c_layout) Array2.t = input_value fh in
-          let prun_table : (int, _, c_layout) Array1.t = input_value fh in
           (* may segfault if the file does not contain the right values! *)
           close_in fh;
-          ((fun o m -> mul_table.{o,m}), prun_table)
+          fun o m -> mul_table.{o,m}
         end
         else begin
           (* Compute and save the table *)
           let mul_table = initialize_mul() in
           let mul o m = mul_table.{o,m} in
-          let prun_table = initialize_prun id mul length in
           let fh = open_out_bin fname in
           output_value fh mul_table;
+          close_out fh;
+          mul
+        end in
+  mul          (* [mul] function hiding the table *)
+;;
+
+DEFINE INITIALIZE_FILE_PRUN(initialize_prun,mul) =
+  let prun_table = match file with
+    | None ->
+        initialize_prun id mul length
+    | Some fname ->
+        if Sys.file_exists fname then begin
+          let fh = open_in_bin fname in
+          let prun_table : (int, _, c_layout) Array1.t = input_value fh in
+          (* may segfault if the file does not contain the right values! *)
+          close_in fh;
+          prun_table
+        end
+        else begin
+          (* Compute and save the table *)
+          let prun_table = initialize_prun id mul length in
+          let fh = open_out_bin fname in
           output_value fh prun_table;
           close_out fh;
-          (mul, prun_table)
+          prun_table
         end in
-  mul,          (* [mul] function hiding the table *)
   (fun o -> prun_table.{o})              (* pruning function *)
-;;
 
-DEFINE INITIALIZE(kind) =
+DEFINE MUL(kind) =
   let initialize_mul () = INITIALIZE_MUL(kind) in
-  INITIALIZE_FILE(initialize_mul, initialize_prun)
+  INITIALIZE_FILE_MUL(initialize_mul)
 ;;
-
+DEFINE PRUN(mul) =
+  INITIALIZE_FILE_PRUN(initialize_prun,mul)
 
 module CornerO =
 struct
@@ -475,7 +495,10 @@ struct
 
   let id = of_cube Cubie.id
 
-  let initialize ?file () = INITIALIZE(int16_unsigned)
+  let initialize_mul ?file () = MUL(int16_unsigned)
+
+  let initialize_pruning ?file mul = PRUN(mul)
+
 end
 
 
@@ -508,7 +531,9 @@ struct
 
   let id = of_cube Cubie.id
 
-  let initialize ?file () = INITIALIZE(int16_unsigned)
+  let initialize_mul ?file () = MUL(int16_unsigned)
+
+  let initialize_pruning ?file mul = PRUN(mul)
 end
 
 
@@ -559,7 +584,9 @@ struct
 
   let id = of_cube Cubie.id
 
-  let initialize ?file () = INITIALIZE(int16_unsigned)
+  let initialize_mul ?file () = MUL(int16_unsigned)
+
+  let initialize_pruning ?file mul = PRUN(mul)
 end
 
 
@@ -581,7 +608,9 @@ struct
 
   let id = of_cube Cubie.id
 
-  let initialize ?file () = INITIALIZE(int)
+  let initialize_mul ?file () = MUL(int)
+
+  let initialize_pruning ?file mul = PRUN(mul)
 end
 
 
@@ -645,9 +674,9 @@ struct
     done;
     mul_table
 
-  let initialize ?file () = INITIALIZE_FILE(initialize_mul,initialize_prun)
-    (* We can take the INITIALIZE_PRUN function because it doesn't use the
-       function [to_cube] in its implementation. *)
+  let initialize_mul ?file () = INITIALIZE_FILE_MUL(initialize_mul)
+
+  let initialize_pruning ?file mul = PRUN(mul)
 end
 
 
@@ -676,19 +705,87 @@ struct
 
   let in_goal = in_G1
 
-  (* FIXME: lazy initialize so they share the same matrices? *)
-  let initialize ?file () =
+  let id = of_cube Cubie.id
+
+  exception Finished
+
+  module C = EdgeO
+  let get_coord (c,e,u) = (e,u)
+
+  let prun mul =
+    let lC = C.length in
+    let lU = UDSlice.length in
+    let prun_table = Array2.create int8_signed c_layout lC lU in
+    Array2.fill prun_table (-1);
+    (* The initialisation is such that [prun_table.{i} < 0] iff the
+       permutation numbered [i] has not been computed yet. *)
+    prun_table.{C.id,UDSlice.id} <- 0; (* This is the goal state. *)
+    let rec fill_table (cubes, n) depth =
+      (* [n] counts the number of already computed cubes. *)
+      let len = List.length cubes in
+      Printf.eprintf "Depth: %i => length list: %i\n%!" depth len;
+      if n < (lC*lU) && cubes <> [] then
+        (* Search a new depth-step in the tree of permutations. *)
+        let depth = depth + 1 in
+        let new_depth cubes_new_n cube =
+          (* Search for all children of [cube] that are part of the new
+             depth-step. *)
+          let add_children ((cubes_new, n_curr) as curr) m =
+            if n_curr >= (lC*lU) then raise Finished
+            else
+              let newc = mul cube m in
+              let (newcC,newcU) = get_coord newc in
+              if prun_table.{newcC,newcU} < 0 then (
+                prun_table.{newcC,newcU} <- depth;
+                (newc :: cubes_new, n_curr+1)
+              )
+              else curr in
+          List.fold_left add_children cubes_new_n Move.all
+        in
+        fill_table (List.fold_left new_depth ([],n) cubes) depth
+      else
+        Printf.eprintf "# pruning entries = %i =? %i = #perms\n%!" n (lC*lU)
+    in
+    begin
+      try fill_table ([id], 1) 0
+      with Finished -> Printf.eprintf ">>> All pruning entries filled\n%!"
+    end;
+    prun_table
+
+  let init_prun ?file mul =
+    let prun_table = match file with
+    | None -> (prun mul)
+    | Some fname ->
+        if Sys.file_exists fname then begin
+          let fh = open_in_bin fname in
+          let prun_table : (int, _, c_layout) Array2.t = input_value fh in
+          close_in fh;
+          prun_table
+        end
+        else begin
+          (* Compute and save the table *)
+          let prun_table = prun mul in
+          let fh = open_out_bin fname in
+          output_value fh prun_table;
+          close_out fh;
+          prun_table
+        end in
+    (fun (c,_,u) -> prun_table.{c,u})              (* pruning function *)
+
+  let initialize_mul ?file () =
     let file1, file2, file3 = match file with
       | None -> None, None, None
       | Some f ->
           Some(f ^ ".cornero"), Some(f ^ ".edgeo"), Some(f ^ "usd1") in
-    let mulC, prunC = CornerO.initialize ?file:file1 ()
-    and mulE, prunE = EdgeO.initialize ?file:file2 ()
-    and mulU, prunU = UDSlice.initialize ?file:file3 () in
-    let mul (c,e,u) m = (mulC c m, mulE e m, mulU u m)
-    and prun (c,e,u) = max3 (prunC c) (prunE e) (prunU u) in
-    (* FIXME: is this pruning method good enough? *)
-    (mul, prun)
+    let mulC = CornerO.initialize_mul ?file:file1 ()
+    and mulE = EdgeO.initialize_mul ?file:file2 ()
+    and mulU = UDSlice.initialize_mul ?file:file3 () in
+    let mul (c,e,u) m = (mulC c m, mulE e m, mulU u m) in
+    mul
+
+  let initialize_pruning ?file mul =
+    let prun = init_prun ?file:file mul in
+    prun
 end
 
 (* Authorized moves in the phase 2 of the algo (safety and possibly
@@ -728,7 +825,9 @@ struct
 
   let id = of_cube Cubie.id
 
-  let initialize ?file () = INITIALIZE(int16_unsigned)
+  let initialize_mul ?file () = MUL(int16_unsigned)
+
+  let initialize_pruning ?file mul = PRUN(mul)
 end
 
 (* Permutation of the 4 edge cubies; only valid in phase 2 *)
@@ -755,7 +854,9 @@ struct
 
   let id = of_cube Cubie.id
 
-  let initialize ?file () = INITIALIZE(int16_unsigned)
+  let initialize_mul ?file () = MUL(int16_unsigned)
+
+  let initialize_pruning ?file mul = PRUN(mul)
 end
 
 
@@ -785,17 +886,30 @@ struct
   let in_goal = is_identity
 
   (* FIXME: lazy initialize so they share the same matrices? *)
-  let initialize ?file () =
+  let initialize_mul ?file () =
     let file1, file2, file3 = match file with
       | None -> None, None, None
       | Some f ->
           Some(f ^ ".cornerp"), Some(f ^ ".edgep2"), Some(f ^ "usd2") in
-    let mulC, prunC = CornerP.initialize ?file:file1 ()
-    and mulE, prunE = EdgeP2.initialize ?file:file2 ()
-    and mulU, prunU = UDSlice2.initialize ?file:file3 () in
-    let mul (c,e,u) m = (mulC c m, mulE e m, mulU u m)
-    and prun (c,e,u) = max3 (prunC c) (prunE e) (prunU u) in
-    (mul, prun)
+    let mulC = CornerP.initialize_mul ?file:file1 ()
+    and mulE = EdgeP2.initialize_mul ?file:file2 ()
+    and mulU = UDSlice2.initialize_mul ?file:file3 () in
+    let mul (c,e,u) m = (mulC c m, mulE e m, mulU u m) in
+    mul
+
+  let initialize_pruning ?file mul =
+   let file1, file2, file3 = match file with
+      | None -> None, None, None
+      | Some f ->
+          Some(f ^ ".cornerp"), Some(f ^ ".edgep2"), Some(f ^ "usd2") in
+    let prunC =
+      CornerP.initialize_pruning ?file:file1 (CornerP.initialize_mul())
+    and prunE =
+      EdgeP2.initialize_pruning ?file:file2 (EdgeP2.initialize_mul())
+    and prunU =
+      UDSlice2.initialize_pruning ?file:file3 (UDSlice2.initialize_mul()) in
+    let prun (c,e,u) = max3 (prunC c) (prunE e) (prunU u) in
+    prun
 end
 
 
