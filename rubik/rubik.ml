@@ -770,7 +770,7 @@ struct
           close_out fh;
           prun_table
         end in
-    (fun (c,_,u) -> prun_table.{c,u})              (* pruning function *)
+    (fun (_,e,u) -> prun_table.{e,u})              (* pruning function *)
 
   let initialize_mul ?file () =
     let file1, file2, file3 = match file with

@@ -170,7 +170,7 @@ let cube ?(pen=black) ?(angle=45) x0 y0 (c_U, c_L, c_F, c_R, c_B, c_D) len_sq =
     List.iter (fun e -> draw_edge e (Cubie.edge cube e)) edge_list
 
 (* test -- temporary *)
-open Printf
+(*open Printf
 let () =
   let x0 = 10
   and y0 = 10
@@ -185,3 +185,4 @@ let () =
   cube x0 y0 colors len_sq Cubie.id;
   cube (x0 + 12 * len_sq) y0 colors len_sq (Cubie.move (Move.make (B, 1)));
   ignore(wait_next_event [Button_down])
+*)
