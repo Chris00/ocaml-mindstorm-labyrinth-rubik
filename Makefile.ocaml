@@ -1,21 +1,25 @@
+# Makefile.ocaml                                       -*-makefile-*-
 
-## Generic OCaml dependencies
 PP	   ?=
-OCAML      ?= ocaml
 OCAMLC     ?= ocamlc
 OCAMLOPT   ?= ocamlopt
 OCAMLDEP   ?= ocamldep
 OCAMLDOC   ?= ocamldoc
-OCAMLTAGS  ?= ocamltags
-OCAMLMKLIB ?= ocamlmklib
 OCAMLFIND  ?= ocamlfind
+OCAMLTAGS  ?= ocamltags
 
 TAR	?= tar
 CD	?= cd
-MKDIR	?= mkdir
+# the "--" makes it possible to have an empty list after without warning
+RM	?= rm -f --
 
 # The location of OCaml's library files.
 OCAMLLIBDIR ?= $(shell $(OCAMLC) -where)
+
+# Librairie Gnuplot (used by many programs)
+GNUPLOT_INC ?= -I $(HOME)/software/OCaml/ocaml-gnuplot/
+GNUPLOT_CMA ?= unix.cma bigarray.cma gnuplot.cma
+GNUPLOT_CMXA ?= $(GNUPLOT_CMA:.cma=.cmxa)
 
 PP_FLAGS = $(if $(PP), -pp "$(PP)")
 
@@ -23,7 +27,7 @@ PP_FLAGS = $(if $(PP), -pp "$(PP)")
 .SUFFIXES: .ml .mli .cmi .cmo .cma .cmx .cmxa
 
 %.cmi: %.mli
-	$(OCAMLC) $(OCAMLC_FLAGS) -c $<
+	$(OCAMLC) $(PP_FLAGS) $(OCAMLC_FLAGS) -c $<
 
 %.cmo: %.ml
 	$(OCAMLC) $(PP_FLAGS) $(OCAMLC_FLAGS) -c $<
@@ -46,10 +50,14 @@ PP_FLAGS = $(if $(PP), -pp "$(PP)")
 	  $(filter %.cmx %.cmxa,$(filter-out $<,$+)) $<
 
 .depend.ocaml: $(wildcard *.ml) $(wildcard *.mli)
-	-$(OCAMLDEP) $(PP_FLAGS) $(SYNTAX_OPTS) $^ > $@
+	@echo "Building $@ ... "
+	-@test -z "$^" || $(OCAMLDEP) $(PP_FLAGS) $(SYNTAX_OPTS) $^ > $@
+# If we do not force inclusion (e.g. with "-" prefix), then it is not
+# recreated and taken into account properly.
 include .depend.ocaml
 
 
 .PHONY: clean
 clean::
-	$(RM) *~ *.cmi *.cmo *.cmx *.cma *.cmxa *.annot *.o *.a
+	-$(RM) *~ *.cmi *.cmo *.cmx *.cma *.cmxa *.annot *.o *.a
+	-$(RM) .depend.ocaml *.exe *.com

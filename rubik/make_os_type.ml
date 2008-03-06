@@ -29,8 +29,10 @@ let () =
       let os = if name = "Darwin" then "MACOS" else "UNIX" in
       ignore(Unix.close_process_in fh);
       os  in
-  print_endline("OS=" ^ os);
-  print_endline("D_OS=-D" ^ os)
+  print_endline("OS_TYPE=" ^ os);
+  print_endline("D_OS=-D" ^ os);
+  if Sys.word_size = 64 then print_endline "D_ARCH64=-DARCH64";
+  print_endline("-include Makefile." ^ os)
 
 
 (* Local Variables: *)

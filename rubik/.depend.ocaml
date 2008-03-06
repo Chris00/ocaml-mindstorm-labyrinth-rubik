@@ -1,7 +1,13 @@
+a_star.cmo: rubik.cmi priority_queue.cmi 
+a_star.cmx: rubik.cmx priority_queue.cmx 
+calibration.cmo: snapshot.cmi init_color.cmi calibration.cmi 
+calibration.cmx: snapshot.cmx init_color.cmx calibration.cmi 
 display.cmo: rubik.cmi display.cmi 
 display.cmx: rubik.cmx display.cmi 
-init_color.cmo: rubik.cmi ppm.cmi init_color.cmi 
-init_color.cmx: rubik.cmx ppm.cmx init_color.cmi 
+ida.cmo: rubik.cmi 
+ida.cmx: rubik.cmx 
+init_color.cmo: snapshot.cmi rubik.cmi ppm.cmi init_color.cmi 
+init_color.cmx: snapshot.cmx rubik.cmx ppm.cmx init_color.cmi 
 movement.cmo: movement.cmi 
 movement.cmx: movement.cmi 
 ppm.cmo: ppm.cmi 
@@ -10,20 +16,20 @@ priority_queue.cmo: priority_queue.cmi
 priority_queue.cmx: priority_queue.cmi 
 rubik.cmo: rubik.cmi 
 rubik.cmx: rubik.cmi 
-run.cmo: rubik.cmi 
-run.cmx: rubik.cmx 
+run.cmo: rubik.cmi display.cmi a_star.cmo 
+run.cmx: rubik.cmx display.cmx a_star.cmx 
 snapshot.cmo: ppm.cmi snapshot.cmi 
 snapshot.cmx: ppm.cmx snapshot.cmi 
-solver.cmo: rubik.cmi priority_queue.cmi 
-solver.cmx: rubik.cmx priority_queue.cmx 
 test_movement.cmo: movement.cmi 
 test_movement.cmx: movement.cmx 
 test_ppm.cmo: ppm.cmi 
 test_ppm.cmx: ppm.cmx 
+test_snapshot.cmo: snapshot.cmi 
+test_snapshot.cmx: snapshot.cmx 
 test_translator.cmo: translator.cmi rubik.cmi 
 test_translator.cmx: translator.cmx rubik.cmx 
 translator.cmo: rubik.cmi movement.cmi translator.cmi 
 translator.cmx: rubik.cmx movement.cmx translator.cmi 
 display.cmi: rubik.cmi 
-init_color.cmi: rubik.cmi 
+init_color.cmi: snapshot.cmi rubik.cmi 
 translator.cmi: rubik.cmi 

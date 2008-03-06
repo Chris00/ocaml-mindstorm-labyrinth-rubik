@@ -40,7 +40,7 @@ test_snapshot.exe : LIBS_CMA+=graphics.cma
 # Generate HTML documentation for these modules only
 .PHONY: doc
 doc: $(INTERFACES:.mli=.cmi)
-	test -d $(DOC_DIR) || $(MKDIR) $(DOC_DIR)
+	-$(MKDIR) $(DOC_DIR)
 	$(OCAMLDOC) -d $(DOC_DIR) -colorize-code -stars -html \
 	  $(INTERFACES) -I $(MINDSTORM_PATH)
 
