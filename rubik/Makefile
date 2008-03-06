@@ -34,6 +34,8 @@ test_movement.exe: movement.cmo
 
 test_translator.exe : movement.cmo translator.cmo
 
+test_snapshot.exe : ppm.cmo snapshot.cmo
+test_snapshot.exe : LIBS_CMA+=graphics.cma
 
 # Generate HTML documentation for these modules only
 .PHONY: doc
