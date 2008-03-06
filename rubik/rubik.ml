@@ -674,6 +674,8 @@ struct
 
   let in_G1 (c,e,u) = c = 0 && e = 0 && u = 0
 
+  let in_goal = in_G1
+
   (* FIXME: lazy initialize so they share the same matrices? *)
   let initialize ?file () =
     let file1, file2, file3 = match file with
@@ -779,6 +781,8 @@ struct
 
   let is_identity (c,e,u) =
     c = CornerP.id && e = EdgeP2.id && u = UDSlice2.id
+
+  let in_goal = is_identity
 
   (* FIXME: lazy initialize so they share the same matrices? *)
   let initialize ?file () =
