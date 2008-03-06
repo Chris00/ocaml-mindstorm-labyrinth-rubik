@@ -22,12 +22,9 @@
     sequence of moves to get into a goal state. *)
 module Make(P:
   sig
-    type t
-    module Move : Rubik.MoveT
+    include Rubik.Coordinate
+    val max_moves : int
     val in_goal : t -> bool
-    val compare : t -> t -> int
-    val initialize_mul : ?file:string -> unit -> (t -> Move.t -> t)
-    val initialize_pruning : ?file:string -> (t -> Move.t -> t) ->  (t -> int)
   end) =
 struct
 
