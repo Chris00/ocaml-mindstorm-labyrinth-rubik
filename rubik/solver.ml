@@ -87,13 +87,13 @@ let rec print1 l =
   let string_of_move m =
     let (g,i) = Phase1.Move.generator m in
     sprintf "%c%i" (char_of_generator g) i in
-  String.concat " " (List.map string_of_move l)
+  print_endline(String.concat " " (List.map string_of_move l))
 
 let rec print2 l =
   let string_of_move m =
     let (g,i) = Phase2.Move.generator m in
     sprintf "%c%i" (char_of_generator g) i in
-  String.concat " " (List.map string_of_move l)
+  print_endline(String.concat " " (List.map string_of_move l))
 
 let () =
   (*let corner = [(Cubie.UFL,1); (Cubie.DLF,2);(Cubie.ULB,0); (Cubie.UBR,0);
