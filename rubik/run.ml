@@ -15,17 +15,83 @@
    MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the file
    LICENSE for more details. *)
 
-
+open Printf
 open Rubik
 
+module Solver1 = A_star.Make(Rubik.Phase1)
+module Solver2 = A_star.Make(Rubik.Phase2)
+
+(********* Helpers *********)
+let genP1 m = Phase1.Move.generator m
+let genP2 m = Phase2.Move.generator m
+
+let print_move (g,i) =
+  let print_gen g = Printf.printf "Move: %s , %i \n%!" g i in
+  match g with
+  | F -> print_gen "F"
+  | B -> print_gen "B"
+  | L -> print_gen "L"
+  | R -> print_gen "R"
+  | U -> print_gen "U"
+  | D -> print_gen "D"
+
+let print gen s = List.iter (fun m -> print_move (gen m)) s
+
+(********* Modules for the physical part *********)
+module Motor = Mindstorm.Motor
+
+let conn = let bt =
+  if Array.length Sys.argv < 2 then (
+    printf "%s <bluetooth addr>\n" Sys.argv.(0);
+    exit 1;
+  )
+  else Sys.argv.(1) in Mindstorm.connect_bluetooth bt
+
+module C =
+struct
+  let conn = conn
+  let motor_fighter = Motor.a
+  let motor_hand = Motor.b
+  let motor_pf = Motor.c
+  let push_hand_port = `S2
+  let push_fighter_port = `S1
+  let cog_is_set_left = true
+end
+
+module M = Translator.Make(C)
+
+(********* Test *********)
 let () =
-  let mul1 = Phase1.initialize_mul() in
-  let prun1 = Phase1.initialize_pruning mul1 in
-  let mul2 = Phase2.initialize_mul() in
-  let prun2 = Phase2.initialize_pruning mul2 in
+  let moves = [F,3; R,2; U,1; B,3; D,1; L,2; R,3; U,2; F,2; B,1; L,3; F,1;
+               R,1; U,3; B,1; D,2; L,3; B,2] in
+  let moves = List.map (fun m -> Cubie.move (Move.make m)) moves in
+  let cube = List.fold_left Cubie.mul Cubie.id moves in
 
-  Gc.full_major();
-  Gc.print_stat stdout;
-  flush stdout;
-  Unix.sleep 10
+  (********* Phase 1 *********)
+  let cubeP1 = Phase1.of_cube cube in
 
+  Printf.printf "Sequence phase 1: \n%!";
+  let seq1 = Solver1.search_seq_to_goal cubeP1 Phase1.max_moves in
+  print genP1 seq1;
+
+
+  let cube2 =
+    List.fold_left (fun c m -> Cubie.mul c (Cubie.move m)) cube seq1 in
+
+  Gc.major();
+
+  (********* Phase 2 *********)
+  let cubeP2 = Phase2.of_cube cube2 in
+
+  Printf.printf "Sequence phase 2: \n%!";
+  let seq2 = Solver2.search_seq_to_goal cubeP2 Phase2.max_moves in
+  print genP2 seq2;
+
+  let goal =
+    List.fold_left (fun c m -> Cubie.mul c (Phase2.Move.move m)) cube2 seq2 in
+
+  if Cubie.is_identity goal then Printf.printf "Wouhouuu!! \n%!";
+
+  (********* Physical part *********)
+  List.iter M.make (List.map Phase1.Move.generator seq1);
+  List.iter M.make (List.map Phase2.Move.generator seq2)
