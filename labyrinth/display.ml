@@ -43,7 +43,7 @@ let text_fonts =
     "lucidasans-bolditalic-24"]
 let goal_color = yellow
 let text_success = "Trouvé !"
-let failure_color = rgb 259 129 129
+let failure_color = rgb 253 129 129
 let text_failure = "Pas de sortie !"
 
 let dx = square_length + 2 * wall_thickness
@@ -151,6 +151,14 @@ struct
     draw_poly_line (Array.of_list xy);
     set_line_width 1
 
+  let redraw_nbh pos =
+    (* We need to redraw all neighboring squares because they may have
+       been updated by the move.  Redraw also the non-walls paths in
+       order to erase a possible path. *)
+    let redraw (d,p) =
+      draw_square p;
+      if wall_on pos d = `False then draw_wall pos d false in
+    List.iter redraw (Coord.nbh pos)
 
   (* Redefine some functions of [L] to add a graphical animation *)
 
@@ -165,13 +173,7 @@ struct
     L.move dir;
     draw_square old_pos;                (* clear current square *)
     (* draw_square (robot_pos()); *)
-    (* We need to redraw all neighboring squares because they may have
-       been updated by the move.  Redraw also the non-walls paths in
-       order to erase a possible path. *)
-    let redraw (d,p) =
-      draw_square p;
-      if wall_on old_pos d = `False then draw_wall old_pos d false in
-    List.iter redraw (Coord.nbh old_pos);
+    redraw_nbh old_pos;
     (* The first move of the path has just been made, do not draw it *)
     if !current_path <> [] then draw_path (List.tl !current_path);
     draw_robot();
@@ -186,6 +188,7 @@ struct
     and py = y0 + y * dy + wall_thickness in
     set_color color;
     fill_rect px py square_length square_length;
+    redraw_nbh(robot_pos());
     draw_robot();
     try_set_font text_fonts; (* ignore nonexistent font *)
     set_color black;
