@@ -366,6 +366,42 @@ DEFINE INITIALIZE_MUL(kind) =
   mul_table
 ;;
 
+(* This must be a macro so that the type of the tables is monomorphic and
+   the compiler generates efficient access to them. Assume that
+   - id
+   - length
+   are defined in the context the macro.*)
+DEFINE INITIALIZE_FILE_MUL(initialize_mul) =
+  let mul = match file with
+    | None ->
+        let mul_table = initialize_mul() in
+        let mul o m = mul_table.{o,m} in
+        mul
+    | Some fname ->
+        if Sys.file_exists fname then begin
+          let fh = open_in_bin fname in
+          let mul_table : (int, _, c_layout) Array2.t = input_value fh in
+          (* may segfault if the file does not contain the right values! *)
+          close_in fh;
+          fun o m -> mul_table.{o,m}
+        end
+        else begin
+          (* Compute and save the table *)
+          let mul_table = initialize_mul() in
+          let mul o m = mul_table.{o,m} in
+          let fh = open_out_bin fname in
+          output_value fh mul_table;
+          close_out fh;
+          mul
+        end in
+  mul          (* [mul] function hiding the table *)
+;;
+DEFINE MUL(kind) =
+  let initialize_mul () = INITIALIZE_MUL(kind) in
+  INITIALIZE_FILE_MUL(initialize_mul)
+;;
+
+
 exception Finished
 
 let initialize_prun id mul length =
@@ -406,65 +442,32 @@ let initialize_prun id mul length =
   prun_table
 ;;
 
-(* This must be a macro so that the type of the tables is monomorphic and
-   the compiler generates efficient access to them. Assume that
-   - id
-   - length
-   are defined in the context the macro.*)
-DEFINE INITIALIZE_FILE_MUL(initialize_mul) =
-  let mul = match file with
-    | None ->
-        let mul_table = initialize_mul() in
-        let mul o m = mul_table.{o,m} in
-        mul
-    | Some fname ->
-        if Sys.file_exists fname then begin
-          let fh = open_in_bin fname in
-          let mul_table : (int, _, c_layout) Array2.t = input_value fh in
-          (* may segfault if the file does not contain the right values! *)
-          close_in fh;
-          fun o m -> mul_table.{o,m}
-        end
-        else begin
-          (* Compute and save the table *)
-          let mul_table = initialize_mul() in
-          let mul o m = mul_table.{o,m} in
-          let fh = open_out_bin fname in
-          output_value fh mul_table;
-          close_out fh;
-          mul
-        end in
-  mul          (* [mul] function hiding the table *)
+DEFINE INITIALIZE_FILE_PRUN(initialize_prun, id, mul, length) =
+  match file with
+  | None ->
+      initialize_prun id mul length
+  | Some fname ->
+      if Sys.file_exists fname then begin
+        let fh = open_in_bin fname in
+        let prun_table = input_value fh in
+        (* may segfault if the file does not contain the right values! *)
+        close_in fh;
+        prun_table
+      end
+      else begin
+        (* Compute and save the table *)
+        let prun_table = initialize_prun id mul length in
+        let fh = open_out_bin fname in
+        output_value fh prun_table;
+        close_out fh;
+        prun_table
+      end
 ;;
-
-DEFINE INITIALIZE_FILE_PRUN(initialize_prun,mul) =
-  let prun_table = match file with
-    | None ->
-        initialize_prun id mul length
-    | Some fname ->
-        if Sys.file_exists fname then begin
-          let fh = open_in_bin fname in
-          let prun_table : (int, _, c_layout) Array1.t = input_value fh in
-          (* may segfault if the file does not contain the right values! *)
-          close_in fh;
-          prun_table
-        end
-        else begin
-          (* Compute and save the table *)
-          let prun_table = initialize_prun id mul length in
-          let fh = open_out_bin fname in
-          output_value fh prun_table;
-          close_out fh;
-          prun_table
-        end in
+(* ASSUME [id] and [length] are defined in the substitution environment. *)
+DEFINE PRUN(mul) =
+  let prun_table = INITIALIZE_FILE_PRUN(initialize_prun, id, mul, length) in
   (fun o -> prun_table.{o})              (* pruning function *)
 
-DEFINE MUL(kind) =
-  let initialize_mul () = INITIALIZE_MUL(kind) in
-  INITIALIZE_FILE_MUL(initialize_mul)
-;;
-DEFINE PRUN(mul) =
-  INITIALIZE_FILE_PRUN(initialize_prun,mul)
 
 module CornerO =
 struct
@@ -707,19 +710,29 @@ struct
 
   let id = of_cube Cubie.id
 
-  exception Finished
+  let initialize_mul ?file () =
+    let file1, file2, file3 = match file with
+      | None -> None, None, None
+      | Some f ->
+          Some(f ^ ".cornero"), Some(f ^ ".edgeo"), Some(f ^ "usd1") in
+    let mulC = CornerO.initialize_mul ?file:file1 ()
+    and mulE = EdgeO.initialize_mul ?file:file2 ()
+    and mulU = UDSlice.initialize_mul ?file:file3 () in
+    let mul (c,e,u) m = (mulC c m, mulE e m, mulU u m) in
+    mul
+
 
   module C = EdgeO
   let get_coord (c,e,u) = (e,u)
 
-  let prun mul =
+  let prun _id mul _length =
     let lC = C.length in
     let lU = UDSlice.length in
     let prun_table = Array2.create int8_signed c_layout lC lU in
     Array2.fill prun_table (-1);
     (* The initialisation is such that [prun_table.{i} < 0] iff the
        permutation numbered [i] has not been computed yet. *)
-    prun_table.{C.id,UDSlice.id} <- 0; (* This is the goal state. *)
+    prun_table.{C.id, UDSlice.id} <- 0; (* This is the goal state. *)
     let rec fill_table (cubes, n) depth =
       (* [n] counts the number of already computed cubes. *)
       let len = List.length cubes in
@@ -752,40 +765,9 @@ struct
     end;
     prun_table
 
-  let init_prun ?file mul =
-    let prun_table = match file with
-    | None -> (prun mul)
-    | Some fname ->
-        if Sys.file_exists fname then begin
-          let fh = open_in_bin fname in
-          let prun_table : (int, _, c_layout) Array2.t = input_value fh in
-          close_in fh;
-          prun_table
-        end
-        else begin
-          (* Compute and save the table *)
-          let prun_table = prun mul in
-          let fh = open_out_bin fname in
-          output_value fh prun_table;
-          close_out fh;
-          prun_table
-        end in
-    (fun (_,e,u) -> prun_table.{e,u})              (* pruning function *)
-
-  let initialize_mul ?file () =
-    let file1, file2, file3 = match file with
-      | None -> None, None, None
-      | Some f ->
-          Some(f ^ ".cornero"), Some(f ^ ".edgeo"), Some(f ^ "usd1") in
-    let mulC = CornerO.initialize_mul ?file:file1 ()
-    and mulE = EdgeO.initialize_mul ?file:file2 ()
-    and mulU = UDSlice.initialize_mul ?file:file3 () in
-    let mul (c,e,u) m = (mulC c m, mulE e m, mulU u m) in
-    mul
-
   let initialize_pruning ?file mul =
-    let prun = init_prun ?file:file mul in
-    prun
+    let prun_table = INITIALIZE_FILE_PRUN(prun, 0, mul, 0) in
+    (fun (_,e,u) -> prun_table.{e,u})
 end
 
 (* Authorized moves in the phase 2 of the algo (safety and possibly
