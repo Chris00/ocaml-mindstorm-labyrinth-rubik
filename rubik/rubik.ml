@@ -65,6 +65,8 @@ module List = struct
     iter 0 l
 end
 
+let max (i:int) j = if i <= j then j else i
+
 let max3 (i:int) j k =
   if i <= j then   if j <= k then k else j
   else (* i > j *) if i <= k then k else i
@@ -766,8 +768,10 @@ struct
     prun_table
 
   let initialize_pruning ?file mul =
-    let prun_table = INITIALIZE_FILE_PRUN(prun, 0, mul, 0) in
-    (fun (_,e,u) -> prun_table.{e,u})
+    let mul_c c m = let (c',_,_) = mul (c,0,0) m in c' in
+    let prun_c = CornerO.initialize_pruning ?file mul_c in
+    let prun_eu = INITIALIZE_FILE_PRUN(prun, 0, mul, 0) in
+    (fun (c,e,u) -> max (prun_c c) prun_eu.{e,u})
 end
 
 (* Authorized moves in the phase 2 of the algo (safety and possibly
@@ -878,6 +882,7 @@ struct
     and mulU = UDSlice2.initialize_mul ?file:file3 () in
     let mul (c,e,u) m = (mulC c m, mulE e m, mulU u m) in
     mul
+
 
   let initialize_pruning ?file mul =
    let file1, file2, file3 = match file with
