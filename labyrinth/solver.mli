@@ -74,20 +74,4 @@ sig
     (** [follow_path k p] makes the robot follow the path [p], and then
         continues with [k]. *)
 
-  val go_left : cont -> unit
-    (** [go_left k] makes the robot go to the square on the left of it,
-        and then continues with [k]. *)
-
-  val go_right : cont -> unit
-    (** [go_right k] makes the robot go to the square on the right of it,
-        and then continues with [k]. *)
-
-  val go_straight : cont -> unit
-    (** [go_straight k] makes the robot go to the square in front of it,
-        and then continues with [k]. *)
-
-  val go_back : cont -> unit
-    (** [go_back k] makes the robot go to the square behind it,
-        and then continues with [k]. *)
-
 end

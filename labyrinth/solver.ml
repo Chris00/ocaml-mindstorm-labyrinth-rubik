@@ -247,13 +247,13 @@ struct
 
   (** The robot goes to the next square, i.e. the next crossing.
       But if it sees a wall, it restarts the exploration of the labyrinth. *)
-  let rec go_next_square k =
+  and go_next_square k =
     if is_wall() then (
       Labyrinth.set_wall `Front true;
       restart_solve())
     else begin
       let go k  =
-        Labyrinth.move;
+        Labyrinth.move();
         Robot.event_is touch found_exit;
         Robot.event color is_crossing (fun _ -> k());
         let sp = if Random.bool() then 20 else -20 in
@@ -273,7 +273,7 @@ struct
     speed motor_right ~tach_limit:tl sp
 
  (** The robot turns on itself. *)
-  let turn_degree tl sp k =
+  and turn_degree tl sp k =
     let turn tl sp k =
       (*Printf.printf "turn %i %i \n%!" tl sp;*)
       Robot.event_is idle k;
@@ -281,7 +281,7 @@ struct
       speed motor_right ~tach_limit:tl sp in
     go_straight_before_do 180 (fun _ -> turn tl sp (fun _ -> k()))
 
-  let turn dir k =
+  and turn dir k =
     match dir with
     | `Left -> Labyrinth.turn `Left;
         turn_degree 180 25 k
@@ -292,10 +292,10 @@ struct
     | `Back -> Labyrinth.turn `Back;
         turn_degree 360 25 k
 
-  let go dir k =
+  and go dir k =
       turn dir (fun _ -> go_next_square (fun _ -> k()))
 
-  let rec follow_path k path =
+  and follow_path k path =
     Labyrinth.set_current_path path;
     match path with
     | [] -> k()
