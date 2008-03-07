@@ -168,7 +168,7 @@ let () =
 (** Return [true] if all accessible neighboor sqaure are explored. *)
 let fully_explored xy0 =
   let explored (dir,xy) =
-    wall_on xy dir = `True || status xy <> `Non_explored in
+    wall_on xy0 dir = `True || status xy <> `Non_explored in
   List.fold_left (fun hist sq -> hist && explored sq) true (Coord.nbh xy0)
 
 (** Update the status of the square [xy] according to the available
