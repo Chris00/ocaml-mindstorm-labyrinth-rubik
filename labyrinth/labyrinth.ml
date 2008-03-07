@@ -27,7 +27,7 @@ sig
     type t = int*int
     val compare : t -> t -> int
     val move :  t -> dir -> t
-    val nbh : t -> (dir*t) list
+    val nbh : t -> (dir * t) list
   end
 
   val nbh_explored : Coord.t -> (dir * Coord.t) list
@@ -40,7 +40,8 @@ sig
   val rel_dir : dir -> dir_rel
   val abs_dir : dir_rel -> dir
   val set_wall : dir_rel -> bool -> unit
-  val move :  [`Left | `Front | `Right | `Back] -> unit
+  val turn : dir_rel -> unit
+  val move : unit -> unit
 end
 
 (*************************************************************************
@@ -75,7 +76,8 @@ struct
 end
 
 (* For the current realisation, it is enough but in general a more
-   extensible datastructure is needed.  We have chosen this for simplicity. *)
+   extensible datastructure is needed.  We have chosen this for
+   simplicity. *)
 let taille_lab = 8
 let i0 = taille_lab
 let j0 = taille_lab
@@ -89,7 +91,7 @@ let lab =
                         wall_N = `Unknown; } in
   Array.init n (fun _ -> Array.init n make_square)
 
-let current_pos = ref (0, 0)
+let robot_pos = ref (0, 0)
 
 let robot_orient = ref `N
 
@@ -99,6 +101,7 @@ let lab_coord (x,y) =
   then failwith "Position not in the labyrinth matrix";
   (i,j)
 ;;
+
 
 let wall_on xy d =
   let (i,j) = lab_coord xy in
@@ -112,9 +115,9 @@ let status xy =
   let (i,j) = lab_coord xy in
   lab.(i).(j).s_state
 
-let robot_pos () = !current_pos
-
-let robot_dir () = !robot_orient
+let set_status xy v =
+  let (i,j) = lab_coord xy in
+  lab.(i).(j).s_state <- v
 
 (* Attribute numbers (mod 4) to the directions in a clockwise fashion. *)
 let int_of_dir = function `N -> 0 | `E -> 1 | `S -> 2 | `W -> 3
@@ -134,6 +137,12 @@ let abs_dir (dir:dir_rel) : dir =
   | 2 -> `S
   | _ -> `W
 
+let opposite dir = match dir with
+  | `N -> `S
+  | `S -> `N
+  | `E -> `W
+  | `W -> `E
+
 let nbh_explored xy0 =
   let add_if_explored nbh (dir, xy) =
     if wall_on xy0 dir = `False && status xy <> `Non_explored then
@@ -148,49 +157,62 @@ let nbh_unexplored xy0 =
     else nbh in
   List.fold_left add_if_unexplored [] (Coord.nbh xy0)
 
+
+(* Updating the state
+ ***********************************************************************)
+
+(* Initialisation: the current square is visited (not yet fully) *)
+let () =
+  set_status !robot_pos `Cross_roads
+
+(** Return [true] if all accessible neighboor sqaure are explored. *)
+let fully_explored xy0 =
+  let explored (dir,xy) =
+    wall_on xy dir = `True || status xy <> `Non_explored in
+  List.fold_left (fun hist sq -> hist && explored sq) true (Coord.nbh xy0)
+
+(** Update the status of the square [xy] according to the available
+    information. *)
+let update xy =
+  match status xy with
+  | `Explored -> ()
+  | `Cross_roads | `Non_explored ->
+      if fully_explored xy then set_status xy `Explored
+
 let set_wall (d:dir_rel) w =
-  let (i,j) = lab_coord !current_pos in
+  let (i,j) = lab_coord !robot_pos in
   let w = if w then `True else `False in
-  match abs_dir d with
+  begin match abs_dir d with
   | `N -> lab.(i).(j).wall_N <- w
   | `S -> lab.(i).(j-1).wall_N <- w
   | `W -> lab.(i).(j).wall_W <- w
   | `E -> lab.(i+1).(j).wall_W <- w
-
-let opposite dir = match dir with
-  | `N -> `S
-  | `S -> `N
-  | `E -> `W
-  | `W -> `E
+  end;
+  (* Knowing a new wall will not improve the knowledge of neighbors. *)
+  update !robot_pos
 
 
-(* return [true] if neighboor are all explored, [dir_to_dont_check]
-   is the absolute direction of the square to don't check. For the leaving
-   square function it's the square where the robot is going to and for
-   updating x-road fuction it's the square where the robot is.
+let turn d =
+  robot_orient := abs_dir d
+    (* No new information => state does not change *)
+;;
 
-   If a neighboor of [xy] is not explored the robot will return to the [xy]
-   to explore the not explored neighboor. *)
-let fully_explored xy dir_to_dont_check =
-  let explored (dir,xy_e) =
-    dir = dir_to_dont_check || wall_on xy dir = `True
-    || status xy_e <> `Non_explored in
-  List.fold_left (fun hist dir_xy -> hist && explored dir_xy) true (Coord.nbh xy)
+let move () =
+  robot_pos := Coord.move !robot_pos !robot_orient;
+  set_status !robot_pos `Cross_roads;
+  update !robot_pos; (* maybe more info exists that can improve the
+                        status of the current square. *)
+  (* The knowledge that the current square is visited may change its
+     neighbors status. *)
+  List.iter (fun (_,xy) -> update xy) (Coord.nbh !robot_pos)
 
-let move d =
-  let d_abs = abs_dir d in
-  let (i,j) = lab_coord !current_pos in
-  lab.(i).(j).s_state <-
-    if fully_explored !current_pos d_abs then `Explored else `Cross_roads;
-  robot_orient := d_abs;
-  current_pos := Coord.move !current_pos d_abs;
-  List.iter (fun (d, xy) ->
-               let(i,j) = lab_coord xy in
-               if status xy = `Cross_roads then
-                 lab.(i).(j).s_state <-
-                   if fully_explored xy (opposite d) then `Explored
-                   else `Cross_roads;
-            ) (Coord.nbh !current_pos)
+
+(* Accessors
+ ***********************************************************************)
+
+let robot_pos () = !robot_pos
+
+let robot_dir () = !robot_orient
 
 
 (* Local Variables: *)

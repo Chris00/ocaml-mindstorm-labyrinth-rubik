@@ -31,7 +31,7 @@ open Graphics
 let (size_x, size_y) = (720,720)
 let (x0,y0) = (360, 360)      (* initial position *)
 let square_length = 40 (* pixels, excluding walls *)
-let robot_color = magenta
+let robot_color = rgb 65 40 189
 let wall_thickness = 2 (* pixels; wall are twice as thick *)
 let wall_color = black
 let explored_color = rgb 166 227 147    (* green *)
@@ -165,12 +165,20 @@ struct
   (* @override *)
   let set_wall (d: dir_rel) b =
     L.set_wall d b;
-    draw_wall (robot_pos()) (abs_dir d) b
+    draw_wall (robot_pos()) (abs_dir d) b;
+    draw_robot()
+  ;;
 
   (* @override *)
-  let move (dir: dir_rel) =
+  let turn d =
+    L.turn d;
+    draw_robot()
+  ;;
+
+  (* @override *)
+  let move () =
     let old_pos = robot_pos() in
-    L.move dir;
+    L.move();
     draw_square old_pos;                (* clear current square *)
     (* draw_square (robot_pos()); *)
     redraw_nbh old_pos;

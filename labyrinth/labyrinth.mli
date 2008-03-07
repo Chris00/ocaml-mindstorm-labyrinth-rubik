@@ -16,7 +16,8 @@
    LICENSE for more details. *)
 
 
-(** Current knowledge of the labyrinth and of the robot position. *)
+(** Current knowledge of the labyrinth and of the robot position.
+    This module has hiddden state for simplicity. *)
 
 (** The signature of a "Labyrinth" module.  This module posseses an
     inner state that knows the position and orientation of the robot
@@ -81,14 +82,18 @@ sig
   val abs_dir : dir_rel -> dir
     (** Converts a relative direction into an absolute one. *)
 
+
   val set_wall : dir_rel -> bool -> unit
     (** [set_wall d] store in the labyrinth whether or not there is a
         wall in the direction [d] of the current position of the
         robot.  *)
 
-  val move : dir_rel -> unit
+  val turn : dir_rel -> unit
+    (** [turn d] turns the robot in the direction [d]. *)
+
+  val move : unit -> unit
     (** [move d] update the status of the robot given that it executes
-        a move in the direction [d]. *)
+        a move one square ahead of him. *)
 end
 
 include T
