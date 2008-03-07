@@ -57,12 +57,17 @@ struct
     | [] -> ()
     | font :: tl -> (try set_font font with _ -> try_set_font tl)
 
-  let draw_square ((x,y) as xy) =
+  (** @param color : force the square color (for example for the
+      "success" square). *)
+  let draw_square ?color ((x,y) as xy) =
     let px = x0 + x * dx + wall_thickness
     and py = y0 + y * dy + wall_thickness in
-    set_color (match status xy with
-               | `Explored | `Cross_roads -> explored_color
-               | `Non_explored ->  background);
+    set_color (match color with
+               | Some c -> c
+               | None ->
+                   match status xy with
+                   | `Explored | `Cross_roads -> explored_color
+                   | `Non_explored -> background);
     fill_rect px py square_length square_length;
     if status xy = `Cross_roads then begin
       (* Add a special mark on "crossroads" *)
@@ -72,8 +77,8 @@ struct
     end
 
   (** Draw the robot according to its state in [L]. *)
-  let draw_robot () =
-    draw_square (robot_pos());
+  let draw_robot ?color () =
+    draw_square ?color (robot_pos());
     let d = 3 in
     let d2 = 2 * d in
     let w = square_length / 2 in
@@ -187,13 +192,8 @@ struct
    ***********************************************************************)
 
   let draw_final color text =
-    let (x,y) = robot_pos() in
-    let px = x0 + x * dx + wall_thickness
-    and py = y0 + y * dy + wall_thickness in
-    set_color color;
-    fill_rect px py square_length square_length;
     redraw_nbh(robot_pos());
-    draw_robot();
+    draw_robot ~color ();
     try_set_font text_fonts; (* ignore nonexistent font *)
     set_color black;
     let (w,h) = text_size text in
