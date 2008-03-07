@@ -866,6 +866,8 @@ struct
 
   let max_moves = 18
 
+  let id = of_cube Cubie.id
+
   let is_identity (c,e,u) =
     c = CornerP.id && e = EdgeP2.id && u = UDSlice2.id
 
@@ -884,19 +886,65 @@ struct
     mul
 
 
+  (* So as to easily change the coords chosen for [prun]: *)
+  module C = CornerP
+  let get_coord (c,e,u) = (c,u)
+
+  let prun mul =
+    let lC = C.length in
+    let lU = UDSlice2.length in
+    let prun_table = Array2.create int8_signed c_layout lC lU in
+    Array2.fill prun_table (-1);
+    (* The initialisation is such that [prun_table.{i} < 0] iff the
+       permutation numbered [i] has not been computed yet. *)
+    prun_table.{C.id, UDSlice2.id} <- 0; (* This is the goal state. *)
+    let rec fill_table (cubes, n) depth =
+      (* [n] counts the number of already computed cubes. *)
+      let len = List.length cubes in
+      Printf.eprintf "Depth: %i => length list: %i\n%!" depth len;
+      if n < (lC*lU) && cubes <> [] then
+        (* Search a new depth-step in the tree of permutations. *)
+        let depth = depth + 1 in
+        let new_depth cubes_new_n cube =
+          (* Search for all children of [cube] that are part of the new
+             depth-step. *)
+          let add_children ((cubes_new, n_curr) as curr) m =
+            if n_curr >= (lC*lU) then raise Finished
+            else
+              let newc = mul cube m in
+              let (newcC,newcU) = get_coord newc in
+              if prun_table.{newcC,newcU} < 0 then (
+                prun_table.{newcC,newcU} <- depth;
+                (newc :: cubes_new, n_curr+1)
+              )
+              else curr in
+          List.fold_left add_children cubes_new_n Move.all
+        in
+        fill_table (List.fold_left new_depth ([],n) cubes) depth
+      else
+        Printf.eprintf "# pruning entries = %i =? %i = #perms\n%!" n (lC*lU)
+    in
+    begin
+      try fill_table ([id], 1) 0
+      with Finished -> Printf.eprintf ">>> All pruning entries filled\n%!"
+    end;
+    prun_table
+  ;;
+
   let initialize_pruning ?file mul =
    let file1, file2, file3 = match file with
       | None -> None, None, None
       | Some f ->
           Some(f ^ ".cornerp"), Some(f ^ ".edgep2"), Some(f ^ "usd2") in
-    let prunC =
-      CornerP.initialize_pruning ?file:file1 (CornerP.initialize_mul())
-    and prunE =
-      EdgeP2.initialize_pruning ?file:file2 (EdgeP2.initialize_mul())
-    and prunU =
-      UDSlice2.initialize_pruning ?file:file3 (UDSlice2.initialize_mul()) in
-    let prun (c,e,u) = max3 (prunC c) (prunE e) (prunU u) in
-    prun
+(*    let mulC c m = let (c,_,_) = mul (c,0,0) m in c in *)
+(*    let prunC = CornerP.initialize_pruning ?file:file1 mulC in *)
+   let mulE e m = let (_,e,_) = mul (0,e,0) m in e in
+   let prunE = EdgeP2.initialize_pruning ?file:file2 mulE in
+(*    let mulU u m = let (_,_,u) = mul (0,0,u) m in u in *)
+(*    let prunU = UDSlice2.initialize_pruning ?file:file3 mulU in *)
+(*    (fun (c,e,u) -> max3 (prunC c) (prunE e) (prunU u)) *)
+   let prun = initialize_file_prun file prun mul in
+   (fun (c,e,u) -> max (prunE c) prun.{c,u})
 end
 
 
