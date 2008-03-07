@@ -38,20 +38,58 @@ struct
     (c lsr 8) land 0xFF,
     c land 0xFF
 
+  let min a b =
+    if a > b then b
+    else a
+
+  let min3 a b c =
+    min a (min b c)
+
+  let max a b =
+    if a > b then a
+    else b
+
+  let max3 a b c =
+    max a (max b c)
+
+
+  (* according to wikipedia [http://en.wikipedia.org/wiki/HSL_color_space]
+     we can find the hue from the rbg in this way *)
+  let hue r g b =
+    if r = g && g = b then 0
+    else if r >= g && r >= b (* red is the maximun *)
+    then (360 + 60 * (g - b) / (r - (min g b))) mod 360
+    else if g >= r && g >= b (* green is the maximum *)
+    then 120 + 60 * (b - r) / (g - (min b r))
+    else 240 + 60 * (r - g) / (b - (min r g)) (* blue is the maximum *)
+
+  let lightness r g b =
+    (max3 r g b - min3 r g b) / 2
+
+  let saturation r g b =
+    let l = lightness r g b in
+    if l <= 127 then max3 r g b - min3 r g b / 2 / l * 127
+    else max3 r g b - min3 r g b / 2 / (1 - l) * 127
+
   let name rgb =
     let (r,g,b) = rgb in
-    if r > 130
-    then (* we have red orange white or yellow *)
-      if b > (r / 5)
-      then White
-      else if g < (r / 5)
-      then Red
-      else if g < 3 * (r / 5)
-      then  Orange
-      else Yellow
+    if lightness r g b > 200 || saturation r g b < 50 then White
     else
-      if b < 10 then Green
+      let h = hue r g b in
+      if h <= 15 || h > 300 then Red
+      else if h > 15 && h <= 45 then Orange
+      else if h > 45 && h <= 75 then Yellow
+      else if h > 75 && h < 180 then Green
       else Blue
+
+
+  let to_string = function
+    |Red -> "R"
+    |Green -> "G"
+    |Yellow -> "Y"
+    |White -> "W"
+    |Orange -> "O"
+    |Blue -> "B"
 
   let color_of face = match face with
     |U -> Face.u.(1).(1)
@@ -90,13 +128,14 @@ struct
         |_ ->
            pick_x (x+1)
              (Color.rgb_components
-                (snapshot.(x0 + 8 + x*7).(y0 + 8 + y*7)) :: retour
+                (snapshot.(Array.length snapshot -y0- y*7).(x0 + x*7)) :: retour
              )
       in
       match y with
       |3 -> ret
       |_ -> pick_y (y+1) ((pick_x 0 []) :: ret) in
     List.concat (pick_y 0 [])
+ 
 
   let ( +! ) (x1,y1,z1) (x2,y2,z2) = (x1 + x2, y1 + y2, z1 + z2)
 

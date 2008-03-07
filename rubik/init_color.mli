@@ -39,6 +39,10 @@ sig
   val name : int * int * int -> colorf
     (** Return form the rgb components [rgb], the name of the color *)
 
+  val to_string : colorf -> string
+    (** Returns the first letter of the color (ie for blue the function 
+        returns [B] *)
+
   val color_of : generator -> colorf
     (** Return the color of a face *)
 
