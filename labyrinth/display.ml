@@ -57,8 +57,23 @@ struct
     | [] -> ()
     | font :: tl -> (try set_font font with _ -> try_set_font tl)
 
+  let draw_square ((x,y) as xy) =
+    let px = x0 + x * dx + wall_thickness
+    and py = y0 + y * dy + wall_thickness in
+    set_color (match status xy with
+               | `Explored | `Cross_roads -> explored_color
+               | `Non_explored ->  background);
+    fill_rect px py square_length square_length;
+    if status xy = `Cross_roads then begin
+      (* Add a special mark on "crossroads" *)
+      set_color cross_road_color;
+      moveto px py;  rlineto square_length square_length;
+      moveto px (py + square_length);  rlineto square_length (- square_length)
+    end
+
   (** Draw the robot according to its state in [L]. *)
   let draw_robot () =
+    draw_square (robot_pos());
     let d = 3 in
     let d2 = 2 * d in
     let w = square_length / 2 in
@@ -75,21 +90,6 @@ struct
     set_color robot_color;
     fill_poly (Array.map (fun (x,y) -> (x + px, y + py)) poly)
   ;;
-
-  let draw_square ((x,y) as xy) =
-    draw_square (robot_pos());
-    let px = x0 + x * dx + wall_thickness
-    and py = y0 + y * dy + wall_thickness in
-    set_color (match status xy with
-               | `Explored | `Cross_roads -> explored_color
-               | `Non_explored ->  background);
-    fill_rect px py square_length square_length;
-    if status xy = `Cross_roads then begin
-      (* Add a special mark on "crossroads" *)
-      set_color cross_road_color;
-      moveto px py;  rlineto square_length square_length;
-      moveto px (py + square_length);  rlineto square_length (- square_length)
-    end
 
   let () =
     (* Initialize the graphic window *)
@@ -165,8 +165,7 @@ struct
   (* @override *)
   let set_wall (d: dir_rel) b =
     L.set_wall d b;
-    draw_wall (robot_pos()) (abs_dir d) b;
-    draw_robot()
+    draw_wall (robot_pos()) (abs_dir d) b
   ;;
 
   (* @override *)
@@ -179,9 +178,7 @@ struct
   let move () =
     let old_pos = robot_pos() in
     L.move();
-    draw_square old_pos;                (* clear current square *)
-    (* draw_square (robot_pos()); *)
-    redraw_nbh old_pos;
+    redraw_nbh (robot_pos());
     (* The first move of the path has just been made, do not draw it *)
     if !current_path <> [] then draw_path (List.tl !current_path);
     draw_robot();
