@@ -406,7 +406,7 @@ DEFINE MUL(kind) =
 
 exception Finished
 
-let initialize_prun id mul length =
+let initialize_prun_table length id mul =
   let prun_table = Array1.create int8_signed c_layout length in
   Array1.fill prun_table (-1);
   (* The initialisation is such that [prun_table.{i} < 0] iff the
@@ -444,10 +444,9 @@ let initialize_prun id mul length =
   prun_table
 ;;
 
-DEFINE INITIALIZE_FILE_PRUN(initialize_prun, id, mul, length) =
+let initialize_file_prun file initialize_prun mul =
   match file with
-  | None ->
-      initialize_prun id mul length
+  | None -> initialize_prun mul
   | Some fname ->
       if Sys.file_exists fname then begin
         let fh = open_in_bin fname in
@@ -458,16 +457,18 @@ DEFINE INITIALIZE_FILE_PRUN(initialize_prun, id, mul, length) =
       end
       else begin
         (* Compute and save the table *)
-        let prun_table = initialize_prun id mul length in
+        let prun_table = initialize_prun mul in
         let fh = open_out_bin fname in
         output_value fh prun_table;
         close_out fh;
         prun_table
       end
 ;;
-(* ASSUME [id] and [length] are defined in the substitution environment. *)
+(* ASSUME [file], [id] and [length] are defined in the substitution
+   environment. *)
 DEFINE PRUN(mul) =
-  let prun_table = INITIALIZE_FILE_PRUN(initialize_prun, id, mul, length) in
+  let prun_table =
+    initialize_prun file (initialize_prun_table length id) mul in
   (fun o -> prun_table.{o})              (* pruning function *)
 
 
@@ -727,7 +728,7 @@ struct
   module C = EdgeO
   let get_coord (c,e,u) = (e,u)
 
-  let prun _id mul _length =
+  let prun mul =
     let lC = C.length in
     let lU = UDSlice.length in
     let prun_table = Array2.create int8_signed c_layout lC lU in
@@ -770,7 +771,7 @@ struct
   let initialize_pruning ?file mul =
     let mul_c c m = let (c',_,_) = mul (c,0,0) m in c' in
     let prun_c = CornerO.initialize_pruning ?file mul_c in
-    let prun_eu = INITIALIZE_FILE_PRUN(prun, 0, mul, 0) in
+    let prun_eu = initialize_file_prun file prun mul in
     (fun (c,e,u) -> max (prun_c c) prun_eu.{e,u})
 end
 
