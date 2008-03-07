@@ -25,9 +25,11 @@ sig
   val close_when_clicked : unit -> unit
 end
 
+open Printf
 open Graphics
 
-let (x0,y0) = (350, 350)                (* initial position *)
+let (size_x, size_y) = (720,720)
+let (x0,y0) = (360, 360)      (* initial position *)
 let square_length = 40 (* pixels, excluding walls *)
 let robot_color = magenta
 let wall_thickness = 2 (* pixels; wall are twice as thick *)
@@ -41,7 +43,7 @@ let text_fonts =
     "lucidasans-bolditalic-24"]
 let goal_color = yellow
 let text_success = "Trouvé !"
-let failure_color = red
+let failure_color = rgb 259 129 129
 let text_failure = "Pas de sortie !"
 
 let dx = square_length + 2 * wall_thickness
@@ -90,7 +92,7 @@ struct
 
   let () =
     (* Initialize the graphic window *)
-    open_graph " 700x700";
+    open_graph(sprintf " %ix%i" size_x size_y);
     set_window_title "Labyrinth - visualisation";
     (* Draw lines to suggest the labyrinth *)
     set_color laby_structure;
@@ -136,10 +138,10 @@ struct
 
   let get_current_path () = !current_path
 
-  let draw_current_path() =
+  let draw_path dir_path =
     let pos = robot_pos() in
     let path (l,p) d = let p' = Coord.move p d in (p' :: l, p') in
-    let squares, _ = List.fold_left path ([pos], pos) !current_path in
+    let squares, _ = List.fold_left path ([pos], pos) dir_path in
     let mid_square = wall_thickness + square_length / 2 in
     let xy = List.map (fun (x,y) ->
                          (x0 + x * dx + mid_square, y0 + y * dy + mid_square)
@@ -170,7 +172,8 @@ struct
       draw_square p;
       if wall_on old_pos d = `False then draw_wall old_pos d false in
     List.iter redraw (Coord.nbh old_pos);
-    draw_current_path();
+    (* The first move of the path has just been made, do not draw it *)
+    if !current_path <> [] then draw_path (List.tl !current_path);
     draw_robot();
   ;;
 

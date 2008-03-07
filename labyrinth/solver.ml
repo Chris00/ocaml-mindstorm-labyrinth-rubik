@@ -266,11 +266,12 @@ struct
     go_straight_before_do 180 (fun _ -> turn 360 25
       (fun _  -> go_straight_before_do 100 (fun _ -> go_next_square k)))
 
+
   let rec follow_path k path =
     Labyrinth.set_current_path path;
     match path with
     | [] -> k()
-    | d :: tl -> match (Labyrinth.rel_dir d) with
+    | d :: tl -> match Labyrinth.rel_dir d with
       | `Left -> go_left (fun _ -> follow_path k tl)
       | `Right -> go_right (fun _ -> follow_path k tl)
       | `Front -> go_straight (fun _ -> follow_path k tl)
