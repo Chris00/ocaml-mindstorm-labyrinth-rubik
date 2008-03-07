@@ -33,6 +33,9 @@ test_ppm.exe: LIBS_CMA+=graphics.cma
 calibration.exe : rubik.cmo ppm.cmo snapshot.cmo init_color.cmo
 calibration.exe : LIBS_CMA+=graphics.cma
 
+init_color.exe : rubik.cmo display.cmo ppm.cmo snapshot.cmo
+init_color.exe : LIBS_CMA+=graphics.cma
+
 test_movement.exe: movement.cmo
 
 test_translator.exe : movement.cmo translator.cmo

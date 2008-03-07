@@ -8,29 +8,6 @@ open Snapshot
 
 type colorf = Red | Green | Yellow | White | Orange | Blue
 
-module Face =
-struct
-  type t = colorf array array
-
-  let coord id = id mod 3, 2 - id / 3
-
-  let id (x,y) = x + y * 3
-
-  let rotate (x,y) rot = match (rot mod 4) with
-    |0 -> x, y
-    |1 -> y, 2-x
-    |2 -> 2-x, 2-y
-    |_ -> 2-y, x
-
-  (* array of all representing the upper face *)
-  let u = Array.make_matrix 3 3 Red
-  let r = Array.make_matrix 3 3 Red
-  let f = Array.make_matrix 3 3 Red
-  let l = Array.make_matrix 3 3 Red
-  let d = Array.make_matrix 3 3 Red
-  let b = Array.make_matrix 3 3 Red
-end
-
 module Color =
 struct
   let rgb_components (c:Graphics.color) =
@@ -52,36 +29,40 @@ struct
   let max3 a b c =
     max a (max b c)
 
-
   (* according to wikipedia [http://en.wikipedia.org/wiki/HSL_color_space]
      we can find the hue from the rbg in this way *)
   let hue r g b =
     if r = g && g = b then 0
     else if r >= g && r >= b (* red is the maximun *)
-    then (360 + 60 * (g - b) / (r - (min g b))) mod 360
+    then int_of_float (360. +. 60. *. float (g - b) /. float (r - (min g b)))
+      mod 360
     else if g >= r && g >= b (* green is the maximum *)
-    then 120 + 60 * (b - r) / (g - (min b r))
-    else 240 + 60 * (r - g) / (b - (min r g)) (* blue is the maximum *)
+    then int_of_float(120. +. 60. *. float (b - r) /. float(g - (min b r)))
+      (* blue is the maximum *)
+    else int_of_float(240. +. 60. *. float (r - g) /. float (b - (min r g)))
 
   let lightness r g b =
-    (max3 r g b - min3 r g b) / 2
+    int_of_float (float ((max3 r g b + min3 r g b) / 2) /. 2.55)
 
   let saturation r g b =
     let l = lightness r g b in
-    if l <= 127 then max3 r g b - min3 r g b / 2 / l * 127
-    else max3 r g b - min3 r g b / 2 / (1 - l) * 127
+    if l <= 127 then int_of_float(
+      float (max3 r g b - min3 r g b) /. 2. /. (float l /. 100.)
+    )
+    else int_of_float(
+      float (max3 r g b - min3 r g b) /. 2. /.(1. -. (float l /. 100.))
+    )
 
   let name rgb =
     let (r,g,b) = rgb in
-    if lightness r g b > 200 || saturation r g b < 50 then White
+    if lightness r g b > 80 || saturation r g b < 20 then White
     else
       let h = hue r g b in
-      if h <= 15 || h > 300 then Red
-      else if h > 15 && h <= 45 then Orange
+      if h <= 26 || h > 300 then Red
+      else if h > 26 && h <= 45 then Orange
       else if h > 45 && h <= 75 then Yellow
       else if h > 75 && h < 180 then Green
       else Blue
-
 
   let to_string = function
     |Red -> "R"
@@ -91,27 +72,60 @@ struct
     |Orange -> "O"
     |Blue -> "B"
 
+end
+
+module Face =
+struct
+  type t = colorf array array
+
+  let coord id = id mod 3, 2 - id / 3
+
+  let id (x,y) = x + y * 3
+
+  let rotate (x,y) rot = match (rot mod 4) with
+    |0 -> x, y
+    |1 -> y, 2-x
+    |2 -> 2-x, 2-y
+    |_ -> 2-y, x
+
+  (* array of all representing the upper face *)
+  let u = Array.make_matrix 3 3 Red
+  let r = Array.make_matrix 3 3 Red
+  let f = Array.make_matrix 3 3 Red
+  let l = Array.make_matrix 3 3 Red
+  let d = Array.make_matrix 3 3 Red
+  let b = Array.make_matrix 3 3 Red
+
   let color_of face = match face with
-    |U -> Face.u.(1).(1)
-    |R -> Face.r.(1).(1)
-    |F -> Face.f.(1).(1)
-    |L -> Face.l.(1).(1)
-    |D -> Face.d.(1).(1)
-    |B -> Face.b.(1).(1)
+    |U -> u.(1).(1)
+    |R -> r.(1).(1)
+    |F -> f.(1).(1)
+    |L -> l.(1).(1)
+    |D -> d.(1).(1)
+    |B -> b.(1).(1)
 
   (* returns the color of the element [id] of the face [face] *)
   let color_fid (face,id) =
     let f = (match face with
-             |U -> Face.u
-             |R -> Face.r
-             |F -> Face.f
-             |L -> Face.l
-             |D -> Face.d
-             |B -> Face.b) in
-    let (x,y) = Face.coord id in
+             |U -> u
+             |R -> r
+             |F -> f
+             |L -> l
+             |D -> d
+             |B -> b) in
+    let (x,y) = coord id in
     f.(x).(y)
-end
 
+  let to_string face =
+    let rec ry y return =
+      let rec rx x ret = match x with
+        |3 -> ret
+        |_ -> rx (x+1) (ret ^ (" " ^ Color.to_string f.(x).(y)) ^ " -") in
+      match y with
+      |3 -> return ^ "\n-------------\n-"
+      |_ ->  ry (y+1) (rx 0 (return ^ "\n-------------\n-")) in
+    ry 0 ""
+end
 
 module Pick =
 struct
@@ -159,8 +173,8 @@ struct
            |B -> Face.b) in
     let fill_matrix_square x y =
       let (i,j) = Face.rotate (x,y) orient in
-      f.(i).(j) <- Color.name
-        (average (pick_point snapshot (abs x) (ord y)));
+      f.(x).(y) <- Color.name
+        (average (pick_point snapshot (abs i) (ord j)));
     in
     Array.iter (fun x ->
                   Array.iter (fun y -> fill_matrix_square x y) [|0;1;2|]
@@ -268,22 +282,22 @@ let order list_to_find place_list  =
 let corner_list_replacement _ =
   let color_place = List.map (fun corner ->
                                 Array.map (fun face ->
-                                             Color.color_of face)
+                                             Face.color_of face)
                                   (corner_set corner), corner) corner_list in
   let color_corner = List.map (fun corner ->
                                  Array.map (fun face_id ->
-                                              Color.color_fid face_id)
+                                              Face.color_fid face_id)
                                    (corner_def corner)) corner_list in
   order color_corner color_place
 
 let edge_list_replacement _ =
   let color_place = List.map (fun edge ->
                                 Array.map (fun face ->
-                                             Color.color_of face)
+                                             Face.color_of face)
                                   (edge_set edge), edge) edge_list in
   let color_corner = List.map (fun edge ->
                                  Array.map (fun face_id ->
-                                              Color.color_fid face_id)
+                                              Face.color_fid face_id)
                                    (edge_def edge)) edge_list in
   order color_corner color_place
 
@@ -296,3 +310,6 @@ let create_rubik _ =
   let elo = List.map (fun (a,i) -> (a, (i = 1))) edge_list_ordered in
   let cubie = Cubie.make corner_list_ordered elo in
   cubie
+
+let () =
+  printf "%s" (Face.to_string U)

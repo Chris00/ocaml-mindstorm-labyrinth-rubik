@@ -6,6 +6,20 @@ open Graphics
 type colorf = Red | Green | Yellow | White | Orange | Blue
 (** Color of faces *)
 
+module Color :
+(** Random funcion about the color face *)
+sig
+  val rgb_components : Graphics.color -> int * int * int
+    (** Return the rgb components of a [Graphics.color] *)
+
+  val name : int * int * int -> colorf
+    (** Return form the rgb components [rgb], the name of the color *)
+
+  val to_string : colorf -> string
+    (** Returns the first letter of the color (ie for blue the function 
+        returns [B] *)
+end
+
 module Face :
   (** Abstact a face of a rubik.
     Each facelets of a face is numbered in this way :
@@ -28,27 +42,15 @@ sig
   val id : int * int -> int
     (** Return the number of the facelets from an absissa and a coordinate *)
 
-end
-
-module Color :
-(** Random funcion about the color face *)
-sig
-  val rgb_components : Graphics.color -> int * int * int
-    (** Return the rgb components of a [Graphics.color] *)
-
-  val name : int * int * int -> colorf
-    (** Return form the rgb components [rgb], the name of the color *)
-
-  val to_string : colorf -> string
-    (** Returns the first letter of the color (ie for blue the function 
-        returns [B] *)
-
   val color_of : generator -> colorf
     (** Return the color of a face *)
 
   val color_fid : generator * int ->   colorf
     (** Return the color of [(face,id)] wehre [face] is a face of the rubik
         and [id] the identification number of the square.*)
+
+  val to_string : generator -> string
+    (** Print in the shell the color of each square of the face.*)
 end
 
 module Pick :
