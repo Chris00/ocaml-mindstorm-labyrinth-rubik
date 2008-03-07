@@ -193,6 +193,10 @@ struct
 
   let draw_final color text =
     redraw_nbh(robot_pos());
+    (* There should be no path but, if we modified the labyrinth while
+       the robot was discovering it, one would still like to see that
+       path that we were trying to follow. *)
+    draw_path !current_path;
     draw_robot ~color ();
     try_set_font text_fonts; (* ignore nonexistent font *)
     set_color black;
