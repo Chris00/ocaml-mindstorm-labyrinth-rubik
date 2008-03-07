@@ -28,8 +28,7 @@ type webcam
   (** Represent a connected webcam. *)
 
 val start : unit -> webcam
-  (** Start the webcam connected to /dev/video and returns a handle to
-      it. *)
+  (** Start the webcam and returns a handle to it.   You should make *)
 
 val stop : webcam -> unit
   (** Stops the webcam. *)

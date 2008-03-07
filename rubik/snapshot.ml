@@ -27,26 +27,33 @@
 (* vlc -h *)
 (* vlc --help --advanced *)
 let vlc_remote =
-  "vlc --extraintf rc v4l:// \
+  "vlc --intf=rc v4l:// \
 	--snapshot-path /tmp/ --snapshot-prefix ocaml --snapshot-format png"
 
 (* This approach saves snapshots in a file that we can read in
    (execute "vlc -p image" for more info).  The "-I rc" starts the
    remote-control interface, so no display is shown and we have an
    easy way to quit.  *)
-let vlc_remote =
 IFDEF WIN32 THEN
-  "vlc -I rc dshow:// -V image --image-out-replace --image-out-format png \
-	--image-out-prefix "
+let vlc_remote = "c:/\"Program files\"/VLC/vlc -I rc dshow:// --vout=image \
+	--image-out-replace --image-out-format=png --image-out-prefix="
+let vlc = "c:/\"Program files\"/VLC/vlc"
+let vlc_args fname =
+  [| "--intf=rc"; "dshow://"; "--vout=image"; "--image-out-replace";
+     "--image-out-format=png"; "--image-out-prefix=" ^ fname |]
 ELSE
 IFDEF MACOS THEN
   (* FIXME: url ? *)
-  "vlc -I rc ???:// -V image --image-out-replace --image-out-format png \
-	--image-out-prefix "
+let vlc_remote = "vlc -I rc ???:// -V image --image-out-replace \
+	--image-out-format png --image-out-prefix "
 ELSE
   (* Unix *)
-  "vlc -I rc v4l:// -V image --image-out-replace --image-out-format png \
-	--image-out-prefix "
+let vlc_remote = "vlc --intf=rc v4l:// --vout=image --image-out-replace \
+	--image-out-format=png --image-out-prefix="
+let vlc = "/usr/bin/vlc"
+let vlc_args fname =
+  [| "--intf=rc"; "v4l://"; "--vout=image"; "--image-out-replace";
+     "--image-out-format=png"; "--image-out-prefix=" ^ fname |]
 ENDIF
 ENDIF
 
@@ -73,27 +80,58 @@ let convert fname1 fname2 =
 type color = int
 
 type webcam = {
-  in_chan : in_channel;
-  out_chan : out_channel;
+  pid : int;
   png : string
 }
 
 let start () =
-  let fname = Filename.temp_file "rubik" ".png" in
-  let (in_chan, out_chan) = Unix.open_process (vlc_remote ^ fname) in
-  Unix.sleep 2;
-  { in_chan = in_chan;  out_chan = out_chan;  png = fname }
+  let fname = Filename.temp_file "rubik" "" in
+  (* FIXME: If one connects a pipe to input commands to vlc, vlc does
+     not work as expected.  With [Unix.open_process_in],
+     [Unix.close_process_in] does not terminate the process.  So we
+     use the pid and [kill]. *)
+(*   let pid = *)
+(*     Unix.create_process vlc (vlc_args fname) *)
+(*       Unix.stdin Unix.stdout Unix.stderr in *)
+(*   { pid = pid;  png = fname ^ ".png" } *)
+  match Unix.fork() with
+  | 0 -> Unix.execv vlc (vlc_args fname)
+  | pid -> { pid = pid;  png = fname ^ ".png" }
+;;
 
 let stop w =
-  ignore(Unix.close_process (w.in_chan, w.out_chan))
+  Unix.kill w.pid Sys.sigkill
+;;
+
+
+let must_wait_longer = function
+  | None -> true
+  | Some st ->
+      st.Unix.st_size = 0
+      && (st.Unix.st_mtime -. st.Unix.st_atime <= 10.)
+
+let rec wait_for_file fname =
+  (* Wait (unfortunately busily) that w.png exists AND is > 0 bytes
+     AND is at least 5 seconds old (for automatic color
+     adjustments). *)
+  let st = try Some(Unix.stat fname) with _ -> None in
+  if must_wait_longer st then begin
+    prerr_endline "wait for webcam";
+    Unix.sleep 1;
+    wait_for_file fname
+  end
 
 
 let take w =
+  wait_for_file w.png;
   let png = Filename.temp_file "rubik_" ".png" in
   copy w.png png;
   let ppm = Filename.temp_file "rubik_" ".ppm" in
   convert png ppm;
-  Ppm.as_matrix_exn ppm
+  let img = Ppm.as_matrix_exn ppm in
+  Unix.unlink png;
+  Unix.unlink ppm;
+  img
 
 
 
