@@ -128,12 +128,26 @@ struct
   let next_square_to_explore ()  =
     let pos = Labyrinth.robot_pos() in
     match Labyrinth.nbh_unexplored pos with
-    | (dir,_) :: _ -> [dir]
+    | (_ :: _) as dirs ->
+          (* Prefer the `Front position if it exists, otherwise choose
+             randomly between left and right, and in the last case, go
+             back. *)
+          let l = List.map (fun (d,_) -> (Labyrinth.rel_dir d, d)) dirs in
+          [ try List.assoc `Front l
+            with Not_found ->
+              let right = Random.bool() in
+              try List.assoc (if right then `Right else `Left) l
+              with Not_found ->
+                try List.assoc (if right then `Left else `Right) l
+                with Not_found ->
+                  List.assoc `Back l
+          ]                             (* 1 elmt list *)
     | [] ->
         let is_x_roads (sq,_) = Labyrinth.status sq = `Cross_roads in
         match path_to_closer pos is_x_roads with
         | [] -> no_exit_exists()
         | p -> p
+
 
   (** Explore the labyrinth
    ***********************************************************************)
