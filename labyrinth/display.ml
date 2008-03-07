@@ -176,7 +176,6 @@ struct
 
   (* @override *)
   let move () =
-    let old_pos = robot_pos() in
     L.move();
     redraw_nbh (robot_pos());
     (* The first move of the path has just been made, do not draw it *)
