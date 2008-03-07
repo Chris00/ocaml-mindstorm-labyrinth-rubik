@@ -57,20 +57,6 @@ struct
     | [] -> ()
     | font :: tl -> (try set_font font with _ -> try_set_font tl)
 
-  let draw_square ((x,y) as xy) =
-    let px = x0 + x * dx + wall_thickness
-    and py = y0 + y * dy + wall_thickness in
-    set_color (match status xy with
-               | `Explored | `Cross_roads -> explored_color
-               | `Non_explored ->  background);
-    fill_rect px py square_length square_length;
-    if status xy = `Cross_roads then begin
-      (* Add a special mark on "crossroads" *)
-      set_color cross_road_color;
-      moveto px py;  rlineto square_length square_length;
-      moveto px (py + square_length);  rlineto square_length (- square_length)
-    end
-
   (** Draw the robot according to its state in [L]. *)
   let draw_robot () =
     let d = 3 in
@@ -90,6 +76,21 @@ struct
     fill_poly (Array.map (fun (x,y) -> (x + px, y + py)) poly)
   ;;
 
+  let draw_square ((x,y) as xy) =
+    draw_square (robot_pos());
+    let px = x0 + x * dx + wall_thickness
+    and py = y0 + y * dy + wall_thickness in
+    set_color (match status xy with
+               | `Explored | `Cross_roads -> explored_color
+               | `Non_explored ->  background);
+    fill_rect px py square_length square_length;
+    if status xy = `Cross_roads then begin
+      (* Add a special mark on "crossroads" *)
+      set_color cross_road_color;
+      moveto px py;  rlineto square_length square_length;
+      moveto px (py + square_length);  rlineto square_length (- square_length)
+    end
+
   let () =
     (* Initialize the graphic window *)
     open_graph(sprintf " %ix%i" size_x size_y);
@@ -104,7 +105,6 @@ struct
     done;
     (* Draw initial robot *)
     set_line_width 1;
-    draw_square (robot_pos());
     draw_robot()
 
   let draw_wall (rx,ry) (d: dir) b =
