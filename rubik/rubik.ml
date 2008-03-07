@@ -464,11 +464,10 @@ let initialize_file_prun file initialize_prun mul =
         prun_table
       end
 ;;
-(* ASSUME [file], [id] and [length] are defined in the substitution
-   environment. *)
-DEFINE PRUN(mul) =
+
+let initialize_prun file length id mul =
   let prun_table =
-    initialize_prun file (initialize_prun_table length id) mul in
+    initialize_file_prun file (initialize_prun_table length id) mul in
   (fun o -> prun_table.{o})              (* pruning function *)
 
 
@@ -503,7 +502,7 @@ struct
 
   let initialize_mul ?file () = MUL(int16_unsigned)
 
-  let initialize_pruning ?file mul = PRUN(mul)
+  let initialize_pruning ?file mul = initialize_prun file length id mul
 
 end
 
@@ -539,7 +538,7 @@ struct
 
   let initialize_mul ?file () = MUL(int16_unsigned)
 
-  let initialize_pruning ?file mul = PRUN(mul)
+  let initialize_pruning ?file mul = initialize_prun file length id mul
 end
 
 
@@ -592,7 +591,7 @@ struct
 
   let initialize_mul ?file () = MUL(int16_unsigned)
 
-  let initialize_pruning ?file mul = PRUN(mul)
+  let initialize_pruning ?file mul = initialize_prun file length id mul
 end
 
 
@@ -616,7 +615,7 @@ struct
 
   let initialize_mul ?file () = MUL(int)
 
-  let initialize_pruning ?file mul = PRUN(mul)
+  let initialize_pruning ?file mul = initialize_prun file length id mul
 end
 
 
@@ -682,7 +681,7 @@ struct
 
   let initialize_mul ?file () = INITIALIZE_FILE_MUL(initialize_mul)
 
-  let initialize_pruning ?file mul = PRUN(mul)
+  let initialize_pruning ?file mul = initialize_prun file length id mul
 end
 
 
@@ -814,7 +813,7 @@ struct
 
   let initialize_mul ?file () = MUL(int16_unsigned)
 
-  let initialize_pruning ?file mul = PRUN(mul)
+  let initialize_pruning ?file mul = initialize_prun file length id mul
 end
 
 (* Permutation of the 4 edge cubies; only valid in phase 2 *)
@@ -843,7 +842,7 @@ struct
 
   let initialize_mul ?file () = MUL(int16_unsigned)
 
-  let initialize_pruning ?file mul = PRUN(mul)
+  let initialize_pruning ?file mul = initialize_prun file length id mul
 end
 
 
