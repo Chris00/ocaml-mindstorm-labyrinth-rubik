@@ -33,14 +33,12 @@ struct
   module PQ = Priority_queue
 
   let mul = P.initialize_mul()
-  let prun = P.initialize_pruning mul
+  let pruning = P.initialize_pruning mul
 
   (** [search_seq_to_goal p in_goal] returns a list of moves that lead
       to the a permutation [q] (such that [in_goal q] is true) from
       the permutation [p]. *)
   let search_seq_to_goal first max_moves =
-    (* No sequence of moves found, so exit with error *)
-    let no_seq() = exit 2 in
     (* [get_children p] returns the "children" of the permutation [p] (ie all
        the permutations we can reach by applying a single move to [p]) with
        the associated move. *)
@@ -49,16 +47,16 @@ struct
        state. (A* algorithm) *)
     let rec aStar opened =
       (* [opened] is the set of all pending candidates. *)
-      if PQ.is_empty opened (* No more candidates. *) then no_seq()
+      if PQ.is_empty opened (* No more candidates. *) then []
       else
         let (p,seq,pcost) = PQ.take opened in
-        if P.in_goal p (* Get into the goal state! *) then List.rev seq
+        if P.in_goal p (* Get into the goal state! *) then [List.rev seq]
         else begin
           let children = get_children p in
           (* We update the set [opened] with the children of [p]. *)
           let opened =
             List.fold_left begin fun opened (child,m) ->
-              let fchild = pcost+1 + prun child in
+              let fchild = pcost+1 + pruning child in
               if fchild <= max_moves then (* The path is not too long. *)
                 let c = (child, m::seq, pcost+1) in
                 PQ.add fchild c opened;
@@ -72,7 +70,7 @@ struct
     in
     let start = (first,[],0) in
     let opened = PQ.make (max_moves+1) in
-    PQ.add (prun first) start opened;
+    PQ.add (pruning first) start opened;
     aStar opened
 end
 

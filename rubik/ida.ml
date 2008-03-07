@@ -32,23 +32,32 @@ struct
   (* Return a list of possible paths (added to the already existing
      solutions [sols]). *)
   let rec add_solution sols cost_max  perm last_move path depth =
-    if C.in_goal perm then path :: sols else begin
+    if C.in_goal perm then List.rev path :: sols (* sol found *)
+    else begin
       let depth = depth + 1 in
       List.fold_left begin fun sols m ->
-        if C.Move.have_same_gen m last_move then sols (* skip the move *)
+        if C.Move.have_same_gen m last_move then sols (* skip move *)
         else
           let perm = mul perm m in
           let cost = depth + pruning perm in
           if cost > cost_max then sols
-          else add_solution sols cost_max  perm last_move path depth
+          else add_solution sols cost_max  perm m (m :: path) depth
       end sols C.Move.all
     end
 
+  let rec search_cost init cost cost_max =
+    let sols =
+      List.fold_left begin fun sols m ->
+        add_solution sols cost (mul init m) m [m] 1
+      end [] C.Move.all in
+    Printf.eprintf "cost=%i #sols=%i\n%!" cost (List.length sols);
+    if sols = [] && cost < cost_max then
+      search_cost init (cost + 1) cost_max
+    else sols
+
   let search_seq_to_goal init cost_max =
-    if C.in_goal init then [[]]           (* [] : no move needed *)
-    else List.fold_left begin fun sols m ->
-      add_solution sols cost_max (mul init m) m [m] 1
-    end [] C.Move.all
+    if C.in_goal init then [[]]
+    else search_cost init 1 cost_max
 end
 
 

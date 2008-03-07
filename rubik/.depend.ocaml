@@ -16,8 +16,8 @@ priority_queue.cmo: priority_queue.cmi
 priority_queue.cmx: priority_queue.cmi 
 rubik.cmo: rubik.cmi 
 rubik.cmx: rubik.cmi 
-run.cmo: rubik.cmi display.cmi a_star.cmo 
-run.cmx: rubik.cmx display.cmx a_star.cmx 
+run.cmo: rubik.cmi ida.cmo display.cmi 
+run.cmx: rubik.cmx ida.cmx display.cmx 
 snapshot.cmo: ppm.cmi snapshot.cmi 
 snapshot.cmx: ppm.cmx snapshot.cmi 
 test_movement.cmo: movement.cmi 

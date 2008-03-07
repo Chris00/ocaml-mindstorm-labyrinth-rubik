@@ -100,7 +100,8 @@ let start () =
 ;;
 
 let stop w =
-  Unix.kill w.pid Sys.sigkill
+  Unix.kill w.pid Sys.sigkill;
+  Unix.unlink w.png
 ;;
 
 
@@ -112,8 +113,7 @@ let must_wait_longer = function
 
 let rec wait_for_file fname =
   (* Wait (unfortunately busily) that w.png exists AND is > 0 bytes
-     AND is at least 5 seconds old (for automatic color
-     adjustments). *)
+     AND is a few seconds old (for automatic color adjustments). *)
   let st = try Some(Unix.stat fname) with _ -> None in
   if must_wait_longer st then begin
     prerr_endline "wait for webcam";
