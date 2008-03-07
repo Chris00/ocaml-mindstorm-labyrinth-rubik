@@ -62,8 +62,8 @@ sig
   type cont = unit -> unit
     (** Continuations taken by the fonctions. *)
 
-  val look_wall_back : cont -> unit
-    (** [look_wall_back k] makes the robot look behind it,
+  val look_back : cont -> unit
+    (** [look_back k] makes the robot look behind it,
         and then continues with [k]. *)
 
   val look_walls : cont  -> unit

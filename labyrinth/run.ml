@@ -35,7 +35,7 @@ let () =
   and look () =
     Solver.look_walls solve
   in
-  Solver.look_wall_back look;
+  Solver.look_back look;
   Solver.run_loop();
   Sys.set_signal Sys.sigint (Sys.Signal_handle (fun _ -> Solver.stop()));
   printf "Press Ctrl-c to quit.\n%!"
