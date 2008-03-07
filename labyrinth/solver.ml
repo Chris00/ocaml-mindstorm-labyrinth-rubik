@@ -153,8 +153,8 @@ struct
    ***********************************************************************)
 
   let is_crossing a = a < 25
-  let is_path a = a <= 45 && a >= 25
-  let is_floor a = a > 45
+  let is_path a = a <= 35 && a >= 25
+  let is_floor a = a > 35
 
   (** The distance between the robot and a wall is less than wall_dist. *)
   let wall_dist = 30
@@ -246,8 +246,12 @@ struct
       crossing or a path. *)
   let go_back_before_do k =
     Robot.event_is idle (fun _ -> k());
-    speed motor_left ~tach_limit:180 (-25);
-    speed motor_right ~tach_limit:180 (-25)
+    speed motor_left ~tach_limit:100 (-25);
+    speed motor_right ~tach_limit:100 (-25)
+
+  let go_straight_and_check k =
+    Robot.event_is touch found_exit;
+    go_straight_before_do 100 k
 
   (** Restarts the exploration of the labyrinth.
       (the exploration begins with a search of a new path, not with
@@ -259,27 +263,30 @@ struct
       Printf.printf "[%s]\n%!" (String.concat "," l);*)
       follow_path (fun _ -> look_walls restart_solve) (next_square_to_explore())
 
+  and go_next_square k =
+    Robot.event_is touch found_exit;
+    Robot.event color is_crossing (fun _ -> k());
+    let sp = if Random.bool() then 20 else -20 in
+    Robot.event color is_floor (fun _ -> rectif k 20 sp);
+    speed motor_left 30;
+    speed motor_right 30
+
   (** The robot goes to the next square, i.e. the next crossing.
       But if it sees a wall, it restarts the exploration of the labyrinth. *)
-  and go_next_square k =
+  and wall_or_go_next_square k =
     if is_wall() then (
       Labyrinth.set_wall `Front true;
-      restart_solve())
-    else begin
-      let go k  =
-        Labyrinth.move();
-        Robot.event_is touch found_exit;
-        Robot.event color is_crossing (fun _ -> k());
-        let sp = if Random.bool() then 20 else -20 in
-        Robot.event color is_floor (fun _ -> rectif k 20 sp);
-        speed motor_left 30;
-        speed motor_right 30 in
-      go_straight_before_do 100 (fun _ -> go (fun _ -> k()))
-    end
+      Mindstorm.Sound.play C.conn "Woops.rso";
+      go_back_before_do (fun _ -> restart_solve())
+    )
+    else (
+      Labyrinth.move();
+      go_straight_before_do 80 (fun _ -> go_next_square (fun _ -> k()))
+    )
 
   (** The robot rectifies its trajectory to go back to the path. *)
   and rectif k tl sp =
-    Robot.event_is touch found_exit;
+    (* Robot.event_is touch found_exit;*)
     Robot.event color is_path (fun _ -> go_next_square k);
     Robot.event color is_crossing (fun _ -> k());
     Robot.event_is idle (fun _ -> rectif k (tl*2) (-sp));
@@ -302,12 +309,12 @@ struct
     | `Right -> Labyrinth.turn `Right;
         turn_degree 180 (-25) k
     | `Front -> Labyrinth.turn `Front;
-        k()
+        go_straight_and_check k
     | `Back -> Labyrinth.turn `Back;
         turn_degree 360 25 k
 
   and go dir k =
-      turn dir (fun _ -> go_next_square (fun _ -> k()))
+      turn dir (fun _ -> wall_or_go_next_square (fun _ -> k()))
 
   and follow_path k path =
     Labyrinth.set_current_path path;
