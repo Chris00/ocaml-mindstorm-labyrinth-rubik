@@ -142,6 +142,9 @@ struct
   let is_path a = a <= 45 && a >= 25
   let is_floor a = a > 45
 
+  (** The distance between the robot and a wall is less than wall_dist. *)
+  let wall_dist = 30
+
   let r = Robot.make()
 
   let run_loop _ = Robot.run r
@@ -176,9 +179,6 @@ struct
   let see_ultra angle set_wall k =
     Robot.event_is idle_ultra (fun _ -> reset_ultra (-angle) set_wall k);
     speed motor_ultra ~tach_limit:(abs angle) (if angle >= 0 then 25 else -25)
-
-  (** The distance between the robot and a wall is less than wall_dist. *)
-  let wall_dist = 30
 
   (** [is_wall()] returns true if there is a wall in front of the robot. *)
   let is_wall () =
