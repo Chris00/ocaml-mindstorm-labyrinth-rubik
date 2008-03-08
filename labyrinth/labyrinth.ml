@@ -78,7 +78,7 @@ end
 (* For the current realisation, it is enough but in general a more
    extensible datastructure is needed.  We have chosen this for
    simplicity. *)
-let taille_lab = 8
+let taille_lab = 10
 let i0 = taille_lab
 let j0 = taille_lab
 
