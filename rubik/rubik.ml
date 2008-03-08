@@ -834,7 +834,7 @@ struct
   let compare p q = compare (p:int) q
 
   let fr = Cubie.int_of_edge Cubie.FR
-  let first = 0
+  let first = 8                         (* only last 4 *)
   let nedges = 4
 
   (* Contrarily to http://kociemba.org/math/twophase.htm#phase2udslice
