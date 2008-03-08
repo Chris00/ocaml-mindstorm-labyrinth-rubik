@@ -153,7 +153,10 @@ struct
    ***********************************************************************)
 
   (* Use the battery level to choose the more appropriate values. *)
-  let battery = Mindstorm.battery_level conn
+  let battery =
+    let b = Mindstorm.battery_level conn in
+    eprintf "Battery level: %i millivolts\n%!" b;
+    b
 
   (** A wall is said to exists if the distance measured by the
       ultrasonic sencor is less than or equal to [wall_dist]. *)
