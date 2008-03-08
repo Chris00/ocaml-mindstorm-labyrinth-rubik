@@ -187,9 +187,9 @@ struct
 
   let make ~corner ~edge =
     if List.length corner <> ncorners then
-      invalid_arg "Rubik.Cubie.make: 8 corners!";
+      invalid_arg "Rubik.Cubie.make: 8 corners needed";
     if List.length edge <> nedges then
-      invalid_arg "Rubik.Cubie.make: 12 edges!";
+      invalid_arg "Rubik.Cubie.make: 12 edges needed";
     (* Check injectivity & orientations values *)
     let corner_seen = Array.make ncorners false in
     List.iter (fun (c,o) ->
@@ -336,12 +336,12 @@ end
    ----------------------------------------------------------------------
 
    We want the access to multiplications tables to be monomorphic in
-   order for the compiler to generrate efficient code.  We first
-   wanted to functorize it but, apart from the possible performance
-   penalty (this part of the code is critical), it is a bit heavy to
-   parametrize by the Bigarray.kind -- no existential types => have to
-   abstract (int, kind, c_layout) Array.2 and redefine the needed
-   needed array operations on the new type...
+   order for the compiler to generate efficient specialized code.  We
+   first wanted to functorize it but, apart from the possible
+   performance penalty (this part of the code is critical), it is a
+   bit heavy to parametrize by the Bigarray.kind -- no existential
+   types => have to abstract (int, kind, c_layout) Array.2 and
+   redefine the needed needed array operations on the new type...
 
    Since eventually, only the initialize function is shared, a macro
    was deemed simpler.  For INITIALIZE_MUL, we assume that the following
@@ -369,38 +369,35 @@ DEFINE INITIALIZE_MUL(kind) =
 ;;
 
 (* This must be a macro so that the type of the tables is monomorphic and
-   the compiler generates efficient access to them. Assume that
-   - id
-   - length
-   are defined in the context the macro.*)
+   the compiler generates efficient access to them. *)
 DEFINE INITIALIZE_FILE_MUL(initialize_mul) =
-  let mul = match file with
-    | None ->
-        let mul_table = initialize_mul() in
+  match file with
+  | None ->
+      let mul_table = Lazy.force(initialize_mul) in
+      let mul o m = mul_table.{o,m} in
+      mul                             (* [mul] function hiding the table *)
+  | Some fname ->
+      if Sys.file_exists fname then begin
+        let fh = open_in_bin fname in
+        let mul_table : (int, _, c_layout) Array2.t = input_value fh in
+        (* may segfault if the file does not contain the right values! *)
+        close_in fh;
+        fun o m -> mul_table.{o,m}
+      end
+      else begin
+        (* Compute and save the table *)
+        let mul_table = Lazy.force(initialize_mul) in
         let mul o m = mul_table.{o,m} in
+        let fh = open_out_bin fname in
+        output_value fh mul_table;
+        close_out fh;
         mul
-    | Some fname ->
-        if Sys.file_exists fname then begin
-          let fh = open_in_bin fname in
-          let mul_table : (int, _, c_layout) Array2.t = input_value fh in
-          (* may segfault if the file does not contain the right values! *)
-          close_in fh;
-          fun o m -> mul_table.{o,m}
         end
-        else begin
-          (* Compute and save the table *)
-          let mul_table = initialize_mul() in
-          let mul o m = mul_table.{o,m} in
-          let fh = open_out_bin fname in
-          output_value fh mul_table;
-          close_out fh;
-          mul
-        end in
-  mul          (* [mul] function hiding the table *)
 ;;
+(* Allocate a single array even if initialize_mul is called several times *)
 DEFINE MUL(kind) =
-  let initialize_mul () = INITIALIZE_MUL(kind) in
-  INITIALIZE_FILE_MUL(initialize_mul)
+  let mul_table = lazy(INITIALIZE_MUL(kind)) in
+  fun ?file () -> INITIALIZE_FILE_MUL(mul_table)
 ;;
 
 
@@ -500,7 +497,7 @@ struct
 
   let id = of_cube Cubie.id
 
-  let initialize_mul ?file () = MUL(int16_unsigned)
+  let initialize_mul = MUL(int16_unsigned)
 
   let initialize_pruning ?file mul = initialize_prun file length id mul
 
@@ -536,7 +533,7 @@ struct
 
   let id = of_cube Cubie.id
 
-  let initialize_mul ?file () = MUL(int16_unsigned)
+  let initialize_mul = MUL(int16_unsigned)
 
   let initialize_pruning ?file mul = initialize_prun file length id mul
 end
@@ -589,7 +586,7 @@ struct
 
   let id = of_cube Cubie.id
 
-  let initialize_mul ?file () = MUL(int16_unsigned)
+  let initialize_mul = MUL(int16_unsigned)
 
   let initialize_pruning ?file mul = initialize_prun file length id mul
 end
@@ -613,7 +610,7 @@ struct
 
   let id = of_cube Cubie.id
 
-  let initialize_mul ?file () = MUL(int)
+  let initialize_mul = MUL(int)
 
   let initialize_pruning ?file mul = initialize_prun file length id mul
 end
@@ -679,7 +676,9 @@ struct
     done;
     mul_table
 
-  let initialize_mul ?file () = INITIALIZE_FILE_MUL(initialize_mul)
+  let initialize_mul =
+    let mul_table = Lazy.lazy_from_fun initialize_mul in
+    fun ?file () -> INITIALIZE_FILE_MUL(mul_table)
 
   let initialize_pruning ?file mul = initialize_prun file length id mul
 end
@@ -811,7 +810,7 @@ struct
 
   let id = of_cube Cubie.id
 
-  let initialize_mul ?file () = MUL(int16_unsigned)
+  let initialize_mul = MUL(int16_unsigned)
 
   let initialize_pruning ?file mul = initialize_prun file length id mul
 end
@@ -840,7 +839,7 @@ struct
 
   let id = of_cube Cubie.id
 
-  let initialize_mul ?file () = MUL(int16_unsigned)
+  let initialize_mul = MUL(int16_unsigned)
 
   let initialize_pruning ?file mul = initialize_prun file length id mul
 end
@@ -862,6 +861,8 @@ struct
         UDSlice2.compare u1 u2
 
   let of_cube c =
+    if not(Phase1.in_G1(Phase1.of_cube c)) then
+      invalid_arg "Rubik.Phase2.of_cube: cube must be in G1";
     (CornerP.of_cube c, EdgeP2.of_cube c, UDSlice2.of_cube c)
 
   let max_moves = 18
@@ -889,6 +890,7 @@ struct
   (* So as to easily change the coords chosen for [prun]: *)
   module C = CornerP
   let get_coord (c,e,u) = (c,u)
+
 
   let prun mul =
     let lC = C.length in
