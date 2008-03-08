@@ -33,7 +33,7 @@ struct
   module PQ = Priority_queue
 
   let mul = P.initialize_mul()
-  let pruning = P.initialize_pruning mul
+  let pruning = P.initialize_pruning()
 
   (** [search_seq_to_goal p in_goal] returns a list of moves that lead
       to the a permutation [q] (such that [in_goal q] is true) from

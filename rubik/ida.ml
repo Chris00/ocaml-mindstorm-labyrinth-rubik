@@ -27,7 +27,7 @@ module Make(C :
 struct
 
   let mul = C.initialize_mul()
-  let pruning = C.initialize_pruning mul
+  let pruning = C.initialize_pruning()
 
   (* Return a list of possible paths (added to the already existing
      solutions [sols]). *)
@@ -58,7 +58,30 @@ struct
   let search_seq_to_goal init cost_max =
     if C.in_goal init then [[]]
     else search_cost init 1 cost_max
+
+
+  let rec multiple_search_cost inits cost cost_max =
+    let sols =
+      List.fold_left begin fun sols init ->
+        let sols_init =
+          List.fold_left begin fun sols m ->
+            add_solution sols cost (mul init m) m [m] 1
+          end [] C.Move.all in
+        Printf.eprintf "cost=%i #sols=%i\n%!" cost (List.length sols);
+        List.fold_left (fun l s -> (init, s) :: l) sols sols_init
+      end [] inits in
+    if sols = [] && cost < cost_max then
+      multiple_search_cost inits (cost + 1) cost_max
+    else sols
+
+  (* Search from multiple starting points.  Return the starting point
+     and the path. *)
+  let multiple_search inits cost_max =
+    let sols = List.map (fun i -> (i,[])) (List.find_all C.in_goal inits) in
+    if sols = [] then multiple_search_cost inits 1 cost_max
+    else sols
 end
+
 
 
 
