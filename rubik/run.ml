@@ -60,6 +60,7 @@ open Graphics
 let x0 = 10
 and y0 = 20
 and len_sq = 30
+let cube_colors = (blue, magenta, yellow, red, white, green)
 
 let () =
   let img_width = x0 + 12 * len_sq + 180 in
@@ -70,9 +71,7 @@ let () =
   fill_rect 0 0 img_width img_high
 
 
-let print_cube cube =
-  let colors = (blue, magenta, yellow, red, white, green) in
-  Display.cube x0 y0 colors len_sq cube
+let display_cube cube = Display.cube x0 y0 cube_colors len_sq cube
 
 let mul_and_print move c m =
   let cube = Cubie.mul c (move  m) in
@@ -86,7 +85,7 @@ let () =
                                                               R,1; U,3; B,1; D,2; L,3; B,2*)] in
   let moves = List.map (fun m -> Cubie.move (Move.make m)) moves in
   let cube = List.fold_left Cubie.mul Cubie.id moves in
-  print_cube cube;
+  display_cube cube;
 
   (********* Phase 1 *********)
   let cubeP1 = Phase1.of_cube cube in
@@ -114,10 +113,12 @@ let () =
 
   List.iter begin fun (s1,s2) ->
     let goal = apply2 (apply1 s1) s2 in
-    printf "%s | %s => %s\n"
+    printf "%s | %s => %s\n%!"
       (string Phase1.Move.generator s1)
       (string Phase2.Move.generator s2)
-      (if Cubie.is_identity goal then "OK" else "KO")
+      (if Cubie.is_identity goal then "OK" else "KO");
+    display_cube goal;
+    ignore(wait_next_event [Button_down])
   end solutions;
 
 
@@ -125,6 +126,6 @@ let () =
   (*  List.iter M.make (List.map Phase1.Move.generator seq1);
       List.iter M.make (List.map Phase2.Move.generator seq2)*)
 
-  flush stdout;
-  ignore(wait_next_event [Button_down])
+(*   flush stdout; *)
+(*   ignore(wait_next_event [Button_down]) *)
 
