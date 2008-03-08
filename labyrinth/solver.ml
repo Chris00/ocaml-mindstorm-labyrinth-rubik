@@ -152,12 +152,16 @@ struct
   (** Explore the labyrinth
    ***********************************************************************)
 
+  (* Use the battery level to choose the more appropriate values. *)
+  let battery = Mindstorm.battery_level conn
+
+  (** A wall is said to exists if the distance measured by the
+      ultrasonic sencor is less than or equal to [wall_dist]. *)
+  let wall_dist = 30
+
   let is_crossing a = a < 25
   let is_path a = a <= 35 && a >= 25
   let is_floor a = a > 35
-
-  (** The distance between the robot and a wall is less than wall_dist. *)
-  let wall_dist = 30
 
   let r = Robot.make()
 
@@ -183,7 +187,7 @@ struct
   let speed motor ?tach_limit sp =
     Motor.set conn motor (Motor.speed ?tach_limit (-sp))
 
- (** The robot resets the position of its 'eyes'. *)
+  (** The robot resets the position of its 'eyes'. *)
   let reset_ultra angle set_wall k =
     set_wall();
     Robot.event_is idle_ultra (fun _  -> k());
