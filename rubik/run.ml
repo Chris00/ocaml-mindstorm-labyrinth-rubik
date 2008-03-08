@@ -27,10 +27,9 @@ module Solver2 = Search.Make(Phase2)
 let move1 = Cubie.move
 let move2 = Phase2.Move.move
 
-let print gen s =
+let string gen s =
   let string_of_move (g,i) = sprintf "%c%i" (char_of_generator g) i in
-  let s = String.concat " " (List.map (fun m -> string_of_move(gen m)) s) in
-  printf "Moves: %s\n%!" s
+  String.concat " " (List.map (fun m -> string_of_move(gen m)) s)
 
 (********* Modules for the physical part *********)
 module Motor = Mindstorm.Motor
@@ -83,8 +82,8 @@ let mul_and_print move c m =
 
 (********* Test *********)
 let () =
-  let moves = [F,3; R,2; U,1; B,3; D,1; L,2; R,3; U,2; F,2; B,1; (*L,3; F,1;
-               R,1; U,3; B,1; D,2; L,3; B,2*)] in
+  let moves = [F,3; R,2; U,1; B,3; D,1; L,2; R,3; U,2; R,3; (*B,1; F,3; F,1;
+                                                              R,1; U,3; B,1; D,2; L,3; B,2*)] in
   let moves = List.map (fun m -> Cubie.move (Move.make m)) moves in
   let cube = List.fold_left Cubie.mul Cubie.id moves in
   print_cube cube;
@@ -94,32 +93,38 @@ let () =
 
   printf "Sequence phase 1:\n%!";
   let seq1 = Solver1.search_seq_to_goal cubeP1 Phase1.max_moves in
-  List.iter (fun sol -> print Phase1.Move.generator sol) seq1;
-
-  let cubes2 =
-    List.map (fun sol -> List.fold_left (mul_and_print move1) cube sol) seq1 in
-  (* Take the cube with the minimal starting cost for phase 2 *)
-  let p2 c = Solver2.pruning(Phase2.of_cube c) in
-  let cube2 = List.hd(List.sort (fun c c' -> compare (p2 c) (p2 c')) cubes2) in
-  print_cube cube2;
-
-  Gc.major();
+  List.iter (fun sol -> printf "%s\n" (string Phase1.Move.generator sol)) seq1;
 
   (********* Phase 2 *********)
-  let cubeP2 = Phase2.of_cube cube2 in
+  let apply1 sol = List.fold_left (fun c m -> Cubie.mul c (move1 m)) cube sol in
+  let cubesP2 = List.map (fun s -> (Phase2.of_cube(apply1 s)), s) seq1 in
 
   printf "Sequence phase 2:\n%!";
-  let seq2 = Solver2.search_seq_to_goal cubeP2 Phase2.max_moves in
-  List.iter (fun sol -> print Phase2.Move.generator sol) seq2;
+  (* let seq2 = Solver2.search_seq_to_goal cubeP2 Phase2.max_moves in *)
+  let seq2 = Solver2.multiple_search (List.map fst cubesP2) Phase2.max_moves in
+  List.iter (fun (_,sol) ->
+               printf "%s\n" (string Phase2.Move.generator sol)
+            ) seq2;
 
-  let goal =
-    List.fold_left (mul_and_print move2) cube2 (List.hd seq2) in
+  let solutions =
+    List.map (fun (init, sol) -> (List.assoc init cubesP2, sol)) seq2 in
 
-  if Cubie.is_identity goal then printf "Wouhouuu!! \n%!";
+  let apply2 cube sol =
+    List.fold_left (fun c m -> Cubie.mul c (move2 m)) cube sol in
+
+  List.iter begin fun (s1,s2) ->
+    let goal = apply2 (apply1 s1) s2 in
+    printf "%s | %s => %s\n"
+      (string Phase1.Move.generator s1)
+      (string Phase2.Move.generator s2)
+      (if Cubie.is_identity goal then "OK" else "KO")
+  end solutions;
+
 
   (********* Physical part *********)
-(*  List.iter M.make (List.map Phase1.Move.generator seq1);
-  List.iter M.make (List.map Phase2.Move.generator seq2)*)
+  (*  List.iter M.make (List.map Phase1.Move.generator seq1);
+      List.iter M.make (List.map Phase2.Move.generator seq2)*)
 
+  flush stdout;
   ignore(wait_next_event [Button_down])
 

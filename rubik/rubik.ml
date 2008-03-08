@@ -898,7 +898,6 @@ struct
   module C = CornerP
   let get_coord (c,e,u) = (c,u)
 
-
   let prun mul =
     let lC = C.length in
     let lU = UDSlice2.length in
