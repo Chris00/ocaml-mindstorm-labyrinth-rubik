@@ -26,23 +26,24 @@ module Make(C :
   end) =
 struct
 
-  let dir = Filename.concat Filename.temp_dir_name "rubik-ocaml"
-  let mul = C.initialize_mul ~dir ()
-  let pruning = C.initialize_pruning ~dir ()
+  let dir = Some(Filename.concat Filename.temp_dir_name "rubik-ocaml")
+  (* let dir = None *)
+  let mul = C.initialize_mul ?dir ()
+  let pruning = C.initialize_pruning ?dir ()
 
   (* Return a list of possible paths (added to the already existing
      solutions [sols]). *)
-  let rec add_solution sols cost_max  perm last_move path depth =
+  let rec add_solution sols cost_max  perm last_move path cost_path =
     if C.in_goal perm then List.rev path :: sols (* sol found *)
     else begin
-      let depth = depth + 1 in
+      let cost_path = cost_path + 1 in
       List.fold_left begin fun sols m ->
         if C.Move.have_same_gen m last_move then sols (* skip move *)
         else
           let perm = mul perm m in
-          let cost = depth + pruning perm in
+          let cost = cost_path + pruning perm in
           if cost > cost_max then sols  (* prune *)
-          else add_solution sols cost_max  perm m (m :: path) depth
+          else add_solution sols cost_max  perm m (m :: path) cost_path
       end sols C.Move.all
     end
 
