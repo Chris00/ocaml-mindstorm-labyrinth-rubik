@@ -11,6 +11,7 @@ open Labyrinth;;
 set_wall `Front false;
 set_wall `Left false;
 set_wall `Right true;
+(* Try with and without the following: *)
 set_wall `Back false;
 move();;
 

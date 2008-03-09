@@ -91,6 +91,16 @@ struct
          care about the path, we can a use the dummy []). *)
   end
 
+  (* The path can use `Dismissed squares provided one is sure there is
+     no wall. *)
+  let nbh_accessible xy0 =
+    let add_if_can_pass nbh (dir, xy) =
+      if Labyrinth.wall_on xy0 dir = `False
+        && Labyrinth.status xy <> `Non_explored then
+        (dir, xy) :: nbh
+      else nbh in
+    List.fold_left add_if_can_pass [] (Labyrinth.Coord.nbh xy0)
+
   (** [path_to_closer pos cond] search for a square [p] satisfying
       [cond p] as close as possible to the square [pos] while staying
       in the square already visited.  If no such square [p] exists,
@@ -118,7 +128,7 @@ struct
             else
               let newp = (pos, dir :: path) in
               (S.add newp n_curr, S.add newp v_curr) in
-          List.fold_left nbh_q curr (Labyrinth.nbh_explored q)
+          List.fold_left nbh_q curr (nbh_accessible q)
         in
         let (n_new,v_new) = S.fold nbh_of_n n (S.empty, v) in
         search cond n_new v_new
