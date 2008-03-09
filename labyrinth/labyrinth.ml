@@ -17,6 +17,11 @@
    MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the file
    LICENSE for more details. *)
 
+type dir = [`N | `S | `E | `W]
+type dir_rel = [`Left | `Front | `Right | `Back]
+type wall  = [`True | `False | `Unknown]
+type state = [`Explored | `Cross_roads | `Dismissed | `Non_explored]
+
 module type T =
 sig
   type dir = [`N | `S | `E | `W]
@@ -32,8 +37,8 @@ sig
 
   val nbh_explored : Coord.t -> (dir * Coord.t) list
   val nbh_unexplored : Coord.t -> (dir * Coord.t) list
-  val wall_on : Coord.t -> dir -> [`True | `False | `Unknown]
-  val status : Coord.t -> [`Explored | `Cross_roads | `Non_explored]
+  val wall_on : Coord.t -> dir -> wall
+  val status : Coord.t -> state
 
   val robot_pos : unit -> Coord.t
   val robot_dir : unit -> dir
@@ -41,39 +46,16 @@ sig
   val abs_dir : dir_rel -> dir
   val set_wall : dir_rel -> bool -> unit
   val turn : dir_rel -> unit
-  val move : unit -> unit
+  val move : ?affects:(Coord.t list -> Coord.t list -> unit) -> unit -> unit
 end
 
 (*************************************************************************
  *                           Implementation
  *************************************************************************)
 
-type dir = [`N | `S | `E | `W]
-type dir_rel = [`Left | `Front | `Right | `Back]
-type state = [`Explored | `Cross_roads | `Non_explored]
-type wall  = [`True | `False | `Unknown]
-type square = { mutable s_state : state;
+type square = { mutable s_state: state;
                 mutable wall_W: wall;
                 mutable wall_N: wall; }
-
-module Coord =
-struct
-  type t = int * int
-
-  let compare (a, b) (c, d) =
-    if (a < c) || ((a = c) && (b < d)) then -1
-    else if (a = c) && (b = d) then 0
-    else 1
-
-  let move (x,y) = function
-    | `N -> (x, y+1)
-    | `S -> (x, y-1)
-    | `W -> (x-1, y)
-    | `E -> (x+1, y)
-
-  let nbh xy =
-    let c = move xy in [(`N, c `N); (`S, c `S); (`E, c `E); (`W, c `W)]
-end
 
 (* For the current realisation, it is enough but in general a more
    extensible datastructure is needed.  We have chosen this for
@@ -97,10 +79,31 @@ let robot_orient = ref `N
 
 let lab_coord (x,y) =
   let i = i0 + x and j = j0 + y in
-  if i > Array.length lab || i < 0 || j > Array.length lab.(0) || j < 0
-  then failwith "Position not in the labyrinth matrix";
-  (i,j)
+  if 0 <= i && i < Array.length lab && 0 <= j && j < Array.length lab.(0)
+  then (i,j)
+  else invalid_arg "lab_coord: not in board"
 ;;
+
+module Coord =
+struct
+  type t = int * int
+
+  let compare (a, b) (c, d) =
+    if (a < c) || ((a = c) && (b < d)) then -1
+    else if (a = c) && (b = d) then 0
+    else 1
+
+  let move (x,y) = function
+    | `N -> (x, y+1)
+    | `S -> (x, y-1)
+    | `W -> (x-1, y)
+    | `E -> (x+1, y)
+
+  (* The labyrinth is supposed to be potentially infinite so there is
+     no constraint on the possible neighbors. *)
+  let nbh xy =
+    let c = move xy in [(`N, c `N); (`S, c `S); (`E, c `E); (`W, c `W)]
+end
 
 
 let wall_on xy d =
@@ -175,7 +178,7 @@ let fully_explored xy0 =
     information. *)
 let update xy =
   match status xy with
-  | `Explored -> ()
+  | `Explored | `Dismissed -> ()
   | `Cross_roads | `Non_explored ->
       if fully_explored xy then set_status xy `Explored
 
@@ -197,14 +200,49 @@ let turn d =
     (* No new information => state does not change *)
 ;;
 
-let move () =
+module S = Set.Make(Coord)
+
+let not_in_labyrinth xy =
+  try ignore(lab_coord xy); false with _ -> true
+
+exception Not_closed
+
+(* Start a search from the square [xy0] and determine if it belongs to
+   a zone surrounded by explored squares.  Do a depth first if the
+   zone is not closed, that is quickly detected.  If the square [xy0]
+   is visited, it is added to the [boundary] as it may need to be
+   updated. *)
+let dismiss_squares db0 xy0 =
+  let rec search ((dismissed, boundary) as db) xy =
+    if not_in_labyrinth xy then raise Not_closed
+    else match status xy with
+    | `Explored | `Cross_roads -> (dismissed, S.add xy boundary)
+    | `Dismissed (* should not happen *) | `Non_explored ->
+        if S.mem xy dismissed then db   (* already in zone *)
+        else
+          let db' = (S.add xy dismissed, boundary) in
+          List.fold_left (fun db' (_,xy') -> search db' xy') db' (Coord.nbh xy)
+  in
+  try search db0 xy0 with Not_closed -> db0
+
+let move ?affects () =
   robot_pos := Coord.move !robot_pos !robot_orient;
   set_status !robot_pos `Cross_roads;
   update !robot_pos; (* maybe more info exists that can improve the
                         status of the current square. *)
   (* The knowledge that the current square is visited may change its
-     neighbors status. *)
-  List.iter (fun (_,xy) -> update xy) (Coord.nbh !robot_pos)
+     left and right neighbors (and maybe more). *)
+  let dismissed, boundary =
+    List.fold_left (fun db (_,xy) ->
+                      dismiss_squares db xy
+                   ) (S.empty, S.empty) (Coord.nbh !robot_pos) in
+  S.iter (fun xy -> set_status xy `Dismissed) dismissed;
+  (* There may be `Cross_roads around the zone whose only exit points
+     inside the zone and which are no longer worth exploring *)
+  S.iter (fun xy -> update xy) boundary;
+  match affects with
+  | None -> ()
+  | Some f -> f (S.elements dismissed) (S.elements boundary)
 
 
 (* Accessors

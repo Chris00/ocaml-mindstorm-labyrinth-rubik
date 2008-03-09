@@ -63,12 +63,16 @@ sig
   val wall_on : Coord.t -> dir -> [`True | `False | `Unknown]
     (** [wall_on xy d] tells whether there is a wall in the direction
         [d] on the square [xy]. *)
-  val status : Coord.t -> [`Explored | `Cross_roads | `Non_explored]
+  val status : Coord.t -> [`Explored | `Cross_roads
+                          | `Dismissed | `Non_explored]
     (** [status xy] tells whether the square [xy]
         - is fully [`Explored], meaning all its accessible neighbors
         (i.e. without wall in between) are explored;
         - is [`Cross_roads] meaning the robot has been there but one
         of its accessible neighbors that has not yet been explored;
+        - is [`Dismissed] meaning that the system determined that
+          the square is not worth exploring (because, for example,
+          it is surrounded by explored squares);
         - [`Non_explored] meaning the robot has not been there. *)
 
   val robot_pos : unit -> Coord.t
@@ -91,9 +95,15 @@ sig
   val turn : dir_rel -> unit
     (** [turn d] turns the robot in the direction [d]. *)
 
-  val move : unit -> unit
+  val move : ?affects:(Coord.t list -> Coord.t list -> unit) -> unit -> unit
     (** [move d] update the status of the robot given that it executes
-        a move one square ahead of him. *)
+        a move one square ahead of him.
+
+        @param affects A move may have consequances on other squares,
+        dismissing some and changing crossroads in explored.  This
+        argument is a function that receives first new dismissed
+        squares and second potentially updated squares and is executed
+        after the move (and updates) is complete. *)
 end
 
 include T

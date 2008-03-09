@@ -36,6 +36,7 @@ let wall_thickness = 2 (* pixels; wall are twice as thick *)
 let wall_color = black
 let explored_color = rgb 166 227 147    (* green *)
 let cross_road_color = red
+let dismissed_color = rgb 18 152 52
 let path_color = rgb 49 147 192
 let laby_structure = rgb 171 183 227
 let text_fonts =
@@ -67,7 +68,8 @@ struct
                | None ->
                    match status xy with
                    | `Explored | `Cross_roads -> explored_color
-                   | `Non_explored -> background);
+                   | `Non_explored -> background
+                   | `Dismissed -> dismissed_color);
     fill_rect px py square_length square_length;
     if status xy = `Cross_roads then begin
       (* Add a special mark on "crossroads" *)
@@ -156,14 +158,6 @@ struct
     draw_poly_line (Array.of_list xy);
     set_line_width 1
 
-  let redraw_nbh pos =
-    (* We need to redraw all neighboring squares because they may have
-       been updated by the move.  Redraw also the non-walls paths in
-       order to erase a possible path. *)
-    let redraw (d,p) =
-      draw_square p;
-      if wall_on pos d = `False then draw_wall pos d false in
-    List.iter redraw (Coord.nbh pos)
 
   (* Redefine some functions of [L] to add a graphical animation *)
 
@@ -180,19 +174,23 @@ struct
   ;;
 
   (* @override *)
-  let move () =
-    L.move();
-    redraw_nbh (robot_pos());
-    (* The first move of the path has just been made, do not draw it *)
-    if !current_path <> [] then draw_path (List.tl !current_path);
-    draw_robot();
+  let move ?affects () =
+    L.move () ~affects:begin fun dismissed boundary ->
+      List.iter draw_square dismissed;
+      List.iter draw_square boundary;
+      (* The first move of the path has just been made, do not draw it *)
+      if !current_path <> [] then draw_path (List.tl !current_path);
+      draw_robot();
+
+      match affects with None -> () | Some f -> f dismissed boundary
+    end
   ;;
 
   (* New functions
    ***********************************************************************)
 
   let draw_final color text =
-    redraw_nbh(robot_pos());
+    (* redraw_nbh(robot_pos()); *)
     (* There should be no path but, if we modified the labyrinth while
        the robot was discovering it, one would still like to see that
        path that we were trying to follow. *)
