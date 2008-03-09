@@ -45,11 +45,13 @@ struct
       end sols C.Move.all
     end
 
+  let solutions init cost_max =
+    List.fold_left (fun sols m ->
+                      add_solution sols cost_max (mul init m) m [m] 1
+                   ) [] C.Move.all
+
   let rec search_cost init cost cost_max =
-    let sols =
-      List.fold_left begin fun sols m ->
-        add_solution sols cost (mul init m) m [m] 1
-      end [] C.Move.all in
+    let sols = solutions init cost in
     Printf.eprintf "cost=%i #sols=%i\n%!" cost (List.length sols);
     if sols = [] && cost < cost_max then
       search_cost init (cost + 1) cost_max
@@ -62,13 +64,10 @@ struct
 
   let rec multiple_search_cost inits cost cost_max =
     let sols =
-      ListLabels.fold_left ~init:[] inits ~f:begin fun sols init ->
-        let sols_init =
-          ListLabels.fold_left ~init:[] C.Move.all ~f:begin fun sols m ->
-            add_solution sols cost  (mul init m) m [m] 1
-          end in
+      List.fold_left begin fun sols init ->
+        let sols_init = solutions init cost in
         List.fold_left (fun l s -> (init, s) :: l) sols sols_init
-      end in
+      end [] inits in
     Printf.eprintf "cost=%i #sols=%i\n%!" cost (List.length sols);
     if sols = [] && cost < cost_max then
       multiple_search_cost inits (cost + 1) cost_max
