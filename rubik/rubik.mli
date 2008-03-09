@@ -50,14 +50,17 @@ sig
   val all : t list
     (** [all] returns the array of all possible moves. *)
 
-  val have_same_gen : t -> t -> bool
-    (** [has_same_gen m n] returns [true] if m and n are made with the same
-        generator. *)
-
   val commute : t -> t -> bool
     (** [commutes m m'] tells whether the two moves [m] and [m']
         commutes (i.e. [m] * [m'] = [m'] * [m]).  (This is obviously
         the case when [have_same_gen m m'] is [true].) *)
+
+  val compare_gen : t -> t -> int
+    (** [compare_gen m n] returns a number [< 0] (resp. [= 0],
+        resp. [ > 0]) if the generator of [m] is less than
+        (resp. equal to, resp. greater than) the generator of [n].  It
+        defines a total order.  It is compatible with [compare] in the
+        sense that if [compare m m' <= 0] then [compare_gen m m' <= 0]. *)
 
   val compare : t -> t -> int
     (** Comparison function ordering the moves (the only guarantee is

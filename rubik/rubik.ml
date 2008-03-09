@@ -100,8 +100,8 @@ sig
   val make : generator * int -> t
   val generator : t -> generator * int
   val all : t list
-  val have_same_gen : t -> t -> bool
   val commute : t -> t -> bool
+  val compare_gen : t -> t -> int
   val compare : t -> t -> int
   val to_string : t list -> string
 end
@@ -137,9 +137,9 @@ struct
 
   let all = [0; 1; 2; 3; 4; 5; 6; 7; 8; 9; 10; 11; 12; 13; 14; 15; 16; 17]
 
-  let have_same_gen m m' =
-    (* fst(generator m) = fst(generator m') *)
-    m / 3 = m' / 3
+  let compare_gen m m' =
+    (* compare fst(generator m) fst(generator m') *)
+    compare (m / 3) (m' / 3)
 
   (* [opposite_generator.(i)] is the index of the opposite face *)
   let opposite_generator = [| 1; 0;  3; 2;  5; 4|]
@@ -816,9 +816,9 @@ end
 module Move2 =
 struct
   include Move
-    (* We do not distinguish them from Move for now because memory is
-       not an issue.  (If we ever need more memory, move the phase 2
-       moves first in Move.t.) *)
+    (* We do not distinguish their representation as int from Move
+       (for now) because memory is not an issue.  (If we ever need
+       more memory, move the phase 2 moves first in Move.t.) *)
 
   (* @override *)
   (* F^2, B^2, L^2, R^2, U^i, D^i *)
