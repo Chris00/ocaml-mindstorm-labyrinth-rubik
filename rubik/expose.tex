@@ -72,11 +72,11 @@
 
 \title{Atelier de robotique}
 \subtitle{%Comment sortir d'un labyrinthe ?\\
-  Comment résoudre le Rubik cude ?}
+  Comment résoudre le Rubik's cube ?}
 \author[Institut de Mathématique]{%
   Marc \textsc{Ducobu}
   \and Dany \textsc{Maslowski}
-  \and Julie \textsc{de Pril}
+  \and Julie \textsc{De Pril}
   \and Christophe~\textsc{Troestler}}
 \date{PDS, mars 2008}
 \institute[UMH]{Université de Mons-Hainaut\\[3pt]
@@ -97,7 +97,115 @@
   \tableofcontents[subsectionstyle=hide]
 \end{frame}
 
+% Besoin d'un slide préliminaire pour expliquer ce qu'est un Rubik's cube et comment ça marche?
 
+\section{Préliminaires}
+\begin{frame} \frametitle{Appellation des faces du Rubik's cube}
+%dessin d'un Rubik's cube avec le nom des faces (F,B,U,D,L,R)
+Ce Rubik's cube "vierge" est appelé le Rubik's cube \textit{identité}.
+\end{frame}
+
+\section{Notion de mouvement}
+\begin{frame} \frametitle{Notion de mouvement}
+Nous pouvons tourner les faces d'un Rubik's cube d'un angle de 90°, 180° ou 270°.
+\newline
+\newline
+Quand on tourne une face de 360°, c'est comme si l'on avait rien fait. En effet, nous retrouvons le Rubik's cube de départ. %démo
+\newline
+\newline
+Tourner une face d'un certain nombre de degrés est appelé un \textit{mouvement}.\\
+\end{frame}
+
+\begin{frame} \frametitle{Mouvements de base}
+Nous noterons
+\begin{itemize}
+\item "$F$" le fait de tourner la face F de 90°,
+\item "$F^2$" le fait de tourner la face F de 180° et
+\item "$F^3$" le fait de tourner la face F de 270°.
+\end{itemize}
+Idem pour les faces B,U,D,L et R.
+\newline
+\newline
+Nous avons donc 18 mouvements de base: $F, F^2, F^3, B, B^2, B^3, U, U^2, U^3, D, D^2, D^3, R, R^2, R^3, L, L^2, L^3$.
+\end{frame}
+
+\begin{frame} \frametitle{Notion de mouvement inverse}
+Prenons un Rubik's cube quelconque. %photo
+\newline
+Nous lui appliquons le mouvement $F$. On obtient:
+%photo, démo et/ou animation sur le slide
+\newline
+Maintenant, nous lui appliquons le mouvement $F^3$. On obtient:
+%photo, démo et/ou animation sur le slide
+\newline
+C'est le Rubik's cube de départ! % Apparait après.
+\end{frame}
+
+\begin{frame}{Notion de mouvement inverse (suite)}
+Nous pouvons donc déduire qu'appliquer $F$ puis $F^3$ revient à ne rien faire.
+\newline
+\newline
+Nous dirons que $F^3$ le mouvement \textit{inverse} de $F$.
+\newline
+\newline
+De la même façon, on peut dire que $F^2$ est son propre inverse, car appliquer $F^2$ puis encore $F^2$ revient à ne rien faire.
+\end{frame}
+
+\section{Ensemble des Rubik's cubes}
+\begin{frame} \frametitle{L'ensemble de tous les Rubik's cubes}
+Soit $\mathcal{G}$ = l'ensemble de tous les Rubik's cubes possibles obtenus en appliquant des séquences quelconques de mouvements au Rubik's cube identité.
+\newline
+\newline
+C'est-à-dire $\mathcal{G}$ = % { dessins de plusieurs Rubik's cube (dont l'identité)}
+\end{frame}
+
+\section{Idée de l'algorithme}
+\begin{frame} \frametitle{Idée de l'algorithme}
+Au départ: nous avons un Rubik's cube quelconque.
+%photo
+\newline
+\newline
+Notre but: appliquer une certaine séquence de mouvements à ce Rubik's cube afin de retomber sur le Rubik's cube identité.
+\newline
+\newline
+Mais comment trouver cette séquence de mouvements?
+\end{frame}
+
+\begin{frame} \frametitle{Idée de l'algorithme (suite)}
+Nous allons chercher cette séquence pas à pas.
+\newline
+\newline
+Appliquons au Rubik's cube de départ les 18 mouvements possibles:
+% Rubik's cube de départ, 18 traits qui partent de lui avec le mouvement appliqué écrit à côté de chaque trait et sous chaque trait le Rubik's cube obtenu
+\newline
+\newline
+Est-ce que le Rubik's cube identité se trouve parmi ses 18 Rubik's trouvés?
+\newline
+\newline
+Non! Alors on continue!
+\end{frame}
+
+\begin{frame} \frametitle{Idée de l'algorithme (suite)}
+Pour chaque Rubik's cube trouvé, nous allons ré-appliquer les 18 mouvements possibles:
+% même photo que précédemment, avec un niveau en plus
+\newline
+\newline
+Est-ce que le Rubik's cube identité se trouve parmi ces 18*18 Rubik's trouvés?
+\newline
+\newline
+Non! Alors on continue!
+\end{frame}
+
+\begin{frame} \frametitle{Idée de l'algorithme (suite)}
+Nous continuons ainsi, niveau par niveau, jusqu'à ce que nous trouvons le Rubik's cube identité parmi les Rubik's cubes du dernier niveau.
+\newline
+\newline
+Quand nous l'avons trouvé, il ne reste plus qu'à partir du Rubik's cube de départ et lui appliquer la séquence de mouvements qui relie ce Rubik's cube au Rubik's cube identité dans le dessin.
+\newline
+\newline
+Par exemple:
+%exemple
+\end{frame}
 
 \begin{frame} \frametitle{Bibliographie}
   \begin{thebibliography}{}
