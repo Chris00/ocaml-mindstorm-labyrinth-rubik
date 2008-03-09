@@ -101,18 +101,24 @@ sig
   val generator : t -> generator * int
   val all : t list
   val have_same_gen : t -> t -> bool
+  val commute : t -> t -> bool
+  val compare : t -> t -> int
+  val to_string : t list -> string
 end
 
 module Move =
 struct
 
   type t = int
-      (* F -> 0, F^2 -> 1, F^3 -> 2, B -> 3, B^2 -> 4,..., D^3 -> 17.
+      (* F -> 0, F^2 -> 1, F^3 -> 2, B -> 3, B^2 -> 4,..., D^3 -> 17
+         (the order is the one of generator).
          It is important that the representation as an int is known by
          the submodules because it will be used as an index of move
          tables. *)
 
   let length = 18                         (* to iterate on the moves *)
+
+  let compare i j = compare (i:int) j
 
   (* We use [(g, e)] because that is how we want the solution of the
      rubik cube to be presented. *)
@@ -131,9 +137,20 @@ struct
 
   let all = [0; 1; 2; 3; 4; 5; 6; 7; 8; 9; 10; 11; 12; 13; 14; 15; 16; 17]
 
-  let have_same_gen m n =
-    (* fst(generator m) = fst(generator n) *)
-    m / 3 = n / 3
+  let have_same_gen m m' =
+    (* fst(generator m) = fst(generator m') *)
+    m / 3 = m' / 3
+
+  (* [opposite_generator.(i)] is the index of the opposite face *)
+  let opposite_generator = [| 1; 0;  3; 2;  5; 4|]
+
+  let commute m m' =
+    let gen = m / 3 and gen' = m' / 3 in
+    gen = gen' || opposite_generator.(gen) = gen'
+
+  let to_string l =
+    let string_of_move (g,i) = Printf.sprintf "%c%i" (char_of_generator g) i in
+    String.concat " " (List.map (fun m -> string_of_move(generator m)) l)
 end
 
 
@@ -370,7 +387,7 @@ DEFINE MAKE_MUL_TABLE(kind) =
 
 (* This must be a macro so that the type of the tables is monomorphic and
    the compiler generates efficient access to them. *)
-DEFINE INITIALIZE_FILE_MUL(make_mul_table, basename) =
+DEFINE INITIALIZE_FILE_MUL(dir, make_mul_table, basename) =
   match dir with
   | None ->
       let mul_table = make_mul_table() in
@@ -388,9 +405,15 @@ DEFINE INITIALIZE_FILE_MUL(make_mul_table, basename) =
       else begin
         (* Compute and save the table *)
         let mul_table = make_mul_table() in
-        let fh = open_out_bin fname in
-        output_value fh mul_table;
-        close_out fh;
+        let can_save =
+          try Sys.is_directory dir
+          with Sys_error _ -> Unix.mkdir dir 0o700; true in
+        if can_save then
+          let fh = open_out_bin fname in
+          output_value fh mul_table;
+          close_out fh
+        else
+          Printf.eprintf "%S is not a directory: cannot save %S\n" dir basename;
         fun o m -> mul_table.{o,m}
         end
 ;;
@@ -400,7 +423,7 @@ DEFINE MAKE_MUL(make_mul_table, basename) =
   fun ?dir () -> match !computed_mul with
   | Some mul -> mul                     (* already computed or read *)
   | None ->
-      let mul = INITIALIZE_FILE_MUL(make_mul_table, basename) in
+      let mul = INITIALIZE_FILE_MUL(dir, make_mul_table, basename) in
       computed_mul := Some mul;
       mul
 ;;
@@ -415,8 +438,8 @@ exception Finished
 let initialize_prun_table length id mul =
   let prun_table = Array1.create int8_signed c_layout length in
   Array1.fill prun_table (-1);
-  (* The initialisation is such that [prun_table.{i} < 0] iff the
-     permutation numbered [i] has not been computed yet. *)
+  (* The purpose of this initialisation is that [prun_table.{i} < 0]
+     iff the permutation numbered [i] has not been computed yet. *)
   prun_table.{id} <- 0; (* This is the goal state. *)
   let rec fill_table (cubes, n) depth =
     (* [n] counts the number of already computed cubes. *)
@@ -465,9 +488,15 @@ let initialize_file_prun dir file initialize_prun mul =
       else begin
         (* Compute and save the table *)
         let prun_table = initialize_prun mul in
-        let fh = open_out_bin fname in
-        output_value fh prun_table;
-        close_out fh;
+        let can_save =
+          try Sys.is_directory dir
+          with Sys_error _ -> Unix.mkdir dir 0o700; true in
+        if can_save then
+          let fh = open_out_bin fname in
+          output_value fh prun_table;
+          close_out fh
+        else
+          Printf.eprintf "%S is not a directory: cannot save %S\n" dir file;
         prun_table
       end
 ;;
@@ -910,22 +939,21 @@ struct
       (* [n] counts the number of already computed cubes. *)
       let len = List.length cubes in
       Printf.eprintf "Depth: %i => length list: %i\n%!" depth len;
-      if n < (lC*lU) && cubes <> [] then
+      if n < lC * lU && cubes <> [] then
         (* Search a new depth-step in the tree of permutations. *)
         let depth = depth + 1 in
         let new_depth cubes_new_n cube =
           (* Search for all children of [cube] that are part of the new
              depth-step. *)
           let add_children ((cubes_new, n_curr) as curr) m =
-            if n_curr >= (lC*lU) then raise Finished
-            else
-              let newc = mul cube m in
-              let (newcC,newcU) = get_coord newc in
-              if prun_table.{newcC,newcU} < 0 then (
-                prun_table.{newcC,newcU} <- depth;
-                (newc :: cubes_new, n_curr+1)
-              )
-              else curr in
+            if n_curr >= lC * lU then raise Finished;
+            let newc = mul cube m in
+            let (newcC,newcU) = get_coord newc in
+            if prun_table.{newcC,newcU} < 0 then (
+              prun_table.{newcC,newcU} <- depth;
+              (newc :: cubes_new, n_curr+1)
+            )
+            else curr in
           List.fold_left add_children cubes_new_n Move.all
         in
         fill_table (List.fold_left new_depth ([],n) cubes) depth

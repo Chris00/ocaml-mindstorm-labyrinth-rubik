@@ -53,6 +53,18 @@ sig
   val have_same_gen : t -> t -> bool
     (** [has_same_gen m n] returns [true] if m and n are made with the same
         generator. *)
+
+  val commute : t -> t -> bool
+    (** [commutes m m'] tells whether the two moves [m] and [m']
+        commutes (i.e. [m] * [m'] = [m'] * [m]).  (This is obviously
+        the case when [have_same_gen m m'] is [true].) *)
+
+  val compare : t -> t -> int
+    (** Comparison function ordering the moves (the only guarantee is
+        that the order is total, besides that it is completely
+        arbitrary). *)
+  val to_string : t list -> string
+    (** Returns a string representation of the list of moves. *)
 end
 
 module Move : MoveT
