@@ -26,8 +26,9 @@ module Make(C :
   end) =
 struct
 
-  let mul = C.initialize_mul()
-  let pruning = C.initialize_pruning()
+  let dir = Filename.concat Filename.temp_dir_name "rubik-ocaml"
+  let mul = C.initialize_mul ~dir ()
+  let pruning = C.initialize_pruning ~dir ()
 
   (* Return a list of possible paths (added to the already existing
      solutions [sols]). *)
@@ -40,7 +41,7 @@ struct
         else
           let perm = mul perm m in
           let cost = depth + pruning perm in
-          if cost > cost_max then sols
+          if cost > cost_max then sols  (* prune *)
           else add_solution sols cost_max  perm m (m :: path) depth
       end sols C.Move.all
     end
