@@ -31,14 +31,19 @@ struct
   let mul = C.initialize_mul ?dir ()
   let pruning = C.initialize_pruning ?dir ()
 
-  (* Return a list of possible paths (added to the already existing
-     solutions [sols]). *)
+  (* if [m'] commute with [m] we require that the "smaller" one be
+     first (also exclude that [m'] and [m] have the same generator). *)
+  let move_cannot_follow m m' =
+    C.Move.commute m m' && C.Move.compare_gen m m' >= 0
+
+    (* Return a list of possible paths (added to the already existing
+       solutions [sols]). *)
   let rec add_solution sols cost_max  perm last_move path cost_path =
     if C.in_goal perm then List.rev path :: sols (* sol found *)
     else begin
       let cost_path = cost_path + 1 in
       List.fold_left begin fun sols m ->
-        if C.Move.have_same_gen m last_move then sols (* skip move *)
+        if move_cannot_follow last_move m then sols (* skip move *)
         else
           let perm = mul perm m in
           let cost = cost_path + pruning perm in
