@@ -27,10 +27,6 @@ module Solver2 = Search.Make(Phase2)
 let move1 = Cubie.move
 let move2 = Phase2.Move.move
 
-let string gen s =
-  let string_of_move (g,i) = sprintf "%c%i" (char_of_generator g) i in
-  String.concat " " (List.map (fun m -> string_of_move(gen m)) s)
-
 (********* Modules for the physical part *********)
 module Motor = Mindstorm.Motor
 
@@ -81,8 +77,9 @@ let mul_and_print move c m =
 
 (********* Test *********)
 let () =
-  let moves = [F,3; R,2; U,1; B,3; D,1; L,2; R,3; U,2; R,3; (*B,1; F,3; F,1;
-                                                              R,1; U,3; B,1; D,2; L,3; B,2*)] in
+  let moves = [F,3; R,2; U,1; B,3; D,1; L,2; R,3; U,2; R,3; B,1; F,3;
+               F,1; R,1; U,3; B,1; D,2; L,3; B,2
+              ] in
   let moves = List.map (fun m -> Cubie.move (Move.make m)) moves in
   let cube = List.fold_left Cubie.mul Cubie.id moves in
   display_cube cube;
@@ -92,7 +89,7 @@ let () =
 
   printf "Sequence phase 1:\n%!";
   let seq1 = Solver1.search_seq_to_goal cubeP1 Phase1.max_moves in
-  List.iter (fun sol -> printf "%s\n" (string Phase1.Move.generator sol)) seq1;
+  List.iter (fun sol -> printf "%s\n" (Phase1.Move.to_string sol)) seq1;
 
   (********* Phase 2 *********)
   let apply1 sol = List.fold_left (fun c m -> Cubie.mul c (move1 m)) cube sol in
@@ -101,8 +98,11 @@ let () =
   printf "Sequence phase 2:\n%!";
   (* let seq2 = Solver2.search_seq_to_goal cubeP2 Phase2.max_moves in *)
   let seq2 = Solver2.multiple_search (List.map fst cubesP2) Phase2.max_moves in
-  List.iter (fun (_,sol) ->
-               printf "%s\n" (string Phase2.Move.generator sol)
+  List.iter (fun (init,sol) ->
+               let s = List.rev(List.tl(List.rev sol)) in
+               let r = List.fold_left Solver2.mul init s in
+               printf "%s : %i\n" (Phase2.Move.to_string sol)
+                 (Solver2.pruning r)
             ) seq2;
 
   let solutions =
@@ -114,11 +114,12 @@ let () =
   List.iter begin fun (s1,s2) ->
     let goal = apply2 (apply1 s1) s2 in
     printf "%s | %s => %s\n%!"
-      (string Phase1.Move.generator s1)
-      (string Phase2.Move.generator s2)
+      (Phase1.Move.to_string s1) (Phase2.Move.to_string s2)
       (if Cubie.is_identity goal then "OK" else "KO");
-    display_cube goal;
-    ignore(wait_next_event [Button_down])
+    if not(Cubie.is_identity goal) then (
+      display_cube goal;
+      ignore(wait_next_event [Button_down])
+    );
   end solutions;
 
 
@@ -127,5 +128,5 @@ let () =
       List.iter M.make (List.map Phase2.Move.generator seq2)*)
 
 (*   flush stdout; *)
-(*   ignore(wait_next_event [Button_down]) *)
+  ignore(wait_next_event [Button_down])
 
