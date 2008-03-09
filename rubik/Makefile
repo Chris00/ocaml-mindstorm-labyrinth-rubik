@@ -5,7 +5,8 @@ DOC_DIR = doc
 
 OCAMLC_FLAGS = -g -dtypes -dllpath .. -custom -I $(MINDSTORM_PATH) -I ..
 OCAMLOPT_FLAGS = -dtypes -I $(MINDSTORM_PATH) -I ..
-PP = camlp4o pa_macro.cmo $(D_OS) #Camlp4MacroParser.cmo
+CAMLP4 = $(shell which camlp4of.opt || echo "camlp4o pa_macro.cmo")
+PP = $(CAMLP4) $(D_OS) #Camlp4MacroParser.cmo
 
 INTERFACES=$(wildcard *.mli)
 PROGRAM=run.ml
