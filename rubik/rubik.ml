@@ -909,8 +909,7 @@ struct
 
   let id = of_cube Cubie.id
 
-  let is_identity (c,e,u) =
-    c = CornerP.id && e = EdgeP2.id && u = UDSlice2.id
+  let is_identity g = (g = id)
 
   let in_goal = is_identity
 
@@ -974,7 +973,7 @@ struct
 (*    (fun (c,e,u) -> max3 (prunC c) (prunE e) (prunU u)) *)
    let mul = initialize_mul () in
    let prun = initialize_file_prun dir "Phase2_cu.prun" prun mul in
-   (fun (c,e,u) -> max (prunE c) prun.{c,u})
+   (fun (c,e,u) -> max (prunE e) prun.{c,u})
 end
 
 
