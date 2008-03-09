@@ -6,5 +6,7 @@ run.cmo: solver.cmi labyrinth.cmi display.cmi
 run.cmx: solver.cmx labyrinth.cmx display.cmx 
 solver.cmo: labyrinth.cmi display.cmi solver.cmi 
 solver.cmx: labyrinth.cmx display.cmx solver.cmi 
+test_labyrinth.cmo: labyrinth.cmi display.cmi 
+test_labyrinth.cmx: labyrinth.cmx display.cmx 
 display.cmi: labyrinth.cmi 
 solver.cmi: labyrinth.cmi display.cmi 
