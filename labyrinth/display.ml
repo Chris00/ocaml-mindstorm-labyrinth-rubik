@@ -164,7 +164,9 @@ struct
   (* @override *)
   let set_wall (d: dir_rel) b =
     L.set_wall d b;
-    draw_wall (robot_pos()) (abs_dir d) b
+    draw_wall (robot_pos()) (abs_dir d) b;
+    (* New walls may change the status of the current square *)
+    draw_robot();
   ;;
 
   (* @override *)
