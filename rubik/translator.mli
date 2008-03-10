@@ -20,15 +20,16 @@ module Make(C: sig
 
 sig
 
-  val make : Rubik.generator*int -> unit
-    (** make[g r] Create the physical movement associeted to the
-        movement (g*r). (See rubik)*)
+  val make : Rubik.generator * int -> unit
+    (** [make m] drives the robot to execute the physical movement
+        associated to the the move [m].  *)
 
   val face_iter : (Rubik.generator -> int -> unit) -> unit
-    (** Put succecively each face of the cube on top to take a snapshot.
-        face_iter [g i] ask to take a snapshot of the face g, which is in the
-        position i (See the documentation of init_color.ml).
-        Here we choise the letters associates to faces (see the documentation
-        of the fonction 'transform_gen')so that the initial state is correct
-        after all snapshot.*)
+    (** [face_iter f] puts successively each face of the cube on top
+        and run [f] (e.g. to take a snapshot).  [f g i] receives the
+        face [g], which is in the position [i] (see the documentation
+        of {!Init_color} for its meaning).  Here we choose the letters
+        associated to faces (see the documentation of the fonction
+        'transform_gen') so that the initial state is correct after
+        all snapshot.=?? *)
 end
