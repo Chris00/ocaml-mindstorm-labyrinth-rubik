@@ -35,8 +35,9 @@ let vlc_remote =
    remote-control interface, so no display is shown and we have an
    easy way to quit.  *)
 IFDEF WIN32 THEN
-let vlc_remote = "c:/\"Program files\"/VLC/vlc -I rc dshow:// --vout=image \
-	--image-out-replace --image-out-format=png --image-out-prefix="
+let vlc_remote = "c:/\"Program files\"/VideoLan/VideoLan/VLC/vlc -I rc \
+        dshow:// :dshow-adev=\"none\" --vout=image --image-out-replace \
+        --image-out-format=png --image-out-prefix="
 let vlc = "c:/\"Program files\"/VLC/vlc"
 let vlc_args fname =
   [| "--intf=rc"; "dshow://"; "--vout=image"; "--image-out-replace";
