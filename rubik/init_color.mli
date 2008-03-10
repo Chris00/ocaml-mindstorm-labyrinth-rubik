@@ -10,14 +10,16 @@ module Color :
 (** Random funcion about the color face *)
 sig
   val rgb_components : Graphics.color -> int * int * int
-    (** Return the rgb components of a [Graphics.color] *)
+    (** [rgb_components c] returns the rgb components of [c],
+        a [Graphics.color] *)
 
   val name : int * int * int -> colorf
-    (** Return form the rgb components [rgb], the name of the color *)
+    (** [name rgb] returns form the rgb components [rgb],
+        the name of the color ([Red | Green | Yellow | White | Orange | Blue]*)
 
   val to_string : colorf -> string
-    (** Returns the first letter of the color (ie for blue the function 
-        returns [B] *)
+    (** [to_string] returns the first letter of the name of
+        the color (ie for [Blue] the function returns [B] *)
 end
 
 module Face :
@@ -36,21 +38,24 @@ sig
     (** Each face is define by nine colors  *)
 
   val coord : int -> int * int
-    (** Give the coordinate and the absissa
-        of the position [id] in the matrix face *)
+    (** [coord id] gives the coordinate and the absissa
+        of the position [id] for working with the matrix face.
+        [(0,Ø)] is the left bottom square*)
 
   val id : int * int -> int
-    (** Return the number of the facelets from an absissa and a coordinate *)
+    (** [id (x,y)] is the number of the facelets
+        from an absissa [x] and a coordinate [y] *)
 
   val color_of : generator -> colorf
-    (** Return the color of a face *)
+    (** [color_of face] returns the color of the face [face] *)
 
   val color_fid : generator * int ->   colorf
-    (** Return the color of [(face,id)] wehre [face] is a face of the rubik
-        and [id] the identification number of the square.*)
+    (** [color_fid (face,id)] return the color of the square number [id]
+        form the face[face] *)
 
   val to_string : generator -> string
-    (** Print in the shell the color of each square of the face.*)
+    (** [to_string face] gives a string representing the color 
+        of each square of [face].*)
 end
 
 module Pick :
@@ -59,28 +64,30 @@ module Pick :
     square is on (43,23)  *)
 sig
   val abs : int -> int
-    (** absissa of the left bottom face square. [x] is equal to the absissa of
-  [Face.coord_abs fid *)
+    (** [abs x] is the absissa of the left bottom face square where [x] 
+        is equal to the absissa of [Face.coord fid] *)
 
   val ord : int -> int
-    (** Ordinate of the left bottom face square. [x] is equal to the absissa of
-        [Face.coord_abs fid] *)
+    (** [ord y] is the ordinate of the left bottom face square where [y]
+        is equal to the ordinate of [Face.coord fid] *)
 
   val pick_point : color array array -> int -> int -> (int * int * int) list
-    (** Return a list of the rgb components of points belonging to a 14px
-        square. [x0] is the absissa of the left bottom corner of the square
-        and [y0] the ordinate. [snapshot] is a matrix representing the image.*)
+    (** [pick_point snapshot x0 y0] return the rgb components list of points
+        belonging to a 14px square. [x0] is the absissa of the left bottom
+        corner of the square and [y0] the ordinate. [snapshot] is a matrix
+        representing the image.*)
 
   val average : (int * int * int) list -> int * int * int
-    (** Return the average of the list *)
+    (** [average list_color] returns the average of the list *)
 
   val take_face : Snapshot.webcam -> generator -> int -> unit
-    (** Take the color of the face [face] with the orientation [orient]
-        from the [snapshot] and save the data! *)
+    (** [take_face webcam face orient] take the color of the face [face]
+        with the orientation [orient] from [webcam] and save the data! *)
 end
 
 val find_orientation : colorf array -> colorf array -> int
-  (** Returns the orientation of a corner or an edge [ce] in the place [pl].
+  (** [find_orientation ce pl] returns the orientation of a corner or an edge
+      [ce] in the place [pl] which is also a corner or an edge.
       It returns [3] if it's impossible to place the corner*)
 
 val find : colorf array -> (colorf array * 'a) list -> 'a * int
@@ -89,16 +96,19 @@ val  order : colorf array list -> (colorf array * 'a) list
   -> ('a * int) list
 
 val corner_list_replacement : unit -> (Cubie.corner * int) list
-  (** List of the corners and their orientation who replace in the real cubie
+  (** [corner_list_replacement _] gives the list of the corners
+      and their orientation who replace in the real cubie
       this corners : URF, UFL, ULB, UBR, DFR, DLF, DBL, DRB
       This list is used for Rubik.Cubie.make which initialize
       the cubie for a solving search*)
 
 val edge_list_replacement : unit -> (Cubie.edge * int) list
-  (** List of the edges and their orientation who replace in the real cubie
+  (** [edge_list_replacement _] gives  the list of the edges
+      and their orientation who replace in the real cubie
       this edges : UR, UF, UL, UB, DR, DF, DL, DB, FR, FL, BL, BR
       This list is used for Rubik.Cubie.make which initialize
       the cubie for a solving search*)
 
 val create_rubik : unit -> Cubie.t
-  (** Takes the color of the rubik and create the Cubie to be solve! *)
+  (** [create_rubik _] takes the color of the rubik and
+      create the Cubie to be solve! *)
