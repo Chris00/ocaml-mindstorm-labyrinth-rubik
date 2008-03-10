@@ -229,8 +229,6 @@ let dismiss_squares db0 xy0 =
 let move ?affects () =
   robot_pos := Coord.move !robot_pos !robot_orient;
   set_status !robot_pos `Cross_roads;
-  update !robot_pos; (* maybe more info exists that can improve the
-                        status of the current square. *)
   (* The knowledge that the current square is visited may change its
      left and right neighbors (and maybe more). *)
   let dismissed, boundary =
@@ -241,6 +239,8 @@ let move ?affects () =
   (* There may be `Cross_roads around the zone whose only exit points
      inside the zone and which are no longer worth exploring *)
   S.iter (fun xy -> update xy) boundary;
+  update !robot_pos; (* maybe more info exists now that can improve the
+                        status of the current square. *)
   match affects with
   | None -> ()
   | Some f -> f (S.elements dismissed) (S.elements boundary)
