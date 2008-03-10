@@ -2,6 +2,8 @@ open Graphics
 open Init_color
 open Printf
 
+type color = int
+
 let calibrate_webcam () =
   let wc = Snapshot.start () in
   let img = Snapshot.take wc in

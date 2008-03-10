@@ -4,12 +4,22 @@ open Ppm
 open Rubik
 open Snapshot
 
+module Motor = Mindstorm.Motor
+
 (** Initialize the rubik state taking snapshot of the real rubik!*)
 
 type colorf = Red | Green | Yellow | White | Orange | Blue
 
 module Color =
 struct
+  let color_graphics = function
+    |Red -> red
+    |Green -> green
+    |Yellow -> yellow
+    |White -> white
+    |Orange -> magenta
+    |Blue -> blue
+
   let rgb_components (c:Graphics.color) =
     (c lsr 16) land 0xFF,
     (c lsr 8) land 0xFF,
@@ -18,7 +28,7 @@ struct
   let min a b =
     if a > b then b
     else a
-      
+
   let min3 a b c =
     min a (min b c)
 
@@ -162,8 +172,10 @@ struct
       |el :: li -> itern li (sum +! el) (number_el+1)
     in itern list_color (0,0,0) 0
 
-  let take_face webcam face orient =
+  let take_face face orient =
+    let webcam = Snapshot.start () in
     let snapshot = Snapshot.take webcam in
+    Snapshot.stop webcam;
     let f = (match face with
            |U -> Face.u
            |R -> Face.r
@@ -302,23 +314,46 @@ let edge_list_replacement _ =
                                    (edge_def edge), edge) edge_list in
   order color_place color_corner
 
+let conn = let bt =
+  if Array.length Sys.argv < 2 then (
+    printf "%s <bluetooth addr>\n" Sys.argv.(0);
+    exit 1;
+  )
+  else Sys.argv.(1) in Mindstorm.connect_bluetooth bt
+
+module C =
+struct
+  let conn = conn
+  let motor_fighter = Motor.a
+  let motor_hand = Motor.b
+  let motor_pf = Motor.c
+  let push_hand_port = `S2
+  let push_fighter_port = `S1
+  let cog_is_set_left = true
+end
+
+module M = Translator.Make(C)
+
 let create_rubik _ =
-  let webcam = Snapshot.start () in
-  Translator.Make.face_iter (take_face webcam);
-  Snapshot.stop webcam;
+  M.face_iter (Pick.take_face);
   let corner_list_ordered = corner_list_replacement () in
   let edge_list_ordered = edge_list_replacement () in
   let elo = List.map (fun (a,i) -> (a, (i = 1))) edge_list_ordered in
   let cubie = Cubie.make corner_list_ordered elo in
   cubie
 
-(* let () =
-  printf "%i \n%!" (find_orientation [|Red; Blue; Green|] [|Red; Blue; Green|]);
+let () =
+  Calibration.calibrate_webcam ();
   let c = create_rubik () in
   let x0 = 10
   and y0 = 10
   and len_sq = 30 in
-  let colors = (red, green, yellow, white, blue, magenta) in
+  let colors = (Color.color_graphics (Face.color_of U),
+                Color.color_graphics (Face.color_of L), 
+                Color.color_graphics (Face.color_of F), 
+                Color.color_graphics (Face.color_of R), 
+                Color.color_graphics (Face.color_of B), 
+                Color.color_graphics (Face.color_of D)) in
   open_graph ("");
   Display.cube x0 y0 colors len_sq c;
-  ignore(wait_next_event [Button_down]) *)
+  ignore(wait_next_event [Button_down])

@@ -80,9 +80,9 @@ sig
   val average : (int * int * int) list -> int * int * int
     (** [average list_color] returns the average of the list *)
 
-  val take_face : Snapshot.webcam -> generator -> int -> unit
-    (** [take_face webcam face orient] take the color of the face [face]
-        with the orientation [orient] from [webcam] and save the data! *)
+  val take_face : generator -> int -> unit
+    (** [take_face face orient] take the color of the face [face]
+        with the orientation [orient] and save the data! *)
 end
 
 val find_orientation : colorf array -> colorf array -> int

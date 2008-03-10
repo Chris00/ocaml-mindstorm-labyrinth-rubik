@@ -122,6 +122,21 @@ let rec wait_for_file fname =
     wait_for_file fname
   end
 
+let convert img =
+  let ret = Array.make_matrix (Array.length img) (Array.length img.(0)) red in
+  let rgb_components c =
+    (c lsr 16) land 0xFF,
+    (c lsr 8) land 0xFF,
+    c land 0xFF in
+  for i = 0 to (Array.length img) - 1
+  do
+    for j = 0 to (Array.length img.(0)) -1
+    do
+      let (r,g,b) = rgb_components img.(i).(j) in
+      ret.(i).(j) <- Graphics.rgb b g r
+    done;
+  done;
+  ret
 
 let take w =
   wait_for_file w.png;
@@ -129,7 +144,7 @@ let take w =
   copy w.png png;
   let ppm = Filename.temp_file "rubik_" ".ppm" in
   convert png ppm;
-  let img = Ppm.as_matrix_exn ppm in
+  let img = convert (Ppm.as_matrix_exn ppm) in
   Unix.unlink png;
   Unix.unlink ppm;
   img
