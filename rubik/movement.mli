@@ -62,4 +62,10 @@ sig
 
   val turn_rubik_half : cont:cont -> unit
     (** Turn the bottom row of the cube by half a turn. *)
+
+  val free_rubik : cont -> unit
+    (** Move the hand to free the cube *)
+
+  val hold_rubik : cont -> unit
+    (** Move the hand to hold the cube *)
 end

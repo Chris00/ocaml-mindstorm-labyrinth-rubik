@@ -87,14 +87,13 @@ struct
                             speed motor_pf ~tach_limit:38 3)
       else k()
 
-  (** Move the hand to hold the cube *)
+
   let hold_rubik k =
     if !cube_is_held then k()
     else (Robot.event_is idle_hand k;
           cube_is_held := true;
           speed motor_hand ~tach_limit:110 (-30))
-
-  (** Move the hand to free the cube *)
+      
   let free_rubik k =
     if !cube_is_held then begin
       Robot.event_is hand_push (fun _ -> speed motor_hand 0;  k());
