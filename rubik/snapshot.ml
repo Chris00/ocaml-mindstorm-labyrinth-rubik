@@ -1,3 +1,4 @@
+open Graphics
 (* File: snapshot.ml
 
    Copyright (C) 2008
@@ -35,10 +36,10 @@ let vlc_remote =
    remote-control interface, so no display is shown and we have an
    easy way to quit.  *)
 IFDEF WIN32 THEN
-let vlc_remote = "c:/\"Program files\"/VideoLan/VideoLan/VLC/vlc -I rc \
+let vlc_remote = "c:/\"Program files\"/VideoLAN/VLC/vlc -I rc \
         dshow:// :dshow-adev=\"none\" --vout=image --image-out-replace \
-        --image-out-format=png --image-out-prefix="
-let vlc = "c:/\"Program files\"/VLC/vlc"
+        --image-out-format=png --image-out-prefix=rubik"
+let vlc = "c:/Program files/VideoLAN/VLC/vlc"
 let vlc_args fname =
   [| "--intf=rc"; "dshow://"; "--vout=image"; "--image-out-replace";
      "--image-out-format=png"; "--image-out-prefix=" ^ fname |]
@@ -85,20 +86,29 @@ type webcam = {
   png : string
 }
 
+IFDEF WIN32 THEN
 let start () =
   let fname = Filename.temp_file "rubik" "" in
   (* FIXME: If one connects a pipe to input commands to vlc, vlc does
      not work as expected.  With [Unix.open_process_in],
      [Unix.close_process_in] does not terminate the process.  So we
      use the pid and [kill]. *)
-(*   let pid = *)
-(*     Unix.create_process vlc (vlc_args fname) *)
-(*       Unix.stdin Unix.stdout Unix.stderr in *)
-(*   { pid = pid;  png = fname ^ ".png" } *)
+  let pid =
+    Unix.create_process vlc (vlc_args fname)
+      Unix.stdin Unix.stdout Unix.stderr in
+  { pid = pid;  png = fname ^ ".png" }
+    ELSE
+let start () =
+  let fname = Filename.temp_file "rubik" "" in
+  (* FIXME: If one connects a pipe to input commands to vlc, vlc does
+     not work as expected.  With [Unix.open_process_in],
+     [Unix.close_process_in] does not terminate the process.  So we
+     use the pid and [kill]. *)
   match Unix.fork() with
   | 0 -> Unix.execv vlc (vlc_args fname)
   | pid -> { pid = pid;  png = fname ^ ".png" }
 ;;
+ENDIF
 
 let stop w =
   Unix.kill w.pid Sys.sigkill;
@@ -122,7 +132,7 @@ let rec wait_for_file fname =
     wait_for_file fname
   end
 
-let convert img =
+let convert_rb img =
   let ret = Array.make_matrix (Array.length img) (Array.length img.(0)) red in
   let rgb_components c =
     (c lsr 16) land 0xFF,
@@ -144,7 +154,7 @@ let take w =
   copy w.png png;
   let ppm = Filename.temp_file "rubik_" ".ppm" in
   convert png ppm;
-  let img = convert (Ppm.as_matrix_exn ppm) in
+  let img = convert_rb (Ppm.as_matrix_exn ppm) in
   Unix.unlink png;
   Unix.unlink ppm;
   img
