@@ -51,7 +51,7 @@ sig
     (** Launch the robot (must be used last, after a strategy is
         constructed using the functions below.).  *)
 
-  val stop : unit -> unit
+  val stop : ?music:string -> unit -> unit
     (** Stop the event loop -- presumably because the exit was found
         or it was determined that there is no way out. *)
 

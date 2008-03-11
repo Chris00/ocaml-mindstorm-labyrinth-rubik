@@ -40,30 +40,31 @@ struct
   open Printf
 
   (** Stops all the motors and switches off the light sensor. *)
-  let stop () =
+  let stop ?music () =
     Motor.set conn Motor.all (Motor.speed 0);
     Sensor.set conn light_port `Light_inactive `Pct_full_scale;
+    (match music with
+    | None -> ()
+    | Some file -> (try Mindstorm.Sound.play C.conn file with _ -> ()));
+    Unix.sleep 3;
     Mindstorm.close conn;
+    (* Leave the graph displayed (=> do not exit immediately) *)
     Labyrinth.close_when_clicked();
     exit 0
 
   (** If the robot finds the exit of the labyrinth, it will call this
       function. *)
   let found_exit () =
-    printf "found issue\n%!";
     Labyrinth.success();
-    (* Leave the graph displayed (=> do not exit immediately) *)
-    stop()
+    printf "found issue\n%!";
+    stop () ~music:"! Fanfare.rso"
 
   (** If the robot determines that there is no exit to the labyrinth,
       it will call this function. *)
   let no_exit_exists () =
     Labyrinth.failure();
-    Mindstorm.Sound.play C.conn "Woops.rso" ~loop:true;
-    Unix.sleep 3;
-    Mindstorm.Sound.stop C.conn;
     printf "no issue\n%!";
-    stop()
+    stop () ~music:"Ahnoo.rso"
 
   (** Continuations taken by the fonctions. *)
   type cont = unit -> unit
@@ -204,12 +205,12 @@ struct
   let reset_ultra angle set_wall k =
     set_wall();
     Robot.event_is idle_ultra (fun _  -> k());
-    speed motor_ultra ~tach_limit:(abs angle) (if angle >= 0 then 25 else -25)
+    speed motor_ultra ~tach_limit:(abs angle) (if angle >= 0 then 20 else -20)
 
   (** The robot turns its 'eyes' to look around. *)
   let see_ultra angle set_wall k =
     Robot.event_is idle_ultra (fun _ -> reset_ultra (-angle) set_wall k);
-    speed motor_ultra ~tach_limit:(abs angle) (if angle >= 0 then 25 else -25)
+    speed motor_ultra ~tach_limit:(abs angle) (if angle >= 0 then 20 else -20)
 
   (** [is_wall()] returns true if there is a wall in front of the robot. *)
   let is_wall () =
@@ -252,19 +253,21 @@ struct
       look_front k
     else k()
 
+  let sp_motor = 20
+
   (** The robot goes straight a little bit without testing if it is on a
       crossing or a path. *)
   let go_straight_before_do tl k =
     Robot.event_is idle (fun _ -> k());
-    speed motor_left ~tach_limit:tl 25;
-    speed motor_right ~tach_limit:tl 25
+    speed motor_left ~tach_limit:tl sp_motor;
+    speed motor_right ~tach_limit:tl sp_motor
 
   (** The robot goes back a little bit without testing if it is on a
       crossing or a path. *)
   let go_back_before_do k =
     Robot.event_is idle (fun _ -> k());
-    speed motor_left ~tach_limit:100 (-25);
-    speed motor_right ~tach_limit:100 (-25)
+    speed motor_left ~tach_limit:100 (-sp_motor);
+    speed motor_right ~tach_limit:100 (-sp_motor)
 
   let go_straight_and_check k =
     Robot.event_is touch found_exit;
@@ -283,10 +286,10 @@ struct
   and go_next_square k =
     Robot.event_is touch found_exit;
     Robot.event color is_crossing (fun _ -> k());
-    let sp = if Random.bool() then 20 else -20 in
+    let sp = if Random.bool() then (sp_motor - 5) else -(sp_motor - 5) in
     Robot.event color is_floor (fun _ -> rectif k 20 sp);
-    speed motor_left 30;
-    speed motor_right 30
+    speed motor_left sp_motor;
+    speed motor_right sp_motor
 
   (** The robot goes to the next square, i.e. the next crossing.
       But if it sees a wall, it restarts the exploration of the labyrinth. *)
@@ -322,13 +325,13 @@ struct
   and turn dir k =
     match dir with
     | `Left -> Labyrinth.turn `Left;
-        turn_degree 180 25 k
+        turn_degree 180 sp_motor k
     | `Right -> Labyrinth.turn `Right;
-        turn_degree 180 (-25) k
+        turn_degree 180 (-sp_motor) k
     | `Front -> Labyrinth.turn `Front;
         go_straight_and_check k
     | `Back -> Labyrinth.turn `Back;
-        turn_degree 360 25 k
+        turn_degree 360 sp_motor k
 
   and go dir k =
       turn dir (fun _ -> wall_or_go_next_square (fun _ -> k()))
