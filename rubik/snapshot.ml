@@ -113,8 +113,8 @@ let start () =
   match Unix.fork() with
   | 0 -> Unix.execv vlc (vlc_args fname)
   | pid -> { pid = pid;  png = fname ^ ".png" }
-;;
 ENDIF
+;;
 
 let stop w =
   Unix.kill w.pid Sys.sigkill;

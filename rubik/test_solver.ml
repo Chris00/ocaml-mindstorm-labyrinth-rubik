@@ -20,7 +20,7 @@
 
 open Rubik
 
-
+let () =
   let moves = [F,3; R,2; U,1; B,3; D,1; L,2; R,3; U,2; R,3; B,1;
                F,3; F,1; R,1; U,3; B,1; D,2; L,3; B,2 ] in
   (* Patterns from http://www.math.ucf.edu/~reid/Rubik/patterns.html *)
@@ -36,3 +36,4 @@ open Rubik
 
 
   let solution = Solver.find_first cube in
+()
