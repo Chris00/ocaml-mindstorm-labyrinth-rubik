@@ -764,35 +764,36 @@ struct
     let mul (c,e,u) m = (mulC c m, mulE e m, mulU u m) in
     mul
 
-
-  module C = EdgeO
-  let get_coord (c,e,u) = (e,u)
-
-  let prun mul =
-    let lC = C.length in
+  (* [length_fst] is the value [length] of the module that we use with [UDSlice]
+     to build the pruning table (module [CornerO] or [EdgeO]); [id_fst] is the
+     value [id] of this module; [get_coord (c,e,u)] returns a couple of
+     coordinates: the first is the coordinate of this module and the second
+     is the coordinate [u] of the module [UDSlice]. *)
+  let prun length_fst id_fst get_coord mul =
+    let lF = length_fst in
     let lU = UDSlice.length in
-    let prun_table = Array2.create int8_signed c_layout lC lU in
+    let prun_table = Array2.create int8_signed c_layout lF lU in
     Array2.fill prun_table (-1);
     (* The initialisation is such that [prun_table.{i} < 0] iff the
        permutation numbered [i] has not been computed yet. *)
-    prun_table.{C.id, UDSlice.id} <- 0; (* This is the goal state. *)
+    prun_table.{id_fst, UDSlice.id} <- 0; (* This is the goal state. *)
     let rec fill_table (cubes, n) depth =
       (* [n] counts the number of already computed cubes. *)
       let len = List.length cubes in
       Printf.eprintf "Depth: %i => length list: %i\n%!" depth len;
-      if n < (lC*lU) && cubes <> [] then
+      if n < (lF*lU) && cubes <> [] then
         (* Search a new depth-step in the tree of permutations. *)
         let depth = depth + 1 in
         let new_depth cubes_new_n cube =
           (* Search for all children of [cube] that are part of the new
              depth-step. *)
           let add_children ((cubes_new, n_curr) as curr) m =
-            if n_curr >= (lC*lU) then raise Finished
+            if n_curr >= (lF*lU) then raise Finished
             else
               let newc = mul cube m in
-              let (newcC,newcU) = get_coord newc in
-              if prun_table.{newcC,newcU} < 0 then (
-                prun_table.{newcC,newcU} <- depth;
+              let (newcF,newcU) = get_coord newc in
+              if prun_table.{newcF,newcU} < 0 then (
+                prun_table.{newcF,newcU} <- depth;
                 (newc :: cubes_new, n_curr+1)
               )
               else curr in
@@ -800,7 +801,7 @@ struct
         in
         fill_table (List.fold_left new_depth ([],n) cubes) depth
       else
-        Printf.eprintf "# pruning entries = %i =? %i = #perms\n%!" n (lC*lU)
+        Printf.eprintf "# pruning entries = %i =? %i = #perms\n%!" n (lF*lU)
     in
     begin
       try fill_table ([id], 1) 0
@@ -809,10 +810,15 @@ struct
     prun_table
 
   let initialize_pruning ?dir () =
-    let prun_c = CornerO.initialize_pruning ?dir () in
+    (* let prun_c = CornerO.initialize_pruning ?dir () in *)
     let mul = initialize_mul() in
-    let prun_eu = initialize_file_prun dir "Phase1_eu.prun" prun mul in
-    (fun (c,e,u) -> max (prun_c c) prun_eu.{e,u})
+    let get_coord_c (c,e,u) = (c,u) in
+    let prun_c = prun CornerO.length CornerO.id get_coord_c in
+    let prun_cu = initialize_file_prun dir "Phase1_cu.prun" prun_c mul in
+    let get_coord_e (c,e,u) = (e,u) in
+    let prun_e = prun EdgeO.length EdgeO.id get_coord_e in
+    let prun_eu = initialize_file_prun dir "Phase1_eu.prun" prun_e mul in
+    (fun (c,e,u) -> max prun_cu.{c,u} prun_eu.{e,u})
 end
 
 (* Authorized moves in the phase 2 of the algo (safety and possibly
@@ -925,35 +931,35 @@ struct
     let mul (c,e,u) m = (mulC c m, mulE e m, mulU u m) in
     mul
 
-
-  (* So as to easily change the coords chosen for [prun]: *)
-  module C = CornerP
-  let get_coord (c,e,u) = (c,u)
-
-  let prun mul =
-    let lC = C.length in
+  (* [length_fst] is the value [length] of the module that we use with
+     [UDSlice2] to build the pruning table (module [CornerP] or [EdgeP2]);
+     [id_fst] is the value [id] of this module; [get_coord (c,e,u)] returns a
+     couple of coordinates: the first is the coordinate of this module and the
+     second is the coordinate [u] of the module [UDSlice2]. *)
+  let prun length_fst id_fst get_coord mul =
+    let lF = length_fst in
     let lU = UDSlice2.length in
-    let prun_table = Array2.create int8_signed c_layout lC lU in
+    let prun_table = Array2.create int8_signed c_layout lF lU in
     Array2.fill prun_table (-1);
     (* The initialisation is such that [prun_table.{i} < 0] iff the
        permutation numbered [i] has not been computed yet. *)
-    prun_table.{C.id, UDSlice2.id} <- 0; (* This is the goal state. *)
+    prun_table.{id_fst, UDSlice2.id} <- 0; (* This is the goal state. *)
     let rec fill_table (cubes, n) depth =
       (* [n] counts the number of already computed cubes. *)
       let len = List.length cubes in
       Printf.eprintf "Depth: %i => length list: %i\n%!" depth len;
-      if n < lC * lU && cubes <> [] then
+      if n < lF * lU && cubes <> [] then
         (* Search a new depth-step in the tree of permutations. *)
         let depth = depth + 1 in
         let new_depth cubes_new_n cube =
           (* Search for all children of [cube] that are part of the new
              depth-step. *)
           let add_children ((cubes_new, n_curr) as curr) m =
-            if n_curr >= lC * lU then raise Finished;
+            if n_curr >= lF * lU then raise Finished;
             let newc = mul cube m in
-            let (newcC,newcU) = get_coord newc in
-            if prun_table.{newcC,newcU} < 0 then (
-              prun_table.{newcC,newcU} <- depth;
+            let (newcF,newcU) = get_coord newc in
+            if prun_table.{newcF,newcU} < 0 then (
+              prun_table.{newcF,newcU} <- depth;
               (newc :: cubes_new, n_curr+1)
             )
             else curr in
@@ -961,7 +967,7 @@ struct
         in
         fill_table (List.fold_left new_depth ([],n) cubes) depth
       else
-        Printf.eprintf "# pruning entries = %i =? %i = #perms\n%!" n (lC*lU)
+        Printf.eprintf "# pruning entries = %i =? %i = #perms\n%!" n (lF*lU)
     in
     begin
       try fill_table ([id], 1) 0
@@ -971,13 +977,18 @@ struct
   ;;
 
   let initialize_pruning ?dir () =
-(*    let prunC = CornerP.initialize_pruning ?dir () in *)
-   let prunE = EdgeP2.initialize_pruning ?dir () in
-(*    let prunU = UDSlice2.initialize_pruning ?dir () in *)
-(*    (fun (c,e,u) -> max3 (prunC c) (prunE e) (prunU u)) *)
+    (*    let prunC = CornerP.initialize_pruning ?dir () in *)
+    (*    let prunE = EdgeP2.initialize_pruning ?dir () in *)
+    (*    let prunU = UDSlice2.initialize_pruning ?dir () in *)
+    (*    (fun (c,e,u) -> max3 (prunC c) (prunE e) (prunU u)) *)
    let mul = initialize_mul () in
-   let prun = initialize_file_prun dir "Phase2_cu.prun" prun mul in
-   (fun (c,e,u) -> max (prunE e) prun.{c,u})
+   let get_coord_c (c,e,u) = (c,u) in
+   let prun_c = prun CornerP.length CornerP.id get_coord_c in
+   let prun_cu = initialize_file_prun dir "Phase2_cu.prun" prun_c mul in
+   let get_coord_e (c,e,u) = (e,u) in
+   let prun_e = prun EdgeP2.length EdgeP2.id get_coord_e in
+   let prun_eu = initialize_file_prun dir "Phase2_eu.prun" prun_e mul in
+   (fun (c,e,u) -> max prun_cu.{c,u} prun_eu.{e,u})
 end
 
 
