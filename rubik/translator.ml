@@ -3,6 +3,15 @@
 open Rubik
 open Mindstorm
 
+module type TranslatorT =
+sig
+
+  val make : Rubik.generator * int -> unit
+
+  val face_iter : (Rubik.generator -> int -> unit) -> unit
+
+end
+
 module Make (C: sig
                val conn : Mindstorm.bluetooth Mindstorm.conn
                val motor_fighter : Motor.port
