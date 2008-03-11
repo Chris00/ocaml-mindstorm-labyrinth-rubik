@@ -35,7 +35,7 @@ sig
   sig
     type t = int * int
         (** Position [(x,y)] of the robot relative to its initial
-            position.  (The coordinates of the initial position thus
+            position.  (The coordinates of the initial position thus
             being [(0,0)]).  *)
 
     val compare : t -> t -> int
