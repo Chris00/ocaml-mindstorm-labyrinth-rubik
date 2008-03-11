@@ -65,6 +65,10 @@ module List = struct
     iter 0 l
 end
 
+(* Sys.is_directory does not exist in OCaml 3.09 *)
+let is_directory d =
+  (Unix.stat d).Unix.st_kind = Unix.S_DIR
+
 let max (i:int) j = if i <= j then j else i
 
 let max3 (i:int) j k =
@@ -322,7 +326,7 @@ struct
 end
 
 
-(** Summetries
+(** Symmetries
  ***********************************************************************)
 
 (** The group of the 16 symmetries of the cube that preserve the U-D
@@ -406,7 +410,7 @@ DEFINE INITIALIZE_FILE_MUL(dir, make_mul_table, basename) =
         (* Compute and save the table *)
         let mul_table = make_mul_table() in
         let can_save =
-          try Sys.is_directory dir
+          try is_directory dir
           with Sys_error _ -> Unix.mkdir dir 0o700; true in
         if can_save then
           let fh = open_out_bin fname in
@@ -489,7 +493,7 @@ let initialize_file_prun dir file initialize_prun mul =
         (* Compute and save the table *)
         let prun_table = initialize_prun mul in
         let can_save =
-          try Sys.is_directory dir
+          try is_directory dir
           with Sys_error _ -> Unix.mkdir dir 0o700; true in
         if can_save then
           let fh = open_out_bin fname in
