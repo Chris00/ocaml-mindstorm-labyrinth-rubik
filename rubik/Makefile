@@ -5,7 +5,7 @@ DOC_DIR = doc
 
 OCAMLC_FLAGS = -g -dtypes -dllpath .. -custom -I $(MINDSTORM_PATH) -I ..
 OCAMLOPT_FLAGS = -dtypes -I $(MINDSTORM_PATH) -I ..
-CAMLP4 = $(shell which camlp4of.opt || echo "camlp4o pa_macro.cmo")
+CAMLP4 = $(shell which camlp4of.opt || echo camlp4o pa_macro.cmo)
 PP = $(CAMLP4) $(D_OS) #Camlp4MacroParser.cmo
 
 INTERFACES=$(wildcard *.mli)
@@ -31,11 +31,13 @@ display.exe: LIBS_CMA+= graphics.cma
 test_ppm.exe: ppm.cmo
 test_ppm.exe: LIBS_CMA+=graphics.cma
 
-calibration.exe : rubik.cmo ppm.cmo snapshot.cmo init_color.cmo
-calibration.exe : LIBS_CMA+=graphics.cma
+translator.cmo : movement.cmo
 
-init_color.exe : rubik.cmo display.cmo ppm.cmo snapshot.cmo
-init_color.exe : LIBS_CMA+=graphics.cma
+#init_color.exe : rubik.cmo display.cmo ppm.cmo snapshot.cmo movement.cmo translator.cmo
+#init_color.exe : LIBS_CMA+=graphics.cma
+
+calibration.exe : rubik.cmo ppm.cmo snapshot.cmo movement.cmo translator.cmo display.cmo init_color.cmo
+calibration.exe : LIBS_CMA+=graphics.cma
 
 test_movement.exe: movement.cmo
 
