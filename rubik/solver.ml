@@ -5,6 +5,8 @@
      Christophe Troestler <chris_77@users.sourceforge.net>
      WWW: http://math.umh.ac.be/an/software/
 
+     Julie de Pril <julie_87@users.sourceforge.net>
+
    This library is free software; you can redistribute it and/or modify
    it under the terms of the GNU General Public License version 2.1 or
    later as published by the Free Software Foundation, with the special
@@ -104,12 +106,7 @@ let () =
   printf "Sequence phase 2:\n%!";
   (* let seq2 = Solver2.search_seq_to_goal cubeP2 Phase2.max_moves in *)
   let seq2 = Solver2.multiple_search (List.map fst cubesP2) Phase2.max_moves in
-  List.iter (fun (init,sol) ->
-               let s = List.rev(List.tl(List.rev sol)) in
-               let r = List.fold_left Solver2.mul init s in
-               printf "%s : %i\n" (Phase2.Move.to_string sol)
-                 (Solver2.pruning r)
-            ) seq2;
+  List.iter (fun (init,sol) -> printf "%s\n" (Phase2.Move.to_string sol)) seq2;
 
   let solutions =
     List.map (fun (init, sol) -> (List.assoc init cubesP2, sol)) seq2 in
@@ -117,6 +114,26 @@ let () =
   let apply2 cube sol =
     List.fold_left (fun c m -> Cubie.mul c (move2 m)) cube sol in
 
+  List.iter begin fun (s1,s2) ->
+    let goal = apply2 (apply1 s1) s2 in
+    printf "%s | %s => %s\n%!"
+      (Phase1.Move.to_string s1) (Phase2.Move.to_string s2)
+      (if Cubie.is_identity goal then "OK" else "KO");
+    if not(Cubie.is_identity goal) then (
+      display_cube goal;
+      ignore(wait_next_event [Button_down])
+    );
+  end solutions;
+
+  (* Restart *)
+  let nmoves = 12 in
+  let seq1' = Solver1.solutions cubeP1 nmoves in
+  printf "Phase 1 with %i moves: %i sols\n" nmoves (List.length seq1');
+
+  let cubesP2 = List.map (fun s -> (Phase2.of_cube(apply1 s)), s) seq1' in
+  let seq2 = Solver2.multiple_search (List.map fst cubesP2) Phase2.max_moves in
+  let solutions =
+    List.map (fun (init, sol) -> (List.assoc init cubesP2, sol)) seq2 in
   List.iter begin fun (s1,s2) ->
     let goal = apply2 (apply1 s1) s2 in
     printf "%s | %s => %s\n%!"
