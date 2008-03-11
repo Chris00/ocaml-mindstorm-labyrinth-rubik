@@ -4,6 +4,7 @@ open Ppm
 open Rubik
 open Snapshot
 
+(*
 module Motor = Mindstorm.Motor
 
 let conn = let bt =
@@ -24,7 +25,7 @@ struct
   let cog_is_set_left = true
 end
 
-module M = Translator.Make(C)
+module M = Translator.Make(C)*)
 
 (** Initialize the rubik state taking snapshot of the real rubik!*)
 
@@ -88,8 +89,8 @@ struct
     if lightness r g b > 80 || saturation r g b < 20 then White
     else
       let h = hue r g b in
-      if h <= 26 || h > 300 then Red
-      else if h > 26 && h <= 45 then Orange
+      if h <= 15 || h > 300 then Red
+      else if h > 15 && h <= 45 then Orange
       else if h > 45 && h <= 75 then Yellow
       else if h > 75 && h < 180 then Green
       else Blue
@@ -335,7 +336,7 @@ let edge_list_replacement _ =
   order color_place color_corner
 
 let create_rubik _ =
-  M.face_iter (Pick.take_face);
+  (*M.face_iter (Pick.take_face);*)
   let corner_list_ordered = corner_list_replacement () in
   let edge_list_ordered = edge_list_replacement () in
   let elo = List.map (fun (a,i) -> (a, (i = 1))) edge_list_ordered in

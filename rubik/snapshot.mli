@@ -33,5 +33,8 @@ val start : unit -> webcam
 val stop : webcam -> unit
   (** Stops the webcam. *)
 
+val convert_rb : color array array -> color array array
+  (** Exange the red and blue of the rgb component of the color. *)
+
 val take : webcam -> color array array
   (** Take a snapshot from the webcam and return the image. *)

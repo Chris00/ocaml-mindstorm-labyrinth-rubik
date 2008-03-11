@@ -46,8 +46,14 @@ let vlc_args fname =
 ELSE
 IFDEF MACOS THEN
   (* FIXME: url ? *)
-let vlc_remote = "vlc -I rc ???:// -V image --image-out-replace \
-	--image-out-format png --image-out-prefix "
+(* let vlc_remote = "vlc -I rc ???:// -V image --image-out-replace \ *)
+(* 	--image-out-format png --image-out-prefix " *)
+let vlc_remote = "vlc --intf=rc v4l:// --vout=image --image-out-replace \
+	--image-out-format=png --image-out-prefix="
+let vlc = "/usr/bin/vlc"
+let vlc_args fname =
+  [| "--intf=rc"; "v4l://"; "--vout=image"; "--image-out-replace";
+     "--image-out-format=png"; "--image-out-prefix=" ^ fname |]
 ELSE
   (* Unix *)
 let vlc_remote = "vlc --intf=rc v4l:// --vout=image --image-out-replace \

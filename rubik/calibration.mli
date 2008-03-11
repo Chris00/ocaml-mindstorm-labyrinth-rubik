@@ -1,7 +1,9 @@
 (** This module is used to calibrate the solver *)
 
-(** To put the picking color area on the face of the rubik *)
-val calibrate_webcam : unit -> unit
+val calibrate_webcam : ?snapshot_file:string -> unit -> unit
+(** [calibrate_webcam ?snapshot_file _] hepls for putting the picking color
+    area on good position on the snapshot. [snapshot_file] is the way to
+    access to she ppm snapshot_file.*)
 
 (** To calibrate the mechanics *)
 val calibrate_mechanics : unit -> unit
