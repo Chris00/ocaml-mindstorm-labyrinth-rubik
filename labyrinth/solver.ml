@@ -146,10 +146,9 @@ struct
           let l = List.map (fun (d,_) -> (Labyrinth.rel_dir d, d)) dirs in
           [ try List.assoc `Front l
             with Not_found ->
-              let right = Random.bool() in
-              try List.assoc (if right then `Right else `Left) l
+              try List.assoc `Left l
               with Not_found ->
-                try List.assoc (if right then `Left else `Right) l
+                try List.assoc `Right l
                 with Not_found ->
                   List.assoc `Back l
           ]                             (* 1 elmt list *)
