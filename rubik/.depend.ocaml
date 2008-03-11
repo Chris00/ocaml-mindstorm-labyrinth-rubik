@@ -6,8 +6,8 @@ display.cmo: rubik.cmi display.cmi
 display.cmx: rubik.cmx display.cmi 
 ida.cmo: rubik.cmi 
 ida.cmx: rubik.cmx 
-init_color.cmo: snapshot.cmi rubik.cmi ppm.cmi init_color.cmi 
-init_color.cmx: snapshot.cmx rubik.cmx ppm.cmx init_color.cmi 
+init_color.cmo: translator.cmi snapshot.cmi rubik.cmi ppm.cmi init_color.cmi 
+init_color.cmx: translator.cmx snapshot.cmx rubik.cmx ppm.cmx init_color.cmi 
 movement.cmo: movement.cmi 
 movement.cmx: movement.cmi 
 ppm.cmo: ppm.cmi 
@@ -16,10 +16,12 @@ priority_queue.cmo: priority_queue.cmi
 priority_queue.cmx: priority_queue.cmi 
 rubik.cmo: rubik.cmi 
 rubik.cmx: rubik.cmi 
-run.cmo: rubik.cmi ida.cmo display.cmi 
-run.cmx: rubik.cmx ida.cmx display.cmx 
+run.cmo: translator.cmi rubik.cmi display.cmi 
+run.cmx: translator.cmx rubik.cmx display.cmx 
 snapshot.cmo: ppm.cmi snapshot.cmi 
 snapshot.cmx: ppm.cmx snapshot.cmi 
+solver.cmo: rubik.cmi ida.cmo solver.cmi 
+solver.cmx: rubik.cmx ida.cmx solver.cmi 
 test_movement.cmo: movement.cmi 
 test_movement.cmx: movement.cmx 
 test_ppm.cmo: ppm.cmi 
@@ -31,5 +33,6 @@ test_translator.cmx: translator.cmx rubik.cmx
 translator.cmo: rubik.cmi movement.cmi translator.cmi 
 translator.cmx: rubik.cmx movement.cmx translator.cmi 
 display.cmi: rubik.cmi 
-init_color.cmi: snapshot.cmi rubik.cmi 
+init_color.cmi: rubik.cmi 
+solver.cmi: rubik.cmi 
 translator.cmi: rubik.cmi 
