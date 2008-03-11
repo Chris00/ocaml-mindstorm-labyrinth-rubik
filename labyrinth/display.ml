@@ -29,7 +29,7 @@ open Printf
 open Graphics
 
 let (size_x, size_y) = (720,720)
-let (x0,y0) = (360, 360)      (* initial position *)
+let (x0,y0) = (360, 350)      (* initial position *)
 let square_length = 40 (* pixels, excluding walls *)
 let robot_color = rgb 65 40 189
 let wall_thickness = 2 (* pixels; wall are twice as thick *)
@@ -182,6 +182,10 @@ struct
       List.iter draw_square boundary;
       (* The first move of the path has just been made, do not draw it *)
       if !current_path <> [] then draw_path (List.tl !current_path);
+      let pos = L.robot_pos() in
+      List.iter begin fun (d,_) ->
+        if L.wall_on pos d = `False then draw_wall pos d false
+      end (Coord.nbh pos);
       draw_robot();
 
       match affects with None -> () | Some f -> f dismissed boundary
@@ -196,7 +200,7 @@ struct
     (* There should be no path but, if we modified the labyrinth while
        the robot was discovering it, one would still like to see that
        path that we were trying to follow. *)
-    draw_path !current_path;
+    if !current_path <> [] then draw_path (List.tl !current_path);
     draw_robot ~color ();
     try_set_font text_fonts; (* ignore nonexistent font *)
     set_color black;
