@@ -6,6 +6,26 @@ open Snapshot
 
 module Motor = Mindstorm.Motor
 
+let conn = let bt =
+  if Array.length Sys.argv < 2 then (
+    printf "%s <bluetooth addr>\n" Sys.argv.(0);
+    exit 1;
+  )
+  else Sys.argv.(1) in Mindstorm.connect_bluetooth bt
+
+module C =
+struct
+  let conn = conn
+  let motor_fighter = Motor.a
+  let motor_hand = Motor.b
+  let motor_pf = Motor.c
+  let push_hand_port = `S2
+  let push_fighter_port = `S1
+  let cog_is_set_left = true
+end
+
+module M = Translator.Make(C)
+
 (** Initialize the rubik state taking snapshot of the real rubik!*)
 
 type colorf = Red | Green | Yellow | White | Orange | Blue
@@ -159,7 +179,7 @@ struct
       |3 -> ret
       |_ -> pick_y (y+1) ((pick_x 0 []) :: ret) in
     List.concat (pick_y 0 [])
- 
+
 
   let ( +! ) (x1,y1,z1) (x2,y2,z2) = (x1 + x2, y1 + y2, z1 + z2)
 
@@ -263,7 +283,7 @@ let harmony ce pl orient =
     if i = lgth then ret
     else iter (ret && (pl.((i+orient) mod lgth) = ce.(i))) (i+1)
   in iter true 0
- 
+
 let find_orientation ce pl =
   let lgth = Array.length ce in
   let rec iter it =
@@ -314,26 +334,6 @@ let edge_list_replacement _ =
                                    (edge_def edge), edge) edge_list in
   order color_place color_corner
 
-let conn = let bt =
-  if Array.length Sys.argv < 2 then (
-    printf "%s <bluetooth addr>\n" Sys.argv.(0);
-    exit 1;
-  )
-  else Sys.argv.(1) in Mindstorm.connect_bluetooth bt
-
-module C =
-struct
-  let conn = conn
-  let motor_fighter = Motor.a
-  let motor_hand = Motor.b
-  let motor_pf = Motor.c
-  let push_hand_port = `S2
-  let push_fighter_port = `S1
-  let cog_is_set_left = true
-end
-
-module M = Translator.Make(C)
-
 let create_rubik _ =
   M.face_iter (Pick.take_face);
   let corner_list_ordered = corner_list_replacement () in
@@ -342,18 +342,18 @@ let create_rubik _ =
   let cubie = Cubie.make corner_list_ordered elo in
   cubie
 
-let () =
-  Calibration.calibrate_webcam ();
+(**let () =
+  printf "t%!";
   let c = create_rubik () in
   let x0 = 10
   and y0 = 10
   and len_sq = 30 in
   let colors = (Color.color_graphics (Face.color_of U),
-                Color.color_graphics (Face.color_of L), 
-                Color.color_graphics (Face.color_of F), 
-                Color.color_graphics (Face.color_of R), 
-                Color.color_graphics (Face.color_of B), 
+                Color.color_graphics (Face.color_of L),
+                Color.color_graphics (Face.color_of F),
+                Color.color_graphics (Face.color_of R),
+                Color.color_graphics (Face.color_of B),
                 Color.color_graphics (Face.color_of D)) in
   open_graph ("");
   Display.cube x0 y0 colors len_sq c;
-  ignore(wait_next_event [Button_down])
+  ignore(wait_next_event [Button_down])*)
