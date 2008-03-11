@@ -101,15 +101,20 @@ struct
     M.execute()
 
   let face_iter f =
-    f L 3;
-    M.kick(
-      fun _ -> f B 3; M.kick(
-        fun _ -> f R 3; M.kick(
-          fun _ -> f F 3; M.turn_pf 1(
-            fun _ -> M.kick(
-              fun _ -> f D 0; M.kick(
-                fun _ -> M.kick(
-                  fun _ -> f U 0; M.end_cont())))))));
+    M.free_rubik(
+      fun _ -> f L 3;M.kick(
+        fun _ -> M.free_rubik(
+          fun _ -> f B 3; M.kick(
+            fun _ -> M.free_rubik(
+              fun _ -> f R 3; M.kick(
+                fun _ -> M.free_rubik(
+                  fun _ -> f F 3; M.turn_pf 1(
+                    fun _ -> M.kick(
+                      fun _ -> M.free_rubik(
+                        fun _ -> f D 0; M.kick(
+                          fun _ -> M.kick(
+                            fun _ -> M.free_rubik(
+                              fun _ -> f U 0; M.end_cont())))))))))))));
     M.execute()
 
 end
