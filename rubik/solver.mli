@@ -21,6 +21,6 @@
 
 open Rubik
 
-val find_first : Cubie.t -> (Phase1.Move.t list *Phase2.Move.t list) list
+val find_first : Cubie.t -> (generator * int) list
   (** Returns the first solution it finds, even if it is
       suboptimal. *)

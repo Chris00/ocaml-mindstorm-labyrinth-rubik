@@ -66,7 +66,11 @@ let find_first cube =
     );
   end solutions;
 
-  solutions
+  match solutions with
+  | [] -> []
+  | (sol1, sol2) :: _ ->
+      List.map Phase1.Move.generator sol1
+      @ List.map Phase2.Move.generator sol2
 ;;
 
 
