@@ -61,8 +61,8 @@ let find_first cube =
       (Phase1.Move.to_string s1) (Phase2.Move.to_string s2)
       (if Cubie.is_identity goal then "OK" else "KO");
     if not(Cubie.is_identity goal) then (
-      display_cube goal;
-      ignore(wait_next_event [Button_down])
+      (* display_cube goal; *)
+      (* ignore(wait_next_event [Button_down]) *)
     );
   end solutions;
 
@@ -70,6 +70,7 @@ let find_first cube =
 ;;
 
 
+(*
 let _ =
   (* Restart *)
   let nmoves = 12 in
@@ -90,3 +91,4 @@ let _ =
       ignore(wait_next_event [Button_down])
     );
   end solutions;
+*)
