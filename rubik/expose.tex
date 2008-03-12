@@ -289,6 +289,29 @@
   \end{block}
 \end{frame}
 
+
+
+\section{L'ensemble des Rubik's cubes}
+\begin{frame} \frametitle{L'ensemble de tous les Rubik's cubes}
+
+  \begin{definition}
+    $\G ={}$l'ensemble de toutes les configurations possibles du
+    Rubik's cube i.e.\ toutes les configurations obtenues en
+    appliquant une séquence quelconque de mouvements à $\id$.
+  \end{definition}
+
+  \begin{align*}
+    \G = \Biggl\{
+    &\cube{expose-id.tex} = \id, \quad
+    \cube{expose-F1.tex} = \id * F, \quad
+    \cube{expose-F1R2.tex} = \id * F * R^2, \\
+    &\cube{expose-F1B2.tex} = \id * F * B^2 = \id * B^2 * F, \quad
+    \dotsc\Biggr\}
+  \end{align*}
+\end{frame}
+
+
+
 \begin{frame} \frametitle{Notion de mouvement inverse}
 Prenons un Rubik's cube quelconque. %photo
 \newline
@@ -312,24 +335,13 @@ De la même façon, on peut dire que $F^2$ est son propre inverse, car appliquer $
 \end{frame}
 
 
-\section{Ensemble des Rubik's cubes}
-\begin{frame} \frametitle{L'ensemble de tous les Rubik's cubes}
+\section{Le problème}
 
-  \begin{definition}
-    $\G ={}$l'ensemble de toutes les configurations possibles du
-    Rubik's cube i.e.\ toutes les configurations obtenues en
-    appliquant une séquence quelconque de mouvements à $\id$.
-  \end{definition}
 
-  \begin{align*}
-    \G = \Biggl\{
-    &\cube{expose-id.tex} = \id, \quad
-    \cube{expose-F1.tex} = \id * F, \quad
-    \cube{expose-F1R2.tex} = \id * F * R^2, \\
-    &\cube{expose-F1B2.tex} = \id * F * B^2 = \id * B^2 * F, \quad
-    \dotsc\Biggr\}
-  \end{align*}
+\begin{frame} \frametitle{Le problème}
+  
 \end{frame}
+
 
 \section{Idée de l'algorithme}
 \begin{frame} \frametitle{Idée de l'algorithme}
