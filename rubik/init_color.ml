@@ -253,47 +253,74 @@ struct
   let tab_c =
     [|red; green; yellow; white; orange; blue|]
 
-      (* draws square [x] [y] are the coordinate of the left bottom corner
-         s the size and c the color *)
-  let ds x y c s =
-    set_color c;
-    fill_rect (s*x) (s*(y+1)) s s;
-    set_color black;
-    draw_rect (s*x) (s*(y+1)) s s
-
+  let convert_color current_color key = match key with
+    |'r' -> printf "r\n%!"; 0
+    |'g' -> printf "g\n%!"; 1
+    |'y' -> printf "y\n%!"; 2
+    |'w' -> printf "w\n%!"; 3
+    |'o' -> printf "o\n%!"; 4
+    |'b' -> printf "b\n%!"; 5
+    |_ -> current_color
 
   let man_take_face face orient =
     let side = 50 in
 
+    let before i = (5 + i) mod 6 in
+
+    let next i = (i + 1) mod 6 in
+
+    (* draws square! [x] [y] are the coordinate of the left bottom corner
+       and an [c] is an int representinf the color. (cf tab_c) *)
+    let ds x y c =
+      set_color tab_c.(c);
+      fill_rect (side*x) (side*(y+1)) side side;
+      set_color black;
+      draw_rect (side*x) (side*(y+1)) side side in
+
     let ord_sq (x,y) =
-    let i = x / 50 in
-    let j = y / 50 in
-    i , (j-1) in
+      let i = x / side in
+      let j = y / side in
+      i , (j-1) in
 
     let tmp_matrix = Array.make_matrix 3 3 0 in
 
-    open_graph (sprintf "%ix%i" (3*side) (4*side));
+    open_graph ("");
     set_color red;
     fill_rect 0 side (3*side) (3*side);
     set_color black;
-    draw_rect 0 side side side;
-    draw_rect side side side side;
-    draw_rect (2*side) side side side;
-    draw_rect 0 (2*side) side side;
-    draw_rect side (2*side) side side;
-    draw_rect (2*side) (2*side) side side;
-    draw_rect 0 (3*side) side side;
-    draw_rect side (3*side) side side;
-    draw_rect (2*side) (3*side) side side;
-    draw_rect (side/2) (side/3) (2*side) (side/3);
-    draw_string ("next");
-    let rec refresh (i,j) =
-      let new_col = (((tmp_matrix.(i).(j)) + 1) mod 6) in
-      ds i j (tab_c.(new_col)) side;
-      tmp_matrix.(i).(j) <- new_col;
-       let status = wait_next_event [Button_down] in
-      if status.mouse_y >= 50 then refresh (ord_sq (status.mouse_x,status.mouse_y))
-    in refresh (0,0);
+    for i = 0 to 2
+    do
+      for j = 1 to 3
+      do
+        draw_rect (i*side) (j*side) side side;
+      done;
+    done;
+    draw_rect (side/3) (side/3) (2*side + side/3) (side/3);
+    moveto (2*side/3) (side/3);
+    draw_string ("Pick next face");
+    let rec color_change new_color (i,j)  =
+      ds i j new_color;
+      tmp_matrix.(i).(j) <- new_color;
+      next_event ()
+    and next_event _ =
+      let status = ref (wait_next_event [Button_down; Key_pressed]) in
+      while((!status).mouse_y >= 4 * side || (!status).mouse_x >= 3 * side)
+      do
+        status := wait_next_event [Button_down; Key_pressed]
+      done;
+      if (!status).mouse_y >= side (* the user want to change a color *)
+      then
+        let (x,y) = ord_sq ((!status).mouse_x,(!status).mouse_y) in
+        if not (!status).button
+        then
+          begin
+            printf "key";
+            color_change (convert_color tmp_matrix.(x).(y) (!status).key)
+            (ord_sq ((!status).mouse_x,(!status).mouse_y))
+          end
+        else
+          color_change ((tmp_matrix.(x).(y) + 1) mod 6) (x,y)
+    in next_event ();
     let f = (match face with
              |U -> Face.u
              |R -> Face.r
@@ -311,7 +338,7 @@ struct
     done;
     printf "%s %i %!\n" (Face.name face) orient;
     printf "%s%!\n" (Face.to_string face)
-    (* close_graph () *)
+   (*  close_graph () *)
 
 
   let take_face face orient =
@@ -400,7 +427,6 @@ let edge_def = function
 (* returns true if the corner or edge with the orientation [orient]
    fit in the place (which is given by a corner or a an edge*)
 let harmony tf np orient =
-  printf "%i%!" orient;
   let lgth = Array.length np in
   let rec iter ret i =
     if i = lgth then ret
@@ -408,7 +434,6 @@ let harmony tf np orient =
   in iter true 0
 
 let find_orientation tf np =
-  printf "----\n%!";
   let lgth = Array.length tf in
   let rec iter it =
     if it = lgth then 3
@@ -420,7 +445,6 @@ let find_orientation tf np =
 let find tf new_position =
   (* finds the corner or the edge in the list [new_position] where fit the
      element [tf] *)
-  printf "k\n%!";
   let rec iter np_l = match np_l with
     |[] -> failwith "No place find for a corner/edge"
     |(el_color, el_return) :: li ->
@@ -467,8 +491,8 @@ let create_rubik face_iter =
   let cubie = Cubie.make corner_list_ordered elo in
   cubie
 
-
-(* let () =
+(*
+let () =
   (*Pick.man_take_face U 0 *)
   printf "t\n%!";
   printf "-%s\n%! " (Color.to_string (Face.color_fid (U,8)));
@@ -500,4 +524,4 @@ let create_rubik face_iter =
        (corner_set Cubie.UFL)) in
   printf "or - %i\n%!" o;
   Display.cube x0 y0 colors len_sq cubie;
-  ignore(wait_next_event [Button_down]) *)
+  ignore(wait_next_event [Button_down])*)
