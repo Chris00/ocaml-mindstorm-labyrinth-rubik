@@ -94,13 +94,13 @@ NEW_NAV= ([ -f "$*.nav" ] && [ -n "`diff $*.old.nav $*.nav`" ])
 
 .PHONY: clean
 clean::
-	rm -f *~ *.aux *.log *.nav *.out *.snm *.toc *.idx *.ind *.ilg *.rip
-	rm -f *.lof *.ofl *.tpt
-	rm -f *.dvi *.ps *.pdf  *.mp{,x,s} *.eps.{gz,bb}
+	$(RM) *~ *.aux *.log *.nav *.out *.snm *.toc *.idx *.ind *.ilg *.rip
+	$(RM) *.lof *.ofl *.tpt
+	$(RM) *.dvi *.ps *.pdf  *.mp{,x,s} *.eps.{gz,bb}
 # AUCTeX temporary files (aks whether to do it):
 	@if [ -d auto/ ]; then \
 	  echo -n "Erase AUCTeX directory auto/ ? [y/N] "; \
 	  read ANSWER; \
 	  if [ "$$ANSWER" = "y" -o "$$ANSWER" = "Y" ]; then \
-	    rm -rf auto/; fi; \
+	    $(RM) -rf auto/; fi; \
 	fi
