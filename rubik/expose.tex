@@ -157,10 +157,18 @@
         \draw[dashed] (3,6) -- (4.5,4.5) -- (6,6);
         \draw[->,thick] (3.8, 5.2) arc(135:45: 1);
       }
-      \only<2>{\input{expose-F1.tex}}
-      \only<3>{\input{expose-F2.tex}}
-      \only<4>{\input{expose-F3.tex}}
-      \only<5>{\input{expose-id.tex}}
+      \only<2>{
+        \input{expose-F1.tex}
+        \node[rotate=-90] at (4.5,4.5) {$F$};}
+      \only<3>{
+        \input{expose-F2.tex}
+        \node[rotate=-180] at (4.5,4.5) {$F$};}
+      \only<4>{
+        \input{expose-F3.tex}
+        \node[rotate=90] at (4.5,4.5) {$F$};}
+      \only<5>{
+        \input{expose-id.tex}
+        \node at (4.5,4.5) {$F$};}
     \end{tikzpicture}
     \par\vspace{1ex}
 
@@ -174,7 +182,7 @@
   \hspace*{5ex}%
   \begin{minipage}[b]{0.3\linewidth}
 
-    \begin{tikzpicture}[x=0.7ex,y=0.7ex]
+    \begin{tikzpicture}[x=0.8ex,y=0.8ex]
       \input{expose-id.tex}
       \node[right] at (13, 4.5) {$\id$};
       \onslide<2->%
