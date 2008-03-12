@@ -2,7 +2,6 @@ open Graphics
 open Printf
 open Ppm
 open Rubik
-open Snapshot
 
 (** Initialize the rubik state taking snapshot of the real rubik!*)
 
@@ -320,12 +319,12 @@ struct
     let snapshot = Snapshot.take webcam in
     Snapshot.stop webcam;
     let f = (match face with
-           |U -> Face.u
-           |R -> Face.r
-           |F -> Face.f
-           |L -> Face.l
-           |D -> Face.d
-           |B -> Face.b) in
+             | U -> Face.u
+             | R -> Face.r
+             | F -> Face.f
+             | L -> Face.l
+             | D -> Face.d
+             | B -> Face.b) in
     let fill_matrix_square x y =
       let (i,j) = Face.rotate (x,y) orient in
       f.(x).(y) <- Color.name
