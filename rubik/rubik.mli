@@ -32,6 +32,10 @@ type generator =
 val char_of_generator : generator -> char
   (** Returns the generator as a character. *)
 
+val generator_iter : (generator -> unit) -> unit
+  (** [generator_iter f] iterates [f] on all the generators. *)
+
+
 (** Abstract vision of moves. *)
 module type MoveT =
 sig
@@ -144,13 +148,12 @@ sig
         permuation of the cube.  *)
 
   val corner : t -> corner -> corner * int
-    (** [corner cube c] returns the corner and its orientation (= [0],
-        [1], pr [2] CW rotations) by which [c] is replaced in the
-        [cube]. *)
+    (** [corner cube c] returns the corner and its (change of)
+        orientation ([0], [1], [2] CW rotations of 120°) by which [c]
+        is replaced in the [cube]. *)
   val edge : t -> edge -> edge * int
     (** [edge cube e] returns the edge and its flip state ([0]: not
-        flipped, ot [1]: flipped) by which [e] is replaced in the
-        [cube]. *)
+        flipped, ot [1]: flipped) by which [e] is replaced in the [cube]. *)
 
   val move : Move.t -> t
     (** [move g] the generator [g] expressed at the cubie level.

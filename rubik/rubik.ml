@@ -98,6 +98,8 @@ let generator = [| F; B; L; R; U; D |]
 let char_of_generator = function
   | F -> 'F' | B -> 'B' | L -> 'L' | R -> 'R' | U -> 'U' | D -> 'D'
 
+let generator_iter f = f F;  f B;  f L;  f R;  f U;  f D
+
 module type MoveT =
 sig
   type t
