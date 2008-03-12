@@ -308,6 +308,11 @@
     &\cube{expose-F1B2.tex} = \id * F * B^2 = \id * B^2 * F, \quad
     \dotsc\Biggr\}
   \end{align*}
+
+  \onslide<2->%
+  \vspace*{3ex}%
+  Nombre d'éléments de $\G = 43.252.003.274.489.856.000
+  \approx 43 \cdot 10^{18}$
 \end{frame}
 
 
@@ -340,6 +345,47 @@ De la même façon, on peut dire que $F^2$ est son propre inverse, car appliquer $
 
 \begin{frame} \frametitle{Le problème}
   
+  \begin{minipage}[t]{0.43\linewidth}
+    \begin{block}{Première formulation}
+      Étant donné un cube $g$, le remettre en \og position de base\fg.
+    \end{block}
+  \end{minipage}
+  \hfill
+  \onslide<5->{%
+    \begin{minipage}[t]{0.47\linewidth}
+      \begin{block}{Formulation mathématique}
+        Étant donné  $g \in \G$, trouver des mouvements de base $X_1,
+        \dotsc, X_n$ tels que $g * X_1 * \cdots * X_n = \id$.
+      \end{block}
+    \end{minipage}
+  }
+
+  \vspace*{3ex}%
+  \textsc{Exemple:}
+  \begin{center}
+    \begin{tikzpicture}[x=1ex,y=1ex]
+      \input{expose-F1R2U3.tex}
+      \node[below] at (4.5, -0.5) {$g$};
+      \onslide<2->%
+      \begin{scope}[xshift=15ex]
+        \draw[<-,thick] (-0.5, 4.5) -- +(-2.5,0) node[pos=0.5,above]{$U$};
+        \input{expose-F1R2.tex}
+        \node[below] at (4.5, -0.5) {$g * U$};
+      \end{scope}
+      \onslide<3->%
+      \begin{scope}[xshift=30ex]
+        \draw[<-,thick] (-0.5, 4.5) -- +(-2.5,0) node[pos=0.5,above]{$R^2$};
+        \input{expose-F1.tex}
+        \node[below] at (4.5, -0.5) {$g * U * R^2$};
+      \end{scope}
+      \onslide<4->%
+      \begin{scope}[xshift=45ex]
+        \draw[<-,thick] (-0.5, 4.5) -- +(-2.5,0) node[pos=0.5,above]{$F^3$};
+        \input{expose-id.tex}
+        \node[below] at (4.5, -0.5) {$g * U * R^2 * F^3 = \id$};
+      \end{scope}
+    \end{tikzpicture}
+  \end{center}
 \end{frame}
 
 
@@ -401,6 +447,9 @@ Par exemple:
 
   \bibitem{} Herbert Kociemba, Cube Explorer pages,
     \url{http://kociemba.org/cube.htm}
+
+  \bibitem{} Rubik's Cube group, Wikipedia,
+    \url{http://en.wikipedia.org/wiki/Rubik's_Cube_group}
   \end{thebibliography}
 \end{frame}
 
