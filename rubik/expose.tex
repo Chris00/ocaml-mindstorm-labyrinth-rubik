@@ -3,6 +3,7 @@
 
 \usepackage[latin1]{inputenc}
 \usepackage[francais]{babel}
+\usepackage{textcomp}
 \usepackage{times,mathptmx}
 \usepackage{graphicx,tikz}
 
@@ -13,6 +14,11 @@
 %\setbeameroption{show notes on second screen}
 
 \setlength{\overfullrule}{10pt}
+
+\AtBeginDocument{
+  \setlength{\abovedisplayskip}{3pt plus 1pt}
+  \setlength{\belowdisplayskip}{\abovedisplayskip}
+}
 
 \definecolor{mygreen}{RGB}{23, 120, 49}
 \definecolor{lightgreen}{RGB}{238, 255, 151}
@@ -97,12 +103,42 @@
   \tableofcontents[subsectionstyle=hide]
 \end{frame}
 
-% Besoin d'un slide préliminaire pour expliquer ce qu'est un Rubik's cube et comment ça marche?
+% Besoin d'un slide préliminaire pour expliquer ce qu'est un Rubik's
+% cube et comment ça marche?
 
 \section{Préliminaires}
 \begin{frame} \frametitle{Appellation des faces du Rubik's cube}
-%dessin d'un Rubik's cube avec le nom des faces (F,B,U,D,L,R)
-Ce Rubik's cube "vierge" est appelé le Rubik's cube \textit{identité}.
+  % dessin d'un Rubik's cube avec le nom des faces (F,B,U,D,L,R)
+  \begin{tikzpicture}[x=3ex,y=3ex]
+    \input{expose-id.tex}
+    \only<2->{%
+      % Cover with a transparent white to have smooter colors
+      \fill[semitransparent,white] (0,0) rectangle (11.14,8.14); 
+      % Label faces
+      \node at (4.5,4.5) {$F$};
+      \node at (9.62, 6.62) {$B$};
+      \node at (4.5, 1.5) {$D$};
+      \node at (1.5, 4.5) {$L$};
+      \node[rotate=-13] at (5.5, 7.02) {$U$};
+      \node[rotate=10] at (7, 5.5) {$R$};
+    }
+  \end{tikzpicture}
+  \hfil
+  \begin{minipage}[b]{0.4\linewidth}
+    Rubik's cube en «~position de base~», appelé le Rubik's cube
+    \textit{identité}.
+
+    \onslide<2->%
+    \begin{align*}
+      F &= \text{Front}\\
+      B &= \text{Back}\\
+      L &= \text{Left}\\
+      R &= \text{Right}\\
+      U &= \text{Up}\\
+      D &= \text{Down}
+    \end{align*}
+    %\vspace*{10ex}
+  \end{minipage}
 \end{frame}
 
 \section{Notion de mouvement}

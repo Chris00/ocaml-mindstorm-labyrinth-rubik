@@ -17,8 +17,8 @@ all: byte native
 byte: $(PROGRAM:.ml=.exe)
 native: $(PROGRAM:.ml=.com)
 
-RUN_LIBS=rubik.ml ida.ml movement.ml translator.ml display.ml solver.ml \
-  ppm.ml snapshot.ml init_color.ml
+RUN_LIBS=rubik.ml ida.ml movement.ml translator.ml display.ml display_base.ml \
+  solver.ml ppm.ml snapshot.ml init_color.ml
 run.exe: LIBS_CMA+= graphics.cma
 run.exe: $(RUN_LIBS:.ml=.cmo)
 run.com: LIBS_CMXA+= graphics.cmxa
@@ -40,12 +40,25 @@ init_color.exe : LIBS_CMA+=graphics.cma
 calibration.exe : rubik.cmo ppm.cmo snapshot.cmo movement.cmo translator.cmo display.cmo init_color.cmo
 calibration.exe : LIBS_CMA+=graphics.cma
 
+# Exposé
+TIKZ=id.tex
+expose.pdf: expose.tex $(addprefix expose-, $(TIKZ))
+
+expose-%.tex: expose.exe
+	./$<
+
+expose.exe: rubik.cmo display_base.cmo
+expose.exe: LIBS_CMA+=graphics.cma
+
+# Tests
 test_movement.exe: movement.cmo
 
 test_translator.exe : movement.cmo translator.cmo
 
 test_snapshot.exe : ppm.cmo snapshot.cmo
 test_snapshot.exe : LIBS_CMA+=graphics.cma
+
+
 
 # Generate HTML documentation for these modules only
 .PHONY: doc
@@ -73,6 +86,6 @@ images/Rubik_cube.jpg: images/Rubik_cube.svg
 	cd images/ && convert $^ $@
 
 clean::
-	-$(RM) $(wildcard *.obj *.lib)
+	-$(RM) $(wildcard *.obj *.lib expose-*.tex)
 	-$(CD) images/ && $(RM) Rubik_cube.jpg
 	-$(RM) -rf $(DOC_DIR)
