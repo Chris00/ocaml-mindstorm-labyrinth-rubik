@@ -96,7 +96,7 @@ NEW_NAV= ([ -f "$*.nav" ] && [ -n "`diff $*.old.nav $*.nav`" ])
 clean::
 	$(RM) *~ *.aux *.log *.nav *.out *.snm *.toc *.idx *.ind *.ilg *.rip
 	$(RM) *.lof *.ofl *.tpt
-	$(RM) *.dvi *.ps *.pdf  *.mp{,x,s} *.eps.{gz,bb}
+	$(RM) *.dvi *.ps *.pdf  *.mp $.mpx *.mps *.eps.gz *.eps.bb
 # AUCTeX temporary files (aks whether to do it):
 	@if [ -d auto/ ]; then \
 	  echo -n "Erase AUCTeX directory auto/ ? [y/N] "; \
