@@ -3,6 +3,9 @@
 open Rubik
 module D = Display_base
 
+(* Left associative *)
+let ( >> ) c m = Cubie.mul c (Cubie.move(Move.make m))
+
 let geom = { D.geom with D.width = 1.; height = 1. }
 
 
@@ -13,7 +16,11 @@ let save fname ?(geom=geom) cube =
 
 
 let () =
-  save "id" Cubie.id
+  save "id" Cubie.id;
+
+  save "F1" (Cubie.id >> (F,1));
+  save "F2" (Cubie.id >> (F,2));
+  save "F3" (Cubie.id >> (F,3));
 
 
 
