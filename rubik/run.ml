@@ -82,11 +82,12 @@ let () =
                D,1; B,2; R,3; U,1; D,2] in*)
 
   let moves = List.map (fun m -> Cubie.move (Move.make m)) moves in
-  let cube = List.fold_left Cubie.mul Cubie.id moves in
-  display_cube cube;
+ (** let cube = List.fold_left Cubie.mul Cubie.id moves in
+  display_cube cube;*)
 
 
-  let solution = Solver.find_first cube in
+  let solution = Solver.find_first cubie in
+  List.iter M.make solution;
 
 
   (********* Physical part *********)
