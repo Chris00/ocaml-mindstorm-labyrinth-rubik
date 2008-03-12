@@ -50,6 +50,10 @@ rubik/%:
 	cd rubik/ && $(MAKE) $(@F)
 
 include Makefile.ocaml
+# Define the OS type for the Camlp4 preprocessor, RM,...
+.os_type: make_os_type.exe
+	"./$<" > $@
+include .os_type
 
 clean::
 	$(RM) *.exe *.com
