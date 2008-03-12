@@ -37,7 +37,7 @@ let ( *! ) a (x,y) = (a * x, a * y)
    corner *)
 type face = {
   xy : vector; (* The coordinates of the bottom left corner of the face *)
-  v1 : vector;  (* The bottom edge vector, its length = facelet "width" *)
+  v1 : vector; (* The bottom edge vector, its length = facelet "width" *)
   v2 : vector; (* The left edge vector, its length = facelet "height" *)
 }
 
@@ -88,7 +88,7 @@ let sub3 x y =
   assert(0 <= x && x <= 2 && 0 <= y && y <= 2);
   if y <= x then x - y else 3 + x - y
 
-(* substraction module 2 *)
+(* substraction modulo 2 *)
 let sub2 x y =
   assert(0 <= x && x <= 1 && 0 <= y && y <= 1);
   if y <= x then x - y else 2 + x - y
