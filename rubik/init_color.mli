@@ -86,8 +86,8 @@ sig
 end
 
 val find_orientation : colorf array -> colorf array -> int
-  (** [find_orientation ce pl] returns the orientation of a corner or an edge
-      [ce] in the place [pl] which is also a corner or an edge.
+  (** [find_orientation tf np] returns the orientation of a corner or an edge
+      [tf] in the place [np] which is also a corner or an edge.
       It returns [3] if it's impossible to place the corner*)
 
 val find : colorf array -> (colorf array * 'a) list -> 'a * int
@@ -103,12 +103,14 @@ val corner_list_replacement : unit -> (Cubie.corner * int) list
       the cubie for a solving search*)
 
 val edge_list_replacement : unit -> (Cubie.edge * int) list
-  (** [edge_list_replacement _] gives  the list of the edges
+  (** [edge_list_replacement ()] gives  the list of the edges
       and their orientation who replace in the real cubie
       this edges : UR, UF, UL, UB, DR, DF, DL, DB, FR, FL, BL, BR
       This list is used for Rubik.Cubie.make which initialize
       the cubie for a solving search*)
 
-val create_rubik : unit -> Cubie.t
-  (** [create_rubik _] takes the color of the rubik and
-      create the Cubie to be solve! *)
+val create_rubik : ((Rubik.generator -> int -> unit) -> unit)  -> Cubie.t
+  (** [create_rubik face_iter] is used to initialize rubik colors and
+      create! [face_iter] is a function, which given picking color function,
+      moves the rubik and execute the function giving the specification of
+      the face and the rotation *)

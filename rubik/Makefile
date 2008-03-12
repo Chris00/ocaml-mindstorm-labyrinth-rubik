@@ -18,8 +18,8 @@ all: byte native
 byte: $(PROGRAM:.ml=.exe)
 native: $(PROGRAM:.ml=.com)
 
-RUN_LIBS=rubik.ml priority_queue.ml a_star.ml ida.ml movement.ml \
-	translator.ml display.ml solver.ml
+RUN_LIBS=rubik.ml priority_queue.ml a_star.ml ida.ml ppm.ml snapshot.ml \
+	 movement.ml translator.ml display.ml solver.ml init_color.ml
 run.exe: LIBS_CMA+= graphics.cma
 run.exe: $(RUN_LIBS:.ml=.cmo)
 run.com: LIBS_CMXA+= graphics.cmxa
@@ -35,8 +35,8 @@ test_ppm.exe: LIBS_CMA+=graphics.cma
 
 translator.cmo : movement.cmo
 
-#init_color.exe : rubik.cmo display.cmo ppm.cmo snapshot.cmo movement.cmo translator.cmo
-#init_color.exe : LIBS_CMA+=graphics.cma
+init_color.exe : rubik.cmo display.cmo ppm.cmo snapshot.cmo movement.cmo translator.cmo
+init_color.exe : LIBS_CMA+=graphics.cma
 
 calibration.exe : rubik.cmo ppm.cmo snapshot.cmo movement.cmo translator.cmo display.cmo init_color.cmo
 calibration.exe : LIBS_CMA+=graphics.cma

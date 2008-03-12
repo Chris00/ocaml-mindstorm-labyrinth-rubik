@@ -69,6 +69,9 @@ let mul_and_print move c m =
 
 
 let () =
+  let cubie = Init_color.create_rubik (M.face_iter) in
+  display_cube cubie;
+
   let moves = [F,3; R,2; U,1; B,3; D,1; L,2; R,3; U,2; R,3; B,1;
                F,3; F,1; R,1; U,3; B,1; D,2; L,3; B,2 ] in
   (* Patterns from http://www.math.ucf.edu/~reid/Rubik/patterns.html *)
@@ -89,7 +92,6 @@ let () =
   (********* Physical part *********)
   (*  List.iter M.make (List.map Phase1.Move.generator seq1);
       List.iter M.make (List.map Phase2.Move.generator seq2)*)
-
 
 (*   flush stdout; *)
   ignore(wait_next_event [Button_down])

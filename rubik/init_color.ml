@@ -4,32 +4,11 @@ open Ppm
 open Rubik
 open Snapshot
 
-(*
-module Motor = Mindstorm.Motor
-
-let conn = let bt =
-  if Array.length Sys.argv < 2 then (
-    printf "%s <bluetooth addr>\n" Sys.argv.(0);
-    exit 1;
-  )
-  else Sys.argv.(1) in Mindstorm.connect_bluetooth bt
-
-module C =
-struct
-  let conn = conn
-  let motor_fighter = Motor.a
-  let motor_hand = Motor.b
-  let motor_pf = Motor.c
-  let push_hand_port = `S2
-  let push_fighter_port = `S1
-  let cog_is_set_left = true
-end
-
-module M = Translator.Make(C)*)
-
 (** Initialize the rubik state taking snapshot of the real rubik!*)
 
 type colorf = Red | Green | Yellow | White | Orange | Blue
+
+let orange = rgb 255 122 3
 
 module Color =
 struct
@@ -38,7 +17,7 @@ struct
     |Green -> green
     |Yellow -> yellow
     |White -> white
-    |Orange -> magenta
+    |Orange -> orange
     |Blue -> blue
 
   let rgb_components (c:Graphics.color) =
@@ -86,11 +65,11 @@ struct
 
   let name rgb =
     let (r,g,b) = rgb in
-    if lightness r g b > 80 || saturation r g b < 20 then White
+    if lightness r g b > 85 && saturation r g b < 15 then White
     else
       let h = hue r g b in
-      if h <= 15 || h > 300 then Red
-      else if h > 15 && h <= 45 then Orange
+      if h <= 20 || h > 300 then Red
+      else if h > 20 && h <= 45 then Orange
       else if h > 45 && h <= 75 then Yellow
       else if h > 75 && h < 180 then Green
       else Blue
@@ -113,19 +92,58 @@ struct
 
   let id (x,y) = x + y * 3
 
-  let rotate (x,y) rot = match (rot mod 4) with
-    |0 -> x, y
-    |1 -> y, 2-x
-    |2 -> 2-x, 2-y
-    |_ -> 2-y, x
+  let rotation (x,y) = 2-y, x
+
+  let rotate (x,y) orient = match (orient mod 4) with
+    |0 -> (x,y)
+    |1 -> rotation (x,y)
+    |2 -> rotation ( rotation (x,y))
+    |_ -> rotation ( rotation ( rotation ( (x,y))))
 
   (* array of all representing the upper face *)
-  let u = Array.make_matrix 3 3 Red
+  (* let u = Array.make_matrix 3 3 Red
   let r = Array.make_matrix 3 3 Green
   let f = Array.make_matrix 3 3 Yellow
   let l = Array.make_matrix 3 3 White
   let d = Array.make_matrix 3 3 Blue
-  let b = Array.make_matrix 3 3 Orange
+  let b = Array.make_matrix 3 3 Orange *)
+
+  let u = [|
+    [|Red; White; Yellow|];
+    [|Red; White; Yellow|];
+    [|White; Orange; Green|]
+  |]
+
+  let l = [|
+    [|White;Green ;Orange|];
+    [|White;Orange ;Red|];
+    [|White;White ;Green|]
+  |]
+
+  let f = [|
+    [|Orange; Green; Yellow|];
+    [|Yellow;Green;Blue|];
+    [|Blue; Yellow; Green|]
+  |]
+
+  let r = [|
+    [|Yellow;Orange;Red|];
+    [|Red;Red;White|];
+    [|Yellow;Yellow;White|]
+  |]
+
+let b = [|
+    [|Blue;Blue;Orange|];
+    [|Blue;Blue;Green|];
+    [|Red;Orange;Green|]
+  |]
+
+  let d = [|
+    [|Blue;Blue;Blue|];
+    [|Orange;Yellow;Red|];
+    [|Orange;Green;Red|]
+  |] 
+
 
   let color_of face = match face with
     |U -> u.(1).(1)
@@ -147,11 +165,26 @@ struct
     let (x,y) = coord id in
     f.(x).(y)
 
+  let name face = match face with
+    |U -> "Up"
+    |R -> "Right"
+    |F -> "Front"
+    |L -> "Left"
+    |D -> "Down"
+    |B -> "Back"
+
   let to_string face =
+    let print_face = (match face with
+             |U -> u
+             |R -> r
+             |F -> f
+             |L -> l
+             |D -> d
+             |B -> b) in
     let rec ry y return =
       let rec rx x ret = match x with
         |3 -> ret
-        |_ -> rx (x+1) (ret ^ (" " ^ Color.to_string f.(x).(y)) ^ " -") in
+        |_ -> rx (x+1) (ret ^ (" " ^ Color.to_string print_face.(x).(2-y)) ^ " -") in
       match y with
       |3 -> return ^ "\n-------------\n-"
       |_ ->  ry (y+1) (rx 0 (return ^ "\n-------------\n-")) in
@@ -192,6 +225,95 @@ struct
       |[] -> sum /! number_el
       |el :: li -> itern li (sum +! el) (number_el+1)
     in itern list_color (0,0,0) 0
+
+  (* take face with taking the snapshot manually *)
+  let tf snapshot_file face orient =
+    printf "press a key for picking color on the face %s\n%!"
+      (Face.to_string face);
+    ignore(wait_next_event [Key_pressed]);
+    let img = Ppm.as_matrix_exn snapshot_file in
+    let f = (match face with
+             |U -> Face.u
+             |R -> Face.r
+             |F -> Face.f
+             |L -> Face.l
+             |D -> Face.d
+             |B -> Face.b) in
+    let fill_matrix_square x y =
+      let (i,j) = Face.rotate (x,y) orient in
+      f.(x).(y) <- Color.name
+        (average (pick_point img (abs i) (ord j)));
+    in
+    Array.iter (fun x ->
+                  Array.iter (fun y -> fill_matrix_square x y) [|0;1;2|]
+               ) [|0;1;2|]
+      (* used for the graphical selection of the color *)
+  let tab_color =
+    [| Red; Green; Yellow;  White; Orange; Blue|]
+
+  let tab_c =
+    [|red; green; yellow; white; orange; blue|]
+
+      (* draws square [x] [y] are the coordinate of the left bottom corner
+         s the size and c the color *)
+  let ds x y c s =
+    set_color c;
+    fill_rect (s*x) (s*(y+1)) s s;
+    set_color black;
+    draw_rect (s*x) (s*(y+1)) s s
+
+
+  let man_take_face face orient =
+    let side = 50 in
+
+    let ord_sq (x,y) =
+    let i = x / 50 in
+    let j = y / 50 in
+    i , (j-1) in
+
+    let tmp_matrix = Array.make_matrix 3 3 0 in
+
+    open_graph (sprintf "%ix%i" (3*side) (4*side));
+    set_color red;
+    fill_rect 0 side (3*side) (3*side);
+    set_color black;
+    draw_rect 0 side side side;
+    draw_rect side side side side;
+    draw_rect (2*side) side side side;
+    draw_rect 0 (2*side) side side;
+    draw_rect side (2*side) side side;
+    draw_rect (2*side) (2*side) side side;
+    draw_rect 0 (3*side) side side;
+    draw_rect side (3*side) side side;
+    draw_rect (2*side) (3*side) side side;
+    draw_rect (side/2) (side/3) (2*side) (side/3);
+    draw_string ("next");
+    let rec refresh (i,j) =
+      let new_col = (((tmp_matrix.(i).(j)) + 1) mod 6) in
+      ds i j (tab_c.(new_col)) side;
+      tmp_matrix.(i).(j) <- new_col;
+       let status = wait_next_event [Button_down] in
+      if status.mouse_y >= 50 then refresh (ord_sq (status.mouse_x,status.mouse_y))
+    in refresh (0,0);
+    let f = (match face with
+             |U -> Face.u
+             |R -> Face.r
+             |F -> Face.f
+             |L -> Face.l
+             |D -> Face.d
+             |B -> Face.b) in
+    for x = 0 to 2
+    do
+      for y = 0 to 2
+      do
+        let (i,j) = Face.rotate (x,y) orient in
+        f.(i).(j) <- tab_color.(tmp_matrix.(x).(y))
+      done;
+    done;
+    printf "%s %i %!\n" (Face.name face) orient;
+    printf "%s%!\n" (Face.to_string face)
+    (* close_graph () *)
+
 
   let take_face face orient =
     let webcam = Snapshot.start () in
@@ -278,74 +400,83 @@ let edge_def = function
 
 (* returns true if the corner or edge with the orientation [orient]
    fit in the place (which is given by a corner or a an edge*)
-let harmony ce pl orient =
-  let lgth = Array.length ce in
+let harmony tf np orient =
+  printf "%i%!" orient;
+  let lgth = Array.length np in
   let rec iter ret i =
     if i = lgth then ret
-    else iter (ret && (pl.((i+orient) mod lgth) = ce.(i))) (i+1)
+    else iter (ret && (np.(i) = tf.((i+orient) mod lgth))) (i+1)
   in iter true 0
 
-let find_orientation ce pl =
-  let lgth = Array.length ce in
+let find_orientation tf np =
+  printf "----\n%!";
+  let lgth = Array.length tf in
   let rec iter it =
     if it = lgth then 3
     else
-      if harmony ce pl it then it
+      if harmony tf np it then it
       else iter (it +1)
   in iter 0
 
-let find pl ce_list =
-  (* finds the corner or the edge from the list [ce_list] which fit in
-     the place [pl] *)
-  let rec iter ce_l = match ce_l with
+let find tf new_position =
+  (* finds the corner or the edge in the list [new_position] where fit the
+     element [tf] *)
+  printf "k\n%!";
+  let rec iter np_l = match np_l with
     |[] -> failwith "No place find for a corner/edge"
     |(el_color, el_return) :: li ->
-       let orient = find_orientation el_color pl in
-       if orient <> 3 then el_return, orient
+       let orient = find_orientation tf el_color in
+       if orient = 0 || orient = 1 || orient = 2 then el_return, orient
        else iter li
-  in iter ce_list
+  in iter new_position
 
-(* Order a list of corners or edges in good position to represents a
-   real cubie and create it with Rubik.Cubie.make *)
-let order place_list corner_list =
-  let rec iter ret t_o = match t_o with
+(* Find the new position and orientation of each elements of the list
+   [to_find] in the list [new_position]*)
+let order to_find new_position =
+  let rec iter ret tf = match tf with
     |[] -> List.rev ret
-    |el :: li -> iter ((find el corner_list) :: ret) li
-  in iter [] place_list
+    |el :: li -> iter ((find el new_position) :: ret) li
+  in iter [] to_find
 
 let corner_list_replacement _ =
-  let color_place = List.map (fun corner ->
+  let corner_new_position = List.map (fun corner ->
                                 Array.map (fun face ->
                                              Face.color_of face)
-                                  (corner_set corner)) corner_list in
-  let color_corner = List.map (fun corner ->
+                                  (corner_set corner), corner) corner_list in
+  let corner_to_find = List.map (fun corner ->
                                  Array.map (fun face_id ->
                                               Face.color_fid face_id)
-                                   (corner_def corner), corner) corner_list in
-  order color_place color_corner
+                                   (corner_def corner)) corner_list in
+  order corner_to_find corner_new_position
 
 let edge_list_replacement _ =
-  let color_place = List.map (fun edge ->
+  let edge_new_position = List.map (fun edge ->
                                 Array.map (fun face ->
                                              Face.color_of face)
-                                  (edge_set edge)) edge_list in
-  let color_corner = List.map (fun edge ->
+                                  (edge_set edge), edge) edge_list in
+  let edge_to_find = List.map (fun edge ->
                                  Array.map (fun face_id ->
                                               Face.color_fid face_id)
-                                   (edge_def edge), edge) edge_list in
-  order color_place color_corner
+                                   (edge_def edge)) edge_list in
+  order edge_to_find edge_new_position
 
-let create_rubik _ =
-  (*M.face_iter (Pick.take_face);*)
+let create_rubik face_iter =
+  face_iter (Pick.man_take_face);
   let corner_list_ordered = corner_list_replacement () in
   let edge_list_ordered = edge_list_replacement () in
   let elo = List.map (fun (a,i) -> (a, (i = 1))) edge_list_ordered in
   let cubie = Cubie.make corner_list_ordered elo in
   cubie
 
-(**let () =
-  printf "t%!";
-  let c = create_rubik () in
+
+(* let () =
+  (*Pick.man_take_face U 0 *)
+  printf "t\n%!";
+  printf "-%s\n%! " (Color.to_string (Face.color_fid (U,8)));
+  let corner_list_ordered = corner_list_replacement () in
+  let edge_list_ordered = edge_list_replacement () in
+  let elo = List.map (fun (a,i) -> (a, (i = 1))) edge_list_ordered in
+  let cubie = Cubie.make corner_list_ordered elo in
   let x0 = 10
   and y0 = 10
   and len_sq = 30 in
@@ -356,5 +487,18 @@ let create_rubik _ =
                 Color.color_graphics (Face.color_of B),
                 Color.color_graphics (Face.color_of D)) in
   open_graph ("");
-  Display.cube x0 y0 colors len_sq c;
-  ignore(wait_next_event [Button_down])*)
+  printf "%s\n" (Face.to_string U);
+  printf "%s\n" (Face.to_string L);
+  printf "%s\n" (Face.to_string F);
+  printf "%s\n" (Face.to_string R);
+  printf "%s\n" (Face.to_string B);
+  printf "%s\n" (Face.to_string D);
+  (* ce pl *)
+  let o =  find_orientation
+    (Array.map (fun face_id -> Face.color_fid face_id)
+       (corner_def Cubie.UBR))
+    (Array.map (fun face -> Face.color_of face)
+       (corner_set Cubie.UFL)) in
+  printf "or - %i\n%!" o;
+  Display.cube x0 y0 colors len_sq cubie;
+  ignore(wait_next_event [Button_down]) *)
