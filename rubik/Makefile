@@ -54,12 +54,13 @@ doc: $(INTERFACES:.mli=.cmi)
 	$(OCAMLDOC) -d $(DOC_DIR) -colorize-code -stars -html \
 	  $(INTERFACES) -I $(MINDSTORM_PATH)
 
-include ../Makefile.ocaml
-include ../Makefile.latex
 # Define the OS type for the Camlp4 preprocessor,...
 ../.os_type: ../make_os_type.exe
 	"$<" > $@
 include ../.os_type
+
+include ../Makefile.ocaml
+include ../Makefile.latex
 
 ifeq "$(OS_TYPE)" "WIN32"
 CAMLP4 = camlp4o pa_macro.cmo
