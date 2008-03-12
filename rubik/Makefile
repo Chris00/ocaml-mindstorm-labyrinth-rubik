@@ -5,11 +5,6 @@ DOC_DIR = doc
 
 OCAMLC_FLAGS = -g -dtypes -dllpath .. -custom -I $(MINDSTORM_PATH) -I ..
 OCAMLOPT_FLAGS = -dtypes -I $(MINDSTORM_PATH) -I ..
-ifeq "$(OS_TYPE)" "WIN32"
-CAMLP4 = camlp4o pa_macro.cmo
-else
-CAMLP4 = $(shell which camlp4of.opt || echo camlp4o pa_macro.cmo)
-endif
 PP = $(CAMLP4) $(D_OS) #Camlp4MacroParser.cmo
 
 INTERFACES=$(wildcard *.mli)
@@ -65,6 +60,12 @@ include ../Makefile.latex
 ../.os_type: ../make_os_type.exe
 	"$<" > $@
 include ../.os_type
+
+ifeq "$(OS_TYPE)" "WIN32"
+CAMLP4 = camlp4o pa_macro.cmo
+else
+CAMLP4 = $(shell which camlp4of.opt || echo camlp4o pa_macro.cmo)
+endif
 
 # Images -> talk (requires ImageMagick)
 images/Rubik_cube.jpg: images/Rubik_cube.svg
