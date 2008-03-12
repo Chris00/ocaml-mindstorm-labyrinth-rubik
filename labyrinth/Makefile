@@ -25,8 +25,14 @@ doc: $(INTERFACES:.mli=.cmi)
 	$(OCAMLDOC) -d $(DOC_DIR) -colorize-code -stars -html \
 	  $(INTERFACES) -I $(MINDSTORM_PATH)
 
+
+# Define the OS type for RM,...
+../.os_type: ../make_os_type.exe
+	"$<" > $@
+include ../.os_type
+
 include ../Makefile.ocaml
 
 clean::
-	$(RM) *.exe *.com
-	$(RM) -rf $(DOC_DIR)
+	-$(RM) $(wildcard *.exe *.com)
+	-$(RM) -rf $(DOC_DIR)
