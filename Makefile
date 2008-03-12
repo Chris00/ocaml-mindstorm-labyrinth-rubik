@@ -57,7 +57,7 @@ include .os_type
 include Makefile.ocaml
 
 clean::
-	$(RM) *.exe *.com *.obj *.lib
-	-$(CD) $(DOC_DIR); $(RM) *~ *.html *.css
-	$(CD) labyrinth/ &&  $(MAKE) clean
-	$(CD) rubik/ &&  $(MAKE) clean
+	-$(RM) $(wildcard *.exe *.com *.obj *.lib)
+	-$(CD) $(DOC_DIR) && $(RM) *~ *.html *.css
+	-$(CD) labyrinth/ &&  $(MAKE) clean
+	-$(CD) rubik/ &&  $(MAKE) clean
