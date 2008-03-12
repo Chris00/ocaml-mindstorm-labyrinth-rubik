@@ -73,5 +73,6 @@ images/Rubik_cube.jpg: images/Rubik_cube.svg
 	cd images/ && convert $^ $@
 
 clean::
-	$(RM) $(wildcard *.obj *.lib) images/Rubik_cube.jpg
-	$(RM) -rf $(DOC_DIR)
+	-$(RM) $(wildcard *.obj *.lib)
+	-$(CD) images/ && $(RM) Rubik_cube.jpg
+	-$(RM) -rf $(DOC_DIR)
