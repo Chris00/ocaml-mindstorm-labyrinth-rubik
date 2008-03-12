@@ -32,6 +32,8 @@ type geom = {
   width : float;
   height : float;
   angle : int;
+}
+type colors = {
   color_F : color;
   color_B : color;
   color_L : color;
@@ -46,13 +48,24 @@ let geom = {
   width = 30.;
   height = 30.;
   angle = 45;
-  color_F = rgb 255 255 255;            (* white *)
-  color_B = rgb 248 242 84;             (* yellow *)
-  color_L = rgb 0 213 106;              (* green *)
-  color_R = rgb 0 25 211;               (* blue *)
-  color_U = rgb 255 139 20;             (* orange *)
-  color_D = rgb 236 29 64;              (* red *)
-  color_lines = rgb 0 0 0;
+}
+
+let white = rgb 255 255 255
+let yellow = rgb 248 242 84
+let green = rgb 0 213 106
+let blue = rgb 0 25 211
+let orange = rgb 255 139 20
+let red = rgb 236 29 64
+let black = rgb 0 0 0
+
+let faces_colors = {
+  color_F = white;
+  color_B = yellow;
+  color_L = green;
+  color_R = blue;
+  color_U = orange;
+  color_D = red;
+  color_lines = black;
 }
 
 type facelets_color = generator array
@@ -185,20 +198,20 @@ let draw_cube_colors ~fill_poly ?(geom=geom) (colors: facelets_color) =
 
 let round x = truncate(x +. 0.5) (* rounds a float *)
 
-let color_of_face geom = function
-  | F -> geom.color_F
-  | B -> geom.color_B
-  | L -> geom.color_L
-  | R -> geom.color_R
-  | U -> geom.color_U
-  | D -> geom.color_D
+let color_of_face c = function
+  | F -> c.color_F
+  | B -> c.color_B
+  | L -> c.color_L
+  | R -> c.color_R
+  | U -> c.color_U
+  | D -> c.color_D
 
-let cube ?(geom=geom) cube =
+let cube ?(geom=geom) ?(colors=faces_colors) cube =
   let fill_poly color poly =
     let poly = Array.map (fun (x,y) -> (round x, round y)) poly in
-    Graphics.set_color (color_of_face geom color);
+    Graphics.set_color (color_of_face colors color);
     Graphics.fill_poly poly;
-    Graphics.set_color geom.color_lines;
+    Graphics.set_color colors.color_lines;
     Graphics.draw_poly poly in
   draw_cube_colors ~fill_poly ~geom (colors_of_cube cube)
 
@@ -211,12 +224,12 @@ let texcolor_of_face = function
   | U -> "rubik-U"
   | D -> "rubik-D"
 
-let cube_tikz fh ?(geom=geom) cube =
-  (* Define the colors *)
-  let r, g, b = get_rgb geom.color_lines in
+let cube_tikz fh ?(geom=geom) ?(colors=faces_colors) cube =
+  (* Define LaTeX colors *)
+  let r, g, b = get_rgb colors.color_lines in
   fprintf fh "\\definecolor{rubikline}{RGB}{%i,%i,%i}\n" r g b;
   generator_iter begin fun f ->
-    let r, g, b = get_rgb (color_of_face geom f) in
+    let r, g, b = get_rgb (color_of_face colors f) in
     fprintf fh "\\definecolor{%s}{RGB}{%i,%i,%i}\n" (texcolor_of_face f) r g b;
   end;
   (* Display the cube *)

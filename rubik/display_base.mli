@@ -20,6 +20,16 @@ open Rubik
 type color = int
     (** RGB color compatible with the [Graphic] module. *)
 
+(** The basic colors of the Rubik's cube *)
+val white : color
+val yellow : color
+val green : color
+val blue : color
+val orange : color
+val red : color
+val black : color
+
+
 type geom = {
   xy0 : float * float;
   (** Coordinates of the bottom left corner of smaller rectangle
@@ -30,6 +40,10 @@ type geom = {
   (** The height of a (non slanted) facelet *)
   angle : int;
   (** Angle, in degrees, of the right and up faces *)
+}
+
+(** The colors of the 6 faces and of the lines.  *)
+type colors = {
   color_F : color;
   color_B : color;
   color_L : color;
@@ -37,13 +51,15 @@ type geom = {
   color_U : color;
   color_D : color;
   color_lines : color;
-  (** The colors of the 6 faces and of the lines.  *)
 }
 
 
 val geom : geom
   (** Default values for the cube representation. *)
 
-val cube : ?geom:geom -> Cubie.t -> unit
+val cube : ?geom:geom -> ?colors:colors -> Cubie.t -> unit
+  (** Draw the cube on the [Graphics] window. *)
 
-val cube_tikz : out_channel -> ?geom:geom -> Cubie.t -> unit
+val cube_tikz : out_channel -> ?geom:geom -> ?colors:colors -> Cubie.t -> unit
+  (** [cube_tikz fh c] writes pgf commands to represent the cube [c]
+      on the channel [fh]. *)
