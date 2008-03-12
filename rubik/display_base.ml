@@ -62,11 +62,11 @@ type facelets_color = generator array
      j)].  The facelets are numbered according to the scheme:
 
      -------------
-     | 0 | 1 | 2 |
+     | 6 | 7 | 8 |
      -------------
      | 3 | 4 | 5 |
      -------------
-     | 6 | 7 | 8 |
+     | 0 | 1 | 2 |
      -------------
 
      (the center facelet does not move so always receives the color
@@ -91,14 +91,14 @@ let make_facelets_color () =
 (** Return the 3 facelets of a corner, the first being the reference
     face and the subsequent ones being given CW. *)
 let facelets_of_corner = function
-  | Cubie.URF -> [| (U,8); (R,0); (F,2) |]
-  | Cubie.UFL -> [| (U,6); (F,0); (L,2) |]
-  | Cubie.ULB -> [| (U,0); (L,0); (B,2) |]
-  | Cubie.UBR -> [| (U,2); (B,0); (R,2) |]
-  | Cubie.DFR -> [| (D,2); (F,8); (R,6) |]
-  | Cubie.DLF -> [| (D,0); (L,8); (F,6) |]
-  | Cubie.DBL -> [| (D,6); (B,8); (L,6) |]
-  | Cubie.DRB -> [| (D,8); (R,8); (B,6) |]
+  | Cubie.URF -> [| (U,2); (R,6); (F,8) |]
+  | Cubie.UFL -> [| (U,0); (F,6); (L,8) |]
+  | Cubie.ULB -> [| (U,6); (L,6); (B,8) |]
+  | Cubie.UBR -> [| (U,8); (B,6); (R,8) |]
+  | Cubie.DFR -> [| (D,8); (F,2); (R,0) |]
+  | Cubie.DLF -> [| (D,6); (L,2); (F,0) |]
+  | Cubie.DBL -> [| (D,0); (B,2); (L,0) |]
+  | Cubie.DRB -> [| (D,2); (R,2); (B,0) |]
 
 let corner_list =
   [ Cubie.URF; Cubie.UFL; Cubie.ULB; Cubie.UBR;
@@ -107,14 +107,14 @@ let corner_list =
 (** Return the 2 facelets of an edge, the reference facelet being
     first.  *)
 let facelets_of_edge = function
-  | Cubie.UR -> [| (U,5); (R,1) |]
-  | Cubie.UF -> [| (U,7); (F,1) |]
-  | Cubie.UL -> [| (U,3); (L,1) |]
-  | Cubie.UB -> [| (U,1); (B,1) |]
-  | Cubie.DR -> [| (D,5); (R,7) |]
-  | Cubie.DF -> [| (D,1); (F,7) |]
-  | Cubie.DL -> [| (D,3); (L,7) |]
-  | Cubie.DB -> [| (D,7); (B,7) |]
+  | Cubie.UR -> [| (U,5); (R,7) |]
+  | Cubie.UF -> [| (U,1); (F,7) |]
+  | Cubie.UL -> [| (U,3); (L,7) |]
+  | Cubie.UB -> [| (U,7); (B,7) |]
+  | Cubie.DR -> [| (D,5); (R,1) |]
+  | Cubie.DF -> [| (D,7); (F,1) |]
+  | Cubie.DL -> [| (D,3); (L,1) |]
+  | Cubie.DB -> [| (D,1); (B,1) |]
   | Cubie.FR -> [| (F,5); (R,3) |]
   | Cubie.FL -> [| (F,3); (L,5) |]
   | Cubie.BL -> [| (B,5); (L,3) |]
@@ -162,6 +162,8 @@ let draw_cube_colors ~fill_poly ?(geom=geom) (colors: facelets_color) =
   and e3 = (0., geom.height)
   and e2 = (geom.width *. cos a, geom.width *. sin a) in
   let draw_face f =
+    (* [v1] is the "horizontal" vector of a facelet and [v2] is the
+       vertical one. *)
     let dxy, v1, v2 = match f with
       | F -> 3. *! e1 +! 3. *! e3,              e1, e3
       | B -> 6. *! e1 +! 3. *! e3 +! 3. *! e2,  e1, e3
@@ -174,7 +176,7 @@ let draw_cube_colors ~fill_poly ?(geom=geom) (colors: facelets_color) =
       for j = 0 to 2 do
         let xy = xy0 +! float i *! v1 +! float j *! v2 in
         let poly = [| xy;  xy +! v1;  xy +! v1 +! v2;  xy +! v2 |] in
-        fill_poly f poly
+        fill_poly colors.(9 * int_of_face f + i + 3 * j) poly
       done
     done
   in
@@ -210,11 +212,6 @@ let texcolor_of_face = function
   | D -> "rubik-D"
 
 let cube_tikz fh ?(geom=geom) cube =
-  let fill_poly color poly =
-    let poly = Array.map (fun (x,y) -> sprintf "(%f,%f)" x y) poly in
-    fprintf fh "\\draw[color=rubikline,fill=%s] %s -- cycle;\n"
-      (texcolor_of_face color) (String.concat " -- " (Array.to_list poly));
-  in
   (* Define the colors *)
   let r, g, b = get_rgb geom.color_lines in
   fprintf fh "\\definecolor{rubikline}{RGB}{%i,%i,%i}\n" r g b;
@@ -222,6 +219,12 @@ let cube_tikz fh ?(geom=geom) cube =
     let r, g, b = get_rgb (color_of_face geom f) in
     fprintf fh "\\definecolor{%s}{RGB}{%i,%i,%i}\n" (texcolor_of_face f) r g b;
   end;
+  (* Display the cube *)
+  let fill_poly color poly =
+    let poly = Array.map (fun (x,y) -> sprintf "(%f,%f)" x y) poly in
+    fprintf fh "\\draw[color=rubikline,fill=%s] %s -- cycle;\n"
+      (texcolor_of_face color) (String.concat " -- " (Array.to_list poly));
+  in
   draw_cube_colors ~fill_poly ~geom (colors_of_cube cube)
 
 
