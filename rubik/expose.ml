@@ -24,6 +24,7 @@ let () =
 
   save "F1R2" (Cubie.id >> (F,1) >> (R,2));
 
+  save "F1B2" (Cubie.id >> (F,1) >> (B,2));
 
 
 
