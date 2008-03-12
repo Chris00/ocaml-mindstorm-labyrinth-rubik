@@ -19,7 +19,7 @@ byte: $(PROGRAM:.ml=.exe)
 native: $(PROGRAM:.ml=.com)
 
 RUN_LIBS=rubik.ml ida.ml movement.ml translator.ml display.ml solver.ml \
-  init_color.ml
+  ppm.ml snapshot.ml init_color.ml
 run.exe: LIBS_CMA+= graphics.cma
 run.exe: $(RUN_LIBS:.ml=.cmo)
 run.com: LIBS_CMXA+= graphics.cmxa
