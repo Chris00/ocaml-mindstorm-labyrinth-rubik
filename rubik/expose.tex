@@ -225,6 +225,46 @@ Idem pour les faces B,U,D,L et R.
 Nous avons donc 18 mouvements de base: $F, F^2, F^3, B, B^2, B^3, U, U^2, U^3, D, D^2, D^3, R, R^2, R^3, L, L^2, L^3$.
 \end{frame}
 
+\begin{frame} \frametitle{\og Multiplication\fg{} de mouvements}
+  \begin{tikzpicture}[x=2.6ex,y=2.6ex]
+    \only<1>{\input{expose-id.tex}}
+    \only<2>{\input{expose-F1.tex}}
+    \only<3->{\input{expose-F1R2.tex}}
+    \node[right] at (7, 2.5) {\large $\id
+      \onslide<2->{* F}
+      \onslide<3->{* R^2}$};
+  \end{tikzpicture} 
+  \hfil
+  \begin{minipage}[b]{0.48\linewidth}
+    cube${}\leftrightarrow{}$séquence mouvements
+    \par\vspace*{2ex}  
+
+    \noindent\hspace*{4em}
+    \begin{tikzpicture}[x=0.8ex,y=0.8ex]
+      \input{expose-id.tex}
+      \node[right] at (13, 4.5) {$\id$};
+    \onslide<2->{%
+      \begin{scope}[yshift=-8ex]
+        \input{expose-F1.tex}
+        \node[right] at (13, 4.5) {$\id * F$};
+      \end{scope}
+    }
+    \onslide<3->{%
+      \begin{scope}[yshift=-16ex]
+        \input{expose-F1R2.tex}
+        \node[right] at (13, 4.5) {$\id * F * R²$};
+      \end{scope}
+    }
+    \end{tikzpicture}
+  \end{minipage}
+
+  \vspace*{2ex}
+  \onslide<4->%
+  \begin{block}{Notation}
+    $g * X$
+  \end{block}
+\end{frame}
+
 \begin{frame} \frametitle{Notion de mouvement inverse}
 Prenons un Rubik's cube quelconque. %photo
 \newline

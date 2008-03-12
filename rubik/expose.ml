@@ -22,6 +22,9 @@ let () =
   save "F2" (Cubie.id >> (F,2));
   save "F3" (Cubie.id >> (F,3));
 
+  save "F1R2" (Cubie.id >> (F,1) >> (R,2));
+
+
 
 
 (* Local Variables: *)
