@@ -78,11 +78,11 @@ struct
   let rotate nbr_rot =
     match nbr_rot with
       0 -> M.end_cont()
-    | 1 -> M.turn_rubik_left (~cont:M.end_cont)
+    | 1 -> M.turn_rubik_right (~cont:M.end_cont)
     | 2 -> M.turn_rubik_half (~cont:M.end_cont)
-    | _ -> M.turn_rubik_right (~cont:M.end_cont)
+    | _ -> M.turn_rubik_left (~cont:M.end_cont)
 
-  (** Create the physical movement associeted to one (generator*int), 
+  (** Create the physical movement associeted to one (generator*int),
       which represent a movement. *)
   let make (generator, r) =
     begin
@@ -91,8 +91,8 @@ struct
           update_state permut_kick 3;
           M.kick(fun _ -> M.kick(fun _  -> M.kick(fun _ -> rotate r)))
       | 1 ->
-          update_state permut_kick 1;
           update_state permut_rot 3;
+          update_state permut_kick 1;
           M.turn_pf (-1) (fun _ -> M.kick(fun _ -> rotate r))
       | 2 ->
           update_state permut_kick 1;
