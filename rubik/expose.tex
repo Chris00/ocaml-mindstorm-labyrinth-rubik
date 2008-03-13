@@ -64,27 +64,16 @@
   \pgfpagesuselayout{4 on 1}[a4paper, border shrink=5mm,landscape]
 }
 
-%% Cubes
-
-\newcommand{\cube}[1]{%
-  \begin{tikzpicture}[x=0.7ex,y=0.7ex, baseline=2ex]
-    \input{#1}
-  \end{tikzpicture}
-}
-
 
 %% Math
-
-\let\definition=\@undefined
-\newtheorem{definition}{Définition}
 
 \@ifundefined{leqslant}{}{\let\le=\leqslant}
 \@ifundefined{geqslant}{}{\let\ge=\geqslant}
 \@ifundefined{subseteq}{}{\let\subset=\subseteq}
 
+\newcommand{\IR}{{\mathbb R}}
 %\newcommand{\id}{{\mathbbm 1}}
 \newcommand{\id}{{\mathbf 1}}
-\newcommand{\G}{{\mathcal G}}
 
 \makeatother
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
@@ -113,7 +102,7 @@
 \begin{frame}[plain]
   \titlepage
 \end{frame}
-
+\iffalse %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
 \section*{Plan}
 \begin{frame} \frametitle{Plan}
   \tableofcontents[subsectionstyle=hide]
@@ -187,7 +176,7 @@
     $F ={}$faire tourner la face $F$ de 90°.
 
     \begin{block}{}
-      Tourner une face d'un multiple de 90° est appelé un
+      Tourner une face d'un multiple de 90° degrés est appelé un
       \textit{mouvement}.
     \end{block}
   \end{minipage}
@@ -225,28 +214,16 @@
 \end{frame}
 
 \begin{frame} \frametitle{Mouvements de base}
-
-  \begin{block}{18 mouvements de base}
-    $F, F^2, F^3, B, B^2, B^3, U, U^2, U^3, D, D^2, D^3, R, R^2, R^3,
-    L, L^2, L^3$
-  \end{block}
-  où $X^i$ signifie \og tourner la face $X$ de $i$ fois 90°
-  dans le sens horloger\fg.
-
-  \begin{center}
-    % Same figure of slide 1
-    \begin{tikzpicture}[x=3ex,y=3ex]
-      \input{expose-id.tex}
-      \fill[semitransparent,white] (0,0) rectangle (11.14,8.14);
-      % Label faces
-      \node at (4.5,4.5) {$F$};
-      \node at (9.62, 6.62) {$B$};
-      \node at (4.5, 1.5) {$D$};
-      \node at (1.5, 4.5) {$L$};
-      \node[rotate=-13] at (5.5, 7.02) {$U$};
-      \node[rotate=10] at (7, 5.5) {$R$};
-  \end{tikzpicture}
-  \end{center}
+Nous noterons
+\begin{itemize}
+\item "$F$" le fait de tourner la face F de 90°,
+\item "$F^2$" le fait de tourner la face F de 180° et
+\item "$F^3$" le fait de tourner la face F de 270°.
+\end{itemize}
+Idem pour les faces B,U,D,L et R.
+\newline
+\newline
+Nous avons donc 18 mouvements de base: $F, F^2, F^3, B, B^2, B^3, U, U^2, U^3, D, D^2, D^3, R, R^2, R^3, L, L^2, L^3$.
 \end{frame}
 
 \begin{frame} \frametitle{\og Multiplication\fg{} de mouvements}
@@ -284,41 +261,10 @@
 
   \vspace*{2ex}
   \onslide<4->%
-  \begin{minipage}{0.9\linewidth}% do not hide the UMH logo
-    \begin{block}{Notation}
-      $g * X$ est le cube résultant du cube $g$ auquel on a appliqué
-      le mouvement $X$.
-    \end{block}
-  \end{minipage}
+  \begin{block}{Notation}
+    $g * X$
+  \end{block}
 \end{frame}
-
-
-
-\section{L'ensemble des Rubik's cubes}
-\begin{frame} \frametitle{L'ensemble de tous les Rubik's cubes}
-
-  \begin{definition}
-    $\G ={}$l'ensemble de toutes les configurations possibles du
-    Rubik's cube i.e.\ toutes les configurations obtenues en
-    appliquant une séquence quelconque de mouvements à $\id$.
-  \end{definition}
-
-  \begin{align*}
-    \G = \Biggl\{
-    &\cube{expose-id.tex} = \id, \quad
-    \cube{expose-F1.tex} = \id * F, \quad
-    \cube{expose-F1R2.tex} = \id * F * R^2, \\
-    &\cube{expose-F1B2.tex} = \id * F * B^2 = \id * B^2 * F, \quad
-    \dotsc\Biggr\}
-  \end{align*}
-
-  \onslide<2->%
-  \vspace*{3ex}%
-  Nombre d'éléments de $\G = 43.252.003.274.489.856.000
-  \approx 43 \cdot 10^{18}$
-\end{frame}
-
-
 
 \begin{frame} \frametitle{Notion de mouvement inverse}
   \begin{tikzpicture}[x=2.6ex,y=2.6ex]
@@ -419,68 +365,54 @@
   \end{minipage}
 }
 \end{frame}
-
+\fi%%%%%%%%%%%%%%%%%%%%%%%%
 \begin{frame} \frametitle{Notion de mouvement inverse (suite)}
-
+\onslide<1->{%
+  Qu'est-ce que l'inverse de $x \in \IR$?
+ }
+\onslide<2->{%
+ \begin{block}{Définition}
+   Soit $x \in \IR$.\\
+   On dit que $y$ est l'\textit{inverse} de $x$ si $x.y = 1$.
+ \end{block}
+}
+\par\vspace*{2ex}
+\onslide<3->{Analogie avec les mouvements:}
+\onslide<4->{%
+  \begin{block}{Définition}
+    Soit $X$ un mouvement de base.\\
+    Nous dirons que $Y$ est le mouvement \textit{inverse} de $X$
+    si $X * Y = \id$.
+  \end{block}
+ }
+\par\vspace*{2ex}
+\onslide<5->{%
+  On a vu que $R * R^3 = \id$. \\
+  Donc $R^3$ est le mouvement inverse de $R$.
+}
 \end{frame}
 
-
-\section{Le problème}
-
-
-\begin{frame} \frametitle{Le problème}
-  
-  \begin{minipage}[t]{0.43\linewidth}
-    \begin{block}{Première formulation}
-      Étant donné un cube $g$, le remettre en \og position de base\fg.
-    \end{block}
-  \end{minipage}
-  \hfill
-  \onslide<5->{%
-    \begin{minipage}[t]{0.47\linewidth}
-      \begin{block}{Formulation mathématique}
-        Étant donné  $g \in \G$, trouver des mouvements de base $X_1,
-        \dotsc, X_n$ tels que $g * X_1 * \cdots * X_n = \id$.
-      \end{block}
-    \end{minipage}
-  }
-
-  \vspace*{3ex}%
-  \textsc{Exemple:}
-  \begin{center}
-    \begin{tikzpicture}[x=1ex,y=1ex]
-      \input{expose-F1R2U3.tex}
-      \node[below] at (4.5, -0.5) {$g$};
-      \onslide<2->%
-      \begin{scope}[xshift=15ex]
-        \draw[<-,thick] (-0.5, 4.5) -- +(-2.5,0) node[pos=0.5,above]{$U$};
-        \input{expose-F1R2.tex}
-        \node[below] at (4.5, -0.5) {$g * U$};
-      \end{scope}
-      \onslide<3->%
-      \begin{scope}[xshift=30ex]
-        \draw[<-,thick] (-0.5, 4.5) -- +(-2.5,0) node[pos=0.5,above]{$R^2$};
-        \input{expose-F1.tex}
-        \node[below] at (4.5, -0.5) {$g * U * R^2$};
-      \end{scope}
-      \onslide<4->%
-      \begin{scope}[xshift=45ex]
-        \draw[<-,thick] (-0.5, 4.5) -- +(-2.5,0) node[pos=0.5,above]{$F^3$};
-        \input{expose-id.tex}
-        \node[below] at (4.5, -0.5) {$g * U * R^2 * F^3 = \id$};
-      \end{scope}
-    \end{tikzpicture}
-  \end{center}
+\section{Ensemble des Rubik's cubes}
+\begin{frame} \frametitle{L'ensemble de tous les Rubik's cubes}
+Soit $\mathcal{G}$ = l'ensemble de tous les Rubik's cubes possibles obtenus en appliquant des séquences quelconques de mouvements au Rubik's cube identité.
+\newline
+\newline
+C'est-à-dire $\mathcal{G}$ = % { dessins de plusieurs Rubik's cube (dont l'identité)}
 \end{frame}
-
 
 \section{Idée de l'algorithme}
 \begin{frame} \frametitle{Idée de l'algorithme}
+Au départ: nous avons un Rubik's cube quelconque.
+%photo
+\newline
+\newline
+Notre but: appliquer une certaine séquence de mouvements à ce Rubik's cube afin de retomber sur le Rubik's cube identité.
+\newline
+\newline
+Mais comment trouver cette séquence de mouvements?
+\end{frame}
 
-  \begin{block}{}
-    
-  \end{block}
-
+\begin{frame} \frametitle{Idée de l'algorithme (suite)}
 Nous allons chercher cette séquence pas à pas.
 \newline
 \newline
@@ -526,9 +458,6 @@ Par exemple:
 
   \bibitem{} Herbert Kociemba, Cube Explorer pages,
     \url{http://kociemba.org/cube.htm}
-
-  \bibitem{} Rubik's Cube group, Wikipedia,
-    \url{http://en.wikipedia.org/wiki/Rubik's_Cube_group}
   \end{thebibliography}
 \end{frame}
 
