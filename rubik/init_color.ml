@@ -254,12 +254,12 @@ struct
     [|red; green; yellow; white; orange; blue|]
 
   let convert_color current_color key = match key with
-    |'r' -> printf "r\n%!"; 0
-    |'g' -> printf "g\n%!"; 1
-    |'y' -> printf "y\n%!"; 2
-    |'w' -> printf "w\n%!"; 3
-    |'o' -> printf "o\n%!"; 4
-    |'b' -> printf "b\n%!"; 5
+    |'r' -> 0
+    |'g' -> 1
+    |'y' -> 2
+    |'w' -> 3
+    |'o' -> 4
+    |'b' -> 5
     |_ -> current_color
 
   let man_take_face face orient =
@@ -284,7 +284,7 @@ struct
 
     let tmp_matrix = Array.make_matrix 3 3 0 in
 
-    open_graph (sprintf "%ix%i" side side);
+    open_graph (sprintf "%ix%i" (3*side) (4*side));
     set_color red;
     fill_rect 0 side (3*side) (3*side);
     set_color black;
@@ -314,7 +314,6 @@ struct
         if not (!status).button
         then
           begin
-            printf "key";
             color_change (convert_color tmp_matrix.(x).(y) (!status).key)
             (ord_sq ((!status).mouse_x,(!status).mouse_y))
           end

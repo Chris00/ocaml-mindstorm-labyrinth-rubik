@@ -73,17 +73,20 @@ let () =
   open_graph "";
   clear_graph();
   print_cubie cubie;
-  ignore(wait_next_event [Button_down]);
+  ignore(wait_next_event [Key_pressed]);
 
   (********* Resolution part *********)
   let solution = Solver.find_first cubie in
 
   let print_and_do s =
+    let status = wait_next_event[Poll] in
+    if status.button then
+      ignore(wait_next_event[Button_down]);
     print_cubie cubie;
     M.make s
   in
 
   List.iter print_and_do solution;
 
-  ignore(wait_next_event [Button_down])
+  ignore(wait_next_event [Key_pressed])
 
