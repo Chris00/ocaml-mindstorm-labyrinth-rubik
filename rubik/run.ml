@@ -19,7 +19,7 @@
 open Printf
 open Rubik
 open Graphics
-open Display_base
+module D = Display_base
 
 module Motor = Mindstorm.Motor
 
@@ -43,6 +43,12 @@ end
 
 module M = Translator.Make(Brick)
 
+
+let display_moves x y m =
+  let m = List.map (fun (g,i) -> sprintf "%c%i" (char_of_generator g) i) m in
+  moveto x y;
+  draw_string (String.concat " " m)
+
 let () =
   open_graph "";
   (********* Initialization of the cubie *********)
@@ -51,15 +57,9 @@ let () =
 
 
   (********* Graphical part *********)
-  let g_ref = geom in
-  let g = {
-    xy0 = (10.,10.);
-    width = g_ref.width;
-    height = g_ref.height;
-    angle = g_ref.angle;
-  } in
-  let c = {
-    color_F = cF;
+  let geom = { D.geom with D.xy0 = (10.,20.) } in
+  let colors = {
+    D.color_F = cF;
     color_B = cB;
     color_L = cL;
     color_R = cR;
@@ -68,27 +68,26 @@ let () =
     color_lines = black
   } in
 
-  let print_cubie cub = cube ~geom:g ~colors:c cub in
-
-  open_graph "";
   clear_graph();
-  print_cubie cubie;
+  D.cube ~geom ~colors cubie;
   ignore(wait_next_event [Key_pressed]);
 
   (********* Resolution part *********)
   let solution = Solver.find_first cubie in
 
-  let print_and_do c s =
-    let status = wait_next_event[Poll] in
+  let print_and_do (c, moves) m =
+    let status = wait_next_event[Poll; Button_down] in
     if status.button then
       ignore(wait_next_event[Button_down]);
-    let next = Cubie.mul c (Cubie.move (Move.make s)) in
-    print_cubie next;
-    M.make s;
-    next
+    let c_next = Cubie.mul c (Cubie.move (Move.make m)) in
+    let moves = m :: moves in
+    D.cube ~geom ~colors c_next;
+    display_moves 10 10 (List.rev moves);
+    M.make m;
+    (c_next, moves)
   in
 
-  let cubie = List.fold_left print_and_do cubie solution in
+  let cubie, _ = List.fold_left print_and_do (cubie, []) solution in
 
-  print_cubie cubie;
+  D.cube cubie;
   ignore(wait_next_event [Key_pressed])
