@@ -78,15 +78,17 @@ let () =
   (********* Resolution part *********)
   let solution = Solver.find_first cubie in
 
-  let print_and_do s =
+  let print_and_do c s =
     let status = wait_next_event[Poll] in
     if status.button then
       ignore(wait_next_event[Button_down]);
-    print_cubie cubie;
-    M.make s
+    let next = Cubie.mul c (Cubie.move (Move.make s)) in
+    print_cubie next;
+    M.make s;
+    next
   in
 
-  List.iter print_and_do solution;
+  let cubie = List.fold_left print_and_do cubie solution in
 
+  print_cubie cubie;
   ignore(wait_next_event [Key_pressed])
-
