@@ -109,8 +109,13 @@ val edge_list_replacement : unit -> (Cubie.edge * int) list
       This list is used for Rubik.Cubie.make which initialize
       the cubie for a solving search*)
 
-val create_rubik : ((Rubik.generator -> int -> unit) -> unit)  -> Cubie.t
-  (** [create_rubik face_iter] is used to initialize rubik colors and
-      create! [face_iter] is a function, which given picking color function,
+val create_rubik : ((Rubik.generator -> int -> unit) -> unit)  ->
+  Cubie.t * (color * color * color * color * color * color)
+  (** [create_rubik face_iter] is used for the initialization of the rubik
+      colors.
+      [face_iter] is a function, which given a picking color function,
       moves the rubik and execute the function giving the specification of
-      the face and the rotation *)
+      the face and the rotation.
+      It returns the cubie and also the color in this order :
+      Up, Left, Front, Right, Back, Down.
+  *)

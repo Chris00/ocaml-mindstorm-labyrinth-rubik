@@ -18,6 +18,9 @@
 
 open Printf
 open Rubik
+open Graphics
+open Display_base
+
 module Motor = Mindstorm.Motor
 
 let conn = let bt =
@@ -40,60 +43,47 @@ end
 
 module M = Translator.Make(Brick)
 
-(********* Graphical part *********)
-open Graphics
-
-let x0 = 10
-and y0 = 20
-and len_sq = 30
-let cube_colors = (blue, magenta, yellow, red, white, green)
-
 let () =
-  let img_width = x0 + 12 * len_sq + 180 in
-  let img_high = y0 + 9 * len_sq in
-  open_graph (sprintf " %ix%i-100+50" img_width img_high);
-  set_window_title "Rubik cube";
-  set_color (rgb 219 219 219);
-  fill_rect 0 0 img_width img_high
+  open_graph "";
+  (********* Initialization of the cubie *********)
+  let (cubie, (cU, cL, cF, cR, cB, cD)) =
+    Init_color.create_rubik (M.face_iter) in
 
 
-let display_cube cube = Display.cube x0 y0 cube_colors len_sq cube
+  (********* Graphical part *********)
+  let g_ref = geom in
+  let g = {
+    xy0 = (10.,10.);
+    width = g_ref.width;
+    height = g_ref.height;
+    angle = g_ref.angle;
+  } in
+  let c = {
+    color_F = cF;
+    color_B = cB;
+    color_L = cL;
+    color_R = cR;
+    color_U = cU;
+    color_D = cD;
+    color_lines = black
+  } in
 
-(* Compute a movement of the cube and display graphically the
-   resulting cube. *)
-let mul_and_print move c m =
-  let cube = Cubie.mul c (move  m) in
-  display_cube cube;
-  Unix.sleep 2;
-  cube
+  let print_cubie cub = cube ~geom:g ~colors:c cub in
 
+  open_graph "";
+  clear_graph();
+  print_cubie cubie;
+  ignore(wait_next_event [Button_down]);
 
-let () =
-  let cubie = Init_color.create_rubik (M.face_iter) in
-  display_cube cubie;
-
-  let moves = [F,3; R,2; U,1; B,3; D,1; L,2; R,3; U,2; R,3; B,1;
-               F,3; F,1; R,1; U,3; B,1; D,2; L,3; B,2 ] in
-  (* Patterns from http://www.math.ucf.edu/~reid/Rubik/patterns.html *)
-  (* let moves = [F,2; B,2; R,2; L,2; U,2; D,2] in *)
-  (* let moves = [U,3; L,3; U,3; F,3; R,2; B,3; R,1; F,1; U,1; B,2;
-               U,1; B,3; L,1; U,3; F,1; U,1; R,1; F,3] in *)
-  (*let moves = [R,2; L,3; D,1; F,2; R,3; D,3; R,3; L,1; U,3; D,1; R,1;
-               D,1; B,2; R,3; U,1; D,2] in*)
-
-  let moves = List.map (fun m -> Cubie.move (Move.make m)) moves in
- (** let cube = List.fold_left Cubie.mul Cubie.id moves in
-  display_cube cube;*)
-
-
+  (********* Resolution part *********)
   let solution = Solver.find_first cubie in
-  List.iter M.make solution;
 
+  let print_and_do s =
+    print_cubie cubie;
+    M.make s
+  in
 
-  (********* Physical part *********)
-  (*  List.iter M.make (List.map Phase1.Move.generator seq1);
-      List.iter M.make (List.map Phase2.Move.generator seq2)*)
+  List.iter print_and_do solution;
 
-(*   flush stdout; *)
   ignore(wait_next_event [Button_down])
 

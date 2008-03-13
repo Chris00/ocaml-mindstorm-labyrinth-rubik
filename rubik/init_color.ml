@@ -12,12 +12,12 @@ let orange = rgb 255 122 3
 module Color =
 struct
   let color_graphics = function
-    |Red -> red
-    |Green -> green
-    |Yellow -> yellow
-    |White -> white
-    |Orange -> orange
-    |Blue -> blue
+    |Red -> Display_base.red
+    |Green -> Display_base.green
+    |Yellow -> Display_base.yellow
+    |White -> Display_base.white
+    |Orange -> Display_base.orange
+    |Blue -> Display_base.blue
 
   let rgb_components (c:Graphics.color) =
     (c lsr 16) land 0xFF,
@@ -284,7 +284,7 @@ struct
 
     let tmp_matrix = Array.make_matrix 3 3 0 in
 
-    open_graph ("");
+    open_graph (sprintf "%ix%i" side side);
     set_color red;
     fill_rect 0 side (3*side) (3*side);
     set_color black;
@@ -489,7 +489,13 @@ let create_rubik face_iter =
   let edge_list_ordered = edge_list_replacement () in
   let elo = List.map (fun (a,i) -> (a, (i = 1))) edge_list_ordered in
   let cubie = Cubie.make corner_list_ordered elo in
-  cubie
+  (cubie, (
+     Color.color_graphics(Face.color_of U),
+     Color.color_graphics(Face.color_of L),
+     Color.color_graphics(Face.color_of F),
+     Color.color_graphics(Face.color_of R),
+     Color.color_graphics(Face.color_of B),
+     Color.color_graphics(Face.color_of D)))
 
 (*
 let () =
