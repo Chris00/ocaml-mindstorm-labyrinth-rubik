@@ -321,25 +321,107 @@
 
 
 \begin{frame} \frametitle{Notion de mouvement inverse}
-Prenons un Rubik's cube quelconque. %photo
-\newline
-Nous lui appliquons le mouvement $F$. On obtient:
-%photo, démo et/ou animation sur le slide
-\newline
-Maintenant, nous lui appliquons le mouvement $F^3$. On obtient:
-%photo, démo et/ou animation sur le slide
-\newline
-C'est le Rubik's cube de départ! % Apparait après.
+  \begin{tikzpicture}[x=2.6ex,y=2.6ex]
+    \only<1>{\input{expose-id.tex}}
+    \only<2>{\input{expose-R1.tex}}
+    \only<3->{\input{expose-R1R3.tex}}
+    \node[right] at (7, 2.5) {\large $\id
+      \onslide<2->{* R}
+      \onslide<3->{* R^3}$};
+  \end{tikzpicture} 
+  \hfil
+  \begin{minipage}[b]{0.48\linewidth}
+    \par\vspace*{2ex}  
+    \noindent\hspace*{4em}
+    \begin{tikzpicture}[x=0.8ex,y=0.8ex]
+      \input{expose-id.tex}
+      \node[right] at (13, 4.5) {$\id$};
+      \onslide<2->{%
+        \begin{scope}[yshift=-8ex]
+          \input{expose-R1.tex}
+          \node[right] at (13, 4.5) {$\id * R$};
+        \end{scope}
+      }
+      \onslide<3->{%
+        \begin{scope}[yshift=-16ex]
+          \input{expose-R1R3.tex}
+          \node[right] at (13, 4.5) {$\id * R * R^3$};
+        \end{scope}
+      }
+    
+    \end{tikzpicture}
+  \end{minipage}
+
+  \begin{minipage}{0.48\linewidth}
+    \onslide<4->{%
+      \par\vspace*{4ex} 
+      \hspace*{3em} 
+      On retrouve $\id$!
+    }
+  \end{minipage}
+  \hfill
+  \onslide<5->{%
+  \begin{minipage}{0.48\linewidth}
+    \begin{block}{Conclusion}
+      $\id * R * R^3 = \id * R^4  = \id$ \\
+      ou $R * R^3 = R^4 = \id$
+    \end{block}
+  \end{minipage}
+}
 \end{frame}
 
-\begin{frame}{Notion de mouvement inverse (suite)}
-Nous pouvons donc déduire qu'appliquer $F$ puis $F^3$ revient à ne rien faire.
-\newline
-\newline
-Nous dirons que $F^3$ le mouvement \textit{inverse} de $F$.
-\newline
-\newline
-De la même façon, on peut dire que $F^2$ est son propre inverse, car appliquer $F^2$ puis encore $F^2$ revient à ne rien faire.
+\begin{frame} \frametitle{Notion de mouvement inverse (suite)}
+  \begin{tikzpicture}[x=2.6ex,y=2.6ex]
+    \only<1>{\input{expose-scrambled.tex}}
+    \only<2>{\input{expose-scrambledR1.tex}}
+    \only<3->{\input{expose-scrambledR3.tex}}
+    \node[right] at (7, 2.5) {\large $g
+      \onslide<2->{* R}
+      \onslide<3->{* R^3}$};
+  \end{tikzpicture} 
+  \hfil
+  \begin{minipage}[b]{0.48\linewidth}
+    \par\vspace*{2ex}  
+    \noindent\hspace*{4em}
+    \begin{tikzpicture}[x=0.8ex,y=0.8ex]
+      \input{expose-scrambled.tex}
+      \node[right] at (13, 4.5) {$g$};
+      \onslide<2->{%
+        \begin{scope}[yshift=-8ex]
+          \input{expose-scrambledR1.tex}
+          \node[right] at (13, 4.5) {$g * R$};
+        \end{scope}
+      }
+      \onslide<3->{%
+        \begin{scope}[yshift=-16ex]
+          \input{expose-scrambledR3.tex}
+          \node[right] at (13, 4.5) {$g * R * R^3$};
+        \end{scope}
+      }
+    
+    \end{tikzpicture}
+  \end{minipage}
+
+  \begin{minipage}{0.48\linewidth}
+    \onslide<4->{%
+      \par\vspace*{4ex} 
+      \hspace*{3em} 
+      On retrouve $g$!
+    }
+  \end{minipage}
+  \hfill
+  \onslide<5->{%
+  \begin{minipage}{0.48\linewidth}
+    \begin{block}{Conclusion}
+      $g * R * R^3 = g * R^4  = g$ \\
+      car $R * R^3 = R^4 = \id$
+    \end{block}
+  \end{minipage}
+}
+\end{frame}
+
+\begin{frame} \frametitle{Notion de mouvement inverse (suite)}
+
 \end{frame}
 
 
