@@ -76,6 +76,13 @@
 \newcommand{\id}{{\mathbf 1}}
 \newcommand{\G}{{\mathcal G}}
 
+\newcommand{\cube}[1]{%
+  \begin{tikzpicture}[x=0.7ex,y=0.7ex, baseline=2ex]
+    \input{#1}
+  \end{tikzpicture}
+}
+
+
 \makeatother
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
 
@@ -277,10 +284,37 @@
 
   \vspace*{2ex}
   \onslide<4->%
-  \begin{block}{Notation}
-    $g * X$ est le cube résultant du cube $g$ auquel on a appliqué le
-    mouvement $X$.
-  \end{block}
+  \begin{minipage}{0.9\linewidth}% do not hide the UMH logo
+    \begin{block}{Notation}
+      $g * X$ est le cube résultant du cube $g$ auquel on a appliqué le
+      mouvement $X$.
+    \end{block}
+  \end{minipage}
+\end{frame}
+
+
+\section{L'ensemble des Rubik's cubes}
+\begin{frame} \frametitle{L'ensemble de tous les Rubik's cubes}
+ 
+  \begin{definition}
+    $\G ={}$l'ensemble de toutes les configurations possibles du
+    Rubik's cube i.e.\ toutes les configurations obtenues en
+    appliquant une séquence quelconque de mouvements à $\id$.
+  \end{definition}
+ 
+  \begin{align*}
+    \G = \Biggl\{
+    &\cube{expose-id.tex} = \id, \quad
+    \cube{expose-F1.tex} = \id * F, \quad
+    \cube{expose-F1R2.tex} = \id * F * R^2, \\
+    &\cube{expose-F1B2.tex} = \id * F * B^2 = \id * B^2 * F, \quad
+    \dotsc\Biggr\}
+  \end{align*}
+ 
+  \onslide<2->%
+  \vspace*{3ex}%
+  Nombre d'éléments de $\G = 43.252.003.274.489.856.000
+  \approx 43 \cdot 10^{18}$
 \end{frame}
 
 \begin{frame} \frametitle{Notion de mouvement inverse}
