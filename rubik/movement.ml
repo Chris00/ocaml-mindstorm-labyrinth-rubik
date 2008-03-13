@@ -105,12 +105,12 @@ struct
   (** Reset the position of the fighter after having kicked the cube *)
   let reset_fighter k =
     Robot.event_is fighter_push (fun _ -> speed motor_fighter 0; k());
-    speed motor_fighter (-14)
+    speed motor_fighter (-8)
 
   let kick k =
     hold_rubik begin fun _ ->
       Robot.event_is idle_fighter (fun _ -> reset_fighter k);
-      speed motor_fighter ~tach_limit:90 100
+      speed motor_fighter ~tach_limit:100 100
     end
 
   (** Turn the platform slowly to adjust it with precision *)
@@ -126,10 +126,10 @@ struct
     let turn () = free_rubik begin fun _ ->
       let tl17 = qt*(-331) in
       if qt > 0 then (
-        Robot.event_is idle_pf (fun _ -> turn_pf_slowly (-tl17) (-15) k);
+        Robot.event_is idle_pf (fun _ -> turn_pf_slowly (-tl17) (-12) k);
         speed motor_pf ~tach_limit:(qt * degree_per_quarter) (-100))
       else (
-        Robot.event_is idle_pf (fun _ -> turn_pf_slowly tl17 15 k);
+        Robot.event_is idle_pf (fun _ -> turn_pf_slowly tl17 12 k);
         speed motor_pf ~tach_limit:(-qt * degree_per_quarter) 90)
     end in
     set_cog (qt > 0) turn
@@ -158,11 +158,11 @@ struct
     end
 
   let turn_rubik_left ~cont =
-    set_cog true (fun _ -> turn_rubik true 450 264 83 (-70) (-20) (10) cont)
+    set_cog true (fun _ -> turn_rubik true 450 256 75 (-70) (-20) (10) cont)
   let turn_rubik_right ~cont =
-    set_cog false (fun _ -> turn_rubik false 450 229 48 (70) (20) (-10) cont)
+    set_cog false (fun _ -> turn_rubik false 450 238 57 (70) (20) (-10) cont)
   let turn_rubik_half ~cont =
-    set_cog true (fun _ -> turn_rubik true 900 445 81 (-70) (-20) (10) cont)
+    set_cog true (fun _ -> turn_rubik true 900 437 75 (-70) (-20) (10) cont)
 
   let () =
     reset_fighter(fun _ -> free_rubik (end_cont));
