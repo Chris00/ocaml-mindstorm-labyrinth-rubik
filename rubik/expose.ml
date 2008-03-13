@@ -32,6 +32,11 @@ let () =
   save "scrambledR1" (scrambled >> (R,1));
   save "scrambledR3" (scrambled >> (R,3));
 
+  save "F1R2U3" (Cubie.id >> (F,1) >> (R,2) >> (U,3));
+  save "F1R2U3F1" (Cubie.id >> (F,1) >> (R,2) >> (U,3) >> (F,1));
+  save "F1R2U3D3" (Cubie.id >> (F,1) >> (R,2) >> (U,3) >> (D,3));
+
+
 
 (* Local Variables: *)
 (* compile-command: "make -k expose.exe" *)

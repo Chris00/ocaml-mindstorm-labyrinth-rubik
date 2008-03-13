@@ -4,9 +4,9 @@
 \usepackage[latin1]{inputenc}
 \usepackage[francais]{babel}
 \usepackage{textcomp}
-\usepackage{times,mathptmx}
+\usepackage{times,mathptmx,bbm}
 \usepackage{graphicx,tikz}
-\usepackage{bbm}
+\usepackage{array}
 
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
 \makeatletter
@@ -74,6 +74,7 @@
 \newcommand{\IR}{{\mathbb R}}
 %\newcommand{\id}{{\mathbbm 1}}
 \newcommand{\id}{{\mathbf 1}}
+\newcommand{\G}{{\mathcal G}}
 
 \makeatother
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
@@ -102,7 +103,7 @@
 \begin{frame}[plain]
   \titlepage
 \end{frame}
-\iffalse %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+
 \section*{Plan}
 \begin{frame} \frametitle{Plan}
   \tableofcontents[subsectionstyle=hide]
@@ -110,6 +111,7 @@
 
 % Besoin d'un slide préliminaire pour expliquer ce qu'est un Rubik's
 % cube et comment ça marche?
+
 
 \section{Préliminaires}
 \begin{frame} \frametitle{Appellation des faces du Rubik's cube}
@@ -214,16 +216,28 @@
 \end{frame}
 
 \begin{frame} \frametitle{Mouvements de base}
-Nous noterons
-\begin{itemize}
-\item "$F$" le fait de tourner la face F de 90°,
-\item "$F^2$" le fait de tourner la face F de 180° et
-\item "$F^3$" le fait de tourner la face F de 270°.
-\end{itemize}
-Idem pour les faces B,U,D,L et R.
-\newline
-\newline
-Nous avons donc 18 mouvements de base: $F, F^2, F^3, B, B^2, B^3, U, U^2, U^3, D, D^2, D^3, R, R^2, R^3, L, L^2, L^3$.
+
+  \begin{block}{18 mouvements de base}
+    $F, F^2, F^3, B, B^2, B^3, L, L^2, L^3, R, R^2, R^3, U, U^2, U^3,
+    D, D^2, D^3$
+  \end{block}
+  où $X^i$ signifie \og tourner la face $X$ de $i$ fois 90°
+  dans le sens horloger\fg.
+
+  \begin{center}
+    % Same figure of slide 1
+    \begin{tikzpicture}[x=3ex,y=3ex]
+      \input{expose-id.tex}
+      \fill[semitransparent,white] (0,0) rectangle (11.14,8.14);
+      % Label faces
+      \node at (4.5,4.5) {$F$};
+      \node at (9.62, 6.62) {$B$};
+      \node at (4.5, 1.5) {$D$};
+      \node at (1.5, 4.5) {$L$};
+      \node[rotate=-13] at (5.5, 7.02) {$U$};
+      \node[rotate=10] at (7, 5.5) {$R$};
+  \end{tikzpicture}
+  \end{center}
 \end{frame}
 
 \begin{frame} \frametitle{\og Multiplication\fg{} de mouvements}
@@ -234,11 +248,11 @@ Nous avons donc 18 mouvements de base: $F, F^2, F^3, B, B^2, B^3, U, U^2, U^3, D
     \node[right] at (7, 2.5) {\large $\id
       \onslide<2->{* F}
       \onslide<3->{* R^2}$};
-  \end{tikzpicture} 
+  \end{tikzpicture}
   \hfil
   \begin{minipage}[b]{0.48\linewidth}
     cube${}\leftrightarrow{}$séquence mouvements
-    \par\vspace*{2ex}  
+    \par\vspace*{2ex}
 
     \noindent\hspace*{4em}
     \begin{tikzpicture}[x=0.8ex,y=0.8ex]
@@ -262,7 +276,8 @@ Nous avons donc 18 mouvements de base: $F, F^2, F^3, B, B^2, B^3, U, U^2, U^3, D
   \vspace*{2ex}
   \onslide<4->%
   \begin{block}{Notation}
-    $g * X$
+    $g * X$ est le cube résultant du cube $g$ auquel on a appliqué le
+    mouvement $X$.
   \end{block}
 \end{frame}
 
@@ -365,22 +380,23 @@ Nous avons donc 18 mouvements de base: $F, F^2, F^3, B, B^2, B^3, U, U^2, U^3, D
   \end{minipage}
 }
 \end{frame}
-\fi%%%%%%%%%%%%%%%%%%%%%%%%
+
+
 \begin{frame} \frametitle{Notion de mouvement inverse (suite)}
 \onslide<1->{%
   Qu'est-ce que l'inverse de $x \in \IR$?
  }
 \onslide<2->{%
  \begin{block}{Définition}
-   Soit $x \in \IR$.\\
-   On dit que $y$ est l'\textit{inverse} de $x$ si $x.y = 1$.
+   Soit $x \in \IR$.
+   On dit que $y$ est l'\textit{inverse} de $x$ si $x \cdot y = 1$.
  \end{block}
 }
 \par\vspace*{2ex}
 \onslide<3->{Analogie avec les mouvements:}
 \onslide<4->{%
   \begin{block}{Définition}
-    Soit $X$ un mouvement de base.\\
+    Soit $X$ un mouvement de base.
     Nous dirons que $Y$ est le mouvement \textit{inverse} de $X$
     si $X * Y = \id$.
   \end{block}
@@ -392,60 +408,188 @@ Nous avons donc 18 mouvements de base: $F, F^2, F^3, B, B^2, B^3, U, U^2, U^3, D
 }
 \end{frame}
 
-\section{Ensemble des Rubik's cubes}
-\begin{frame} \frametitle{L'ensemble de tous les Rubik's cubes}
-Soit $\mathcal{G}$ = l'ensemble de tous les Rubik's cubes possibles obtenus en appliquant des séquences quelconques de mouvements au Rubik's cube identité.
-\newline
-\newline
-C'est-à-dire $\mathcal{G}$ = % { dessins de plusieurs Rubik's cube (dont l'identité)}
+
+\section{Le problème}
+\begin{frame} \frametitle{Le problème}
+
+  \begin{minipage}[t]{0.43\linewidth}
+    \begin{block}{Première formulation}
+      Étant donné un cube $g$, le remettre en \og position de base\fg.
+    \end{block}
+  \end{minipage}
+  \hfill
+  \onslide<5->{%
+    \begin{minipage}[t]{0.47\linewidth}
+      \begin{block}{Formulation mathématique}
+        Étant donné  $g \in \G$, trouver des mouvements de base $X_1,
+        \dotsc, X_n$ tels que $g * X_1 * \cdots * X_n = \id$.
+      \end{block}
+    \end{minipage}
+  }
+
+  \vspace*{3ex}%
+  \textsc{Exemple:}
+  \begin{center}
+    \begin{tikzpicture}[x=1ex,y=1ex]
+      \input{expose-F1R2U3.tex}
+      \node[below] at (4.5, -0.5) {$g$};
+      \onslide<2->%
+      \begin{scope}[xshift=15ex]
+        \draw[<-,thick] (-0.5, 4.5) -- +(-2.5,0) node[pos=0.5,above]{$U$};
+        \input{expose-F1R2.tex}
+        \node[below] at (4.5, -0.5) {$g * U$};
+      \end{scope}
+      \onslide<3->%
+      \begin{scope}[xshift=30ex]
+        \draw[<-,thick] (-0.5, 4.5) -- +(-2.5,0) node[pos=0.5,above]{$R^2$};
+        \input{expose-F1.tex}
+        \node[below] at (4.5, -0.5) {$g * U * R^2$};
+      \end{scope}
+      \onslide<4->%
+      \begin{scope}[xshift=45ex]
+        \draw[<-,thick] (-0.5, 4.5) -- +(-2.5,0) node[pos=0.5,above]{$F^3$};
+        \input{expose-id.tex}
+        \node[below] at (4.5, -0.5) {$g * U * R^2 * F^3 = \id$};
+      \end{scope}
+    \end{tikzpicture}
+  \end{center}
 \end{frame}
 
 \section{Idée de l'algorithme}
 \begin{frame} \frametitle{Idée de l'algorithme}
-Au départ: nous avons un Rubik's cube quelconque.
-%photo
-\newline
-\newline
-Notre but: appliquer une certaine séquence de mouvements à ce Rubik's cube afin de retomber sur le Rubik's cube identité.
-\newline
-\newline
-Mais comment trouver cette séquence de mouvements?
+  \begin{block}{}
+    Comment trouver la séquence de mouvements pour résoudre un cube~$g$ ?
+  \end{block}
+
+  Pas à pas :
+  \par\vspace*{-2ex}
+  \begin{center}
+    \begin{tikzpicture}[x=1ex,y=1ex]
+      \input{expose-F1R2U3.tex}
+      \node[right] at (7.5, 2) {$g$};
+      \draw[->] (4.5,-0.5) -- +(-18,-6) node[pos=0.5,above]{$F$};
+      \begin{scope}[xshift=-20ex,yshift=-16ex]
+        \input{expose-F1R2U3F1.tex}
+        \node[right] at (7.5, 2) {$g * F$};
+      \end{scope}
+      \draw[->] (4.5,-0.5) -- +(1.5,-6) node[pos=0.5,left]{$U$};
+      \begin{scope}[yshift=-16ex]
+        \fill[black] (-2,4.5) circle(0.7pt) (-4,4.5) circle(0.7pt)
+        (-6,4.5) circle(0.7pt);
+        \input{expose-F1R2.tex}
+        \node[right] at (7.5, 2) {$g * U$};
+      \end{scope}
+      \draw[->] (4.5,-0.5) -- +(21.5,-6) node[pos=0.5,above]{$D^3$};
+      \begin{scope}[xshift=20ex,yshift=-16ex]
+        \fill[black] (-2,4.5) circle(0.7pt) (-4,4.5) circle(0.7pt)
+        (-6,4.5) circle(0.7pt);
+        \input{expose-F1R2U3D3.tex}
+        \node[right] at (7.5, 2) {$g * D^3$};
+      \end{scope}
+      \node[right] at (-20,-18.5) {%
+        $\underbrace{\hspace*{52ex}}_{\text{18 configurations à examiner}}$
+      };
+    \end{tikzpicture}
+  \end{center}
+
+  \vspace*{-1ex}
+  Trouvé l'identité ?
 \end{frame}
 
 \begin{frame} \frametitle{Idée de l'algorithme (suite)}
-Nous allons chercher cette séquence pas à pas.
-\newline
-\newline
-Appliquons au Rubik's cube de départ les 18 mouvements possibles:
-% Rubik's cube de départ, 18 traits qui partent de lui avec le mouvement appliqué écrit à côté de chaque trait et sous chaque trait le Rubik's cube obtenu
-\newline
-\newline
-Est-ce que le Rubik's cube identité se trouve parmi ses 18 Rubik's trouvés?
-\newline
-\newline
-Non! Alors on continue!
+
+  \begin{block}{}
+    Trouvé l'identité ?
+    \begin{itemize}
+    \item<2-> \textit{Oui} : on a fini
+    \item<3-> \textit{Non} : on recommence !
+    \end{itemize}
+  \end{block}
+
+  \onslide<3->%
+  \begin{center}
+    \footnotesize
+    \begin{tikzpicture}[x=0.6ex,y=0.6ex]
+      \input{expose-F1R2U3.tex}
+      \node[right] at (7.5, 2) {$g$};
+      \draw[->] (4.5,-0.5) -- +(-18,-6) node[pos=0.5,above]{$F$};
+      \begin{scope}[xshift=-12ex,yshift=-10ex]
+        \input{expose-F1R2U3F1.tex}
+        \node[right] at (7.5, 1.5) {$g * F$};
+        %% Level 3 for that node
+        \draw[->] (4.5,-0.5) -- +(-7,-6);
+        \draw[->] (4.5,-0.5) -- +(1.5,-6);
+        \draw[->] (4.5,-0.5) -- +(7,-6);
+        \node[below] at (4.5,-6.5) {\hbox to 10ex{\dotfill}};
+      \end{scope}
+      \draw[->] (4.5,-0.5) -- +(1.5,-6) node[pos=0.5,left]{$U$};
+      \begin{scope}[yshift=-10ex]
+        \fill[black] (-2,4.5) circle(0.7pt) (-4,4.5) circle(0.7pt)
+        (-6,4.5) circle(0.7pt);
+        \input{expose-F1R2.tex}
+        \node[right] at (7.5, 1.5) {$g * U$};
+        %% Level 3 for that node
+        \draw[->] (4.5,-0.5) -- +(-7,-6);
+        \draw[->] (4.5,-0.5) -- +(1.5,-6);
+        \draw[->] (4.5,-0.5) -- +(7,-6);
+        \node[below] at (4.5,-6.5) {\hbox to 10ex{\dotfill}};
+      \end{scope}
+      \draw[->] (4.5,-0.5) -- +(21.5,-6) node[pos=0.5,above]{$D^3$};
+      \begin{scope}[xshift=12ex,yshift=-10ex]
+        \fill[black] (-2,4.5) circle(0.7pt) (-4,4.5) circle(0.7pt)
+        (-6,4.5) circle(0.7pt);
+        \input{expose-F1R2U3D3.tex}
+        \node[right] at (7.5, 1.5) {$g * D^3$};
+        %% Level 3 for that node
+        \draw[->] (4.5,-0.5) -- +(-7,-6);
+        \draw[->] (4.5,-0.5) -- +(1.5,-6);
+        \draw[->] (4.5,-0.5) -- +(7,-6);
+        \node[below] at (4.5,-6.5) {\hbox to 10ex{\dotfill}};
+      \end{scope}
+      \node[right] at (-25,-28) {%
+        $\underbrace{\hspace*{36ex}}_{18 \times 18 = 324 \text{ configurations à examiner}}$
+      };
+    \end{tikzpicture}
+  \end{center}
+
+  Trouvé l'identité ?
 \end{frame}
 
-\begin{frame} \frametitle{Idée de l'algorithme (suite)}
-Pour chaque Rubik's cube trouvé, nous allons ré-appliquer les 18 mouvements possibles:
-% même photo que précédemment, avec un niveau en plus
-\newline
-\newline
-Est-ce que le Rubik's cube identité se trouve parmi ces 18*18 Rubik's trouvés?
-\newline
-\newline
-Non! Alors on continue!
-\end{frame}
 
 \begin{frame} \frametitle{Idée de l'algorithme (suite)}
-Nous continuons ainsi, niveau par niveau, jusqu'à ce que nous trouvons le Rubik's cube identité parmi les Rubik's cubes du dernier niveau.
-\newline
-\newline
-Quand nous l'avons trouvé, il ne reste plus qu'à partir du Rubik's cube de départ et lui appliquer la séquence de mouvements qui relie ce Rubik's cube au Rubik's cube identité dans le dessin.
-\newline
-\newline
-Par exemple:
-%exemple
+
+  \begin{minipage}{0.5\linewidth}
+    \begin{math}
+      \begin{array}{l|l<{{}}@{}r}
+        \text{Niveau}& \multicolumn{2}{c}{\text{\# de configurations}}\\
+        \hline
+        \rule{0pt}{2.2ex}%
+        1& 18^1 =& 18\\
+        2& 18^2 =& 324\\
+        3& 18^3 =& 5.832\\
+        4& 18^4 =& 104.976\\
+        5& 18^5 =& 1.889.568\\
+        6& 18^6 =& 34.012.224\\
+        7& 18^7 =& 612.220.032\\
+        8& 18^8 =& 11.019.960.576
+      \end{array}
+    \end{math}
+
+    \vspace*{2ex}%
+    Explosion des cas !
+  \end{minipage}
+  \hfill
+  \onslide<2->%
+  \begin{minipage}{0.45\linewidth}
+    \begin{block}{Ingédients}
+      \begin{itemize}
+      \item<2-> Sous problèmes
+      \item<3-> Multiplication rapide
+      \item<4-> Recherche «~informée~» \& \emph{pruning}
+      \item<5-> Réductions par symétries
+      \end{itemize}
+    \end{block}
+  \end{minipage}
 \end{frame}
 
 \begin{frame} \frametitle{Bibliographie}
