@@ -89,5 +89,5 @@ let () =
 
   let cubie, _ = List.fold_left print_and_do (cubie, []) solution in
 
-  D.cube cubie;
+  D.cube ~geom ~colors cubie;
   ignore(wait_next_event [Key_pressed])
