@@ -5,19 +5,19 @@ open Rubik
 
 (** Initialize the rubik state taking snapshot of the real rubik!*)
 
-type colorf = Red | Green | Yellow | White | Orange | Blue
-
 let orange = rgb 255 122 3
 
 module Color =
 struct
+  type t = Red | Green | Yellow | White | Orange | Blue
+
   let color_graphics = function
-    |Red -> Display_base.red
-    |Green -> Display_base.green
-    |Yellow -> Display_base.yellow
-    |White -> Display_base.white
-    |Orange -> Display_base.orange
-    |Blue -> Display_base.blue
+    | Red -> Display_base.red
+    | Green -> Display_base.green
+    | Yellow -> Display_base.yellow
+    | White -> Display_base.white
+    | Orange -> Display_base.orange
+    | Blue -> Display_base.blue
 
   let rgb_components (c:Graphics.color) =
     (c lsr 16) land 0xFF,
@@ -85,7 +85,7 @@ end
 
 module Face =
 struct
-  type t = colorf array array
+  type t = Color.t array array
 
   let coord id = id mod 3, 2 - id / 3
 
@@ -94,99 +94,58 @@ struct
   let rotation (x,y) = 2-y, x
 
   let rotate (x,y) orient = match (orient mod 4) with
-    |0 -> (x,y)
-    |1 -> rotation (x,y)
-    |2 -> rotation ( rotation (x,y))
-    |_ -> rotation ( rotation ( rotation ( (x,y))))
+    | 0 -> (x,y)
+    | 1 -> rotation (x,y)
+    | 2 -> rotation ( rotation (x,y))
+    | _ -> rotation ( rotation ( rotation (x,y)))
 
   (* array of all representing the upper face *)
-  (* let u = Array.make_matrix 3 3 Red
-  let r = Array.make_matrix 3 3 Green
-  let f = Array.make_matrix 3 3 Yellow
-  let l = Array.make_matrix 3 3 White
-  let d = Array.make_matrix 3 3 Blue
-  let b = Array.make_matrix 3 3 Orange *)
+  let u = Array.make_matrix 3 3 Color.Red
+  let r = Array.make_matrix 3 3 Color.Green
+  let f = Array.make_matrix 3 3 Color.Yellow
+  let l = Array.make_matrix 3 3 Color.White
+  let d = Array.make_matrix 3 3 Color.Blue
+  let b = Array.make_matrix 3 3 Color.Orange
 
-  let u = [|
-    [|Red; White; Yellow|];
-    [|Red; White; Yellow|];
-    [|White; Orange; Green|]
-  |]
-
-  let l = [|
-    [|White;Green ;Orange|];
-    [|White;Orange ;Red|];
-    [|White;White ;Green|]
-  |]
-
-  let f = [|
-    [|Orange; Green; Yellow|];
-    [|Yellow;Green;Blue|];
-    [|Blue; Yellow; Green|]
-  |]
-
-  let r = [|
-    [|Yellow;Orange;Red|];
-    [|Red;Red;White|];
-    [|Yellow;Yellow;White|]
-  |]
-
-let b = [|
-    [|Blue;Blue;Orange|];
-    [|Blue;Blue;Green|];
-    [|Red;Orange;Green|]
-  |]
-
-  let d = [|
-    [|Blue;Blue;Blue|];
-    [|Orange;Yellow;Red|];
-    [|Orange;Green;Red|]
-  |] 
-
+  (* Return the face 3x3 matrix *)
+  let get = function
+    | U -> u
+    | R -> r
+    | F -> f
+    | L -> l
+    | D -> d
+    | B -> b
 
   let color_of face = match face with
-    |U -> u.(1).(1)
-    |R -> r.(1).(1)
-    |F -> f.(1).(1)
-    |L -> l.(1).(1)
-    |D -> d.(1).(1)
-    |B -> b.(1).(1)
+    | U -> u.(1).(1)
+    | R -> r.(1).(1)
+    | F -> f.(1).(1)
+    | L -> l.(1).(1)
+    | D -> d.(1).(1)
+    | B -> b.(1).(1)
 
   (* returns the color of the element [id] of the face [face] *)
   let color_fid (face,id) =
-    let f = (match face with
-             |U -> u
-             |R -> r
-             |F -> f
-             |L -> l
-             |D -> d
-             |B -> b) in
     let (x,y) = coord id in
-    f.(x).(y)
+    (get face).(x).(y)
 
   let name face = match face with
-    |U -> "Up"
-    |R -> "Right"
-    |F -> "Front"
-    |L -> "Left"
-    |D -> "Down"
-    |B -> "Back"
+    | U -> "Up"
+    | R -> "Right"
+    | F -> "Front"
+    | L -> "Left"
+    | D -> "Down"
+    | B -> "Back"
 
   let to_string face =
-    let print_face = (match face with
-             |U -> u
-             |R -> r
-             |F -> f
-             |L -> l
-             |D -> d
-             |B -> b) in
     let rec ry y return =
       let rec rx x ret = match x with
-        |3 -> ret
-        |_ -> rx (x+1) (ret ^ (" " ^ Color.to_string print_face.(x).(2-y)) ^ " -") in
+        | 3 -> ret
+        | _ -> rx (x+1) (ret ^ (" " ^ Color.to_string (get face).(x).(2-y))
+                         ^ " -") in
       match y with
-      |3 -> return ^ "\n-------------\n-"
-      |_ ->  ry (y+1) (rx 0 (return ^ "\n-------------\n-")) in
+      | 3 -> return ^ "\n-------------\n-"
+      | _ ->  ry (y+1) (rx 0 (return ^ "\n-------------\n-")) in
     ry 0 ""
 end
 
@@ -205,8 +164,8 @@ struct
         |_ ->
            pick_x (x+1)
              (Color.rgb_components
-                (snapshot.(Array.length snapshot -y0- y*7).(x0 + x*7)) :: retour
-             )
+                (snapshot.(Array.length snapshot -y0- y*7).(x0 + x*7))
+              :: retour)
       in
       match y with
       |3 -> ret
@@ -231,44 +190,33 @@ struct
       (Face.to_string face);
     ignore(wait_next_event [Key_pressed]);
     let img = Ppm.as_matrix_exn snapshot_file in
-    let f = (match face with
-             |U -> Face.u
-             |R -> Face.r
-             |F -> Face.f
-             |L -> Face.l
-             |D -> Face.d
-             |B -> Face.b) in
     let fill_matrix_square x y =
       let (i,j) = Face.rotate (x,y) orient in
-      f.(x).(y) <- Color.name
-        (average (pick_point img (abs i) (ord j)));
+      (Face.get face).(x).(y)
+      <- Color.name (average (pick_point img (abs i) (ord j)));
     in
     Array.iter (fun x ->
                   Array.iter (fun y -> fill_matrix_square x y) [|0;1;2|]
                ) [|0;1;2|]
       (* used for the graphical selection of the color *)
   let tab_color =
-    [| Red; Green; Yellow;  White; Orange; Blue|]
+    [| Color.Red; Color.Green; Color.Yellow;
+       Color.White; Color.Orange; Color.Blue|]
 
   let tab_c =
     [|red; green; yellow; white; orange; blue|]
 
   let convert_color current_color key = match key with
-    |'r' -> 0
-    |'g' -> 1
-    |'y' -> 2
-    |'w' -> 3
-    |'o' -> 4
-    |'b' -> 5
-    |_ -> current_color
+    | 'r' -> 0
+    | 'g' -> 1
+    | 'y' -> 2
+    | 'w' -> 3
+    | 'o' -> 4
+    | 'b' -> 5
+    | _ -> current_color
 
   let man_take_face face orient =
     let side = 50 in
-
-    let before i = (5 + i) mod 6 in
-
-    let next i = (i + 1) mod 6 in
-
     (* draws square! [x] [y] are the coordinate of the left bottom corner
        and an [c] is an int representinf the color. (cf tab_c) *)
     let ds x y c =
@@ -320,13 +268,7 @@ struct
         else
           color_change ((tmp_matrix.(x).(y) + 1) mod 6) (x,y)
     in next_event ();
-    let f = (match face with
-             |U -> Face.u
-             |R -> Face.r
-             |F -> Face.f
-             |L -> Face.l
-             |D -> Face.d
-             |B -> Face.b) in
+    let f = Face.get face in
     for x = 0 to 2
     do
       for y = 0 to 2
@@ -344,17 +286,10 @@ struct
     let webcam = Snapshot.start () in
     let snapshot = Snapshot.take webcam in
     Snapshot.stop webcam;
-    let f = (match face with
-             | U -> Face.u
-             | R -> Face.r
-             | F -> Face.f
-             | L -> Face.l
-             | D -> Face.d
-             | B -> Face.b) in
     let fill_matrix_square x y =
       let (i,j) = Face.rotate (x,y) orient in
-      f.(x).(y) <- Color.name
-        (average (pick_point snapshot (abs i) (ord j)));
+      (Face.get face).(x).(y)
+      <- Color.name (average (pick_point snapshot (abs i) (ord j)));
     in
     Array.iter (fun x ->
                   Array.iter (fun y -> fill_matrix_square x y) [|0;1;2|]
@@ -488,13 +423,15 @@ let create_rubik face_iter =
   let edge_list_ordered = edge_list_replacement () in
   let elo = List.map (fun (a,i) -> (a, (i = 1))) edge_list_ordered in
   let cubie = Cubie.make corner_list_ordered elo in
-  (cubie, (
-     Color.color_graphics(Face.color_of U),
-     Color.color_graphics(Face.color_of L),
-     Color.color_graphics(Face.color_of F),
-     Color.color_graphics(Face.color_of R),
-     Color.color_graphics(Face.color_of B),
-     Color.color_graphics(Face.color_of D)))
+  (cubie,
+   { Display_base.color_F = Color.color_graphics(Face.color_of F);
+     color_B = Color.color_graphics(Face.color_of B);
+     color_L = Color.color_graphics(Face.color_of L);
+     color_R = Color.color_graphics(Face.color_of R);
+     color_U = Color.color_graphics(Face.color_of U);
+     color_D = Color.color_graphics(Face.color_of D);
+     color_lines = black }
+  )
 
 (*
 let () =

@@ -3,21 +3,21 @@ open Graphics
 
 (** Initialize the rubik state and creating a representation of it!*)
 
-type colorf = Red | Green | Yellow | White | Orange | Blue
-(** Color of faces *)
-
 module Color :
 (** Random funcion about the color face *)
 sig
+  type t = Red | Green | Yellow | White | Orange | Blue
+      (** Color of faces *)
+
   val rgb_components : Graphics.color -> int * int * int
     (** [rgb_components c] returns the rgb components of [c],
         a [Graphics.color] *)
 
-  val name : int * int * int -> colorf
+  val name : int * int * int -> t
     (** [name rgb] returns form the rgb components [rgb],
         the name of the color ([Red | Green | Yellow | White | Orange | Blue]*)
 
-  val to_string : colorf -> string
+  val to_string : t -> string
     (** [to_string] returns the first letter of the name of
         the color (ie for [Blue] the function returns [B] *)
 end
@@ -46,10 +46,10 @@ sig
     (** [id (x,y)] is the number of the facelets
         from an absissa [x] and a coordinate [y] *)
 
-  val color_of : generator -> colorf
+  val color_of : generator -> Color.t
     (** [color_of face] returns the color of the face [face] *)
 
-  val color_fid : generator * int ->   colorf
+  val color_fid : generator * int -> Color.t
     (** [color_fid (face,id)] return the color of the square number [id]
         form the face[face] *)
 
@@ -85,15 +85,14 @@ sig
         with the orientation [orient] and save the data! *)
 end
 
-val find_orientation : colorf array -> colorf array -> int
+val find_orientation : Color.t array -> Color.t array -> int
   (** [find_orientation tf np] returns the orientation of a corner or an edge
       [tf] in the place [np] which is also a corner or an edge.
       It returns [3] if it's impossible to place the corner*)
 
-val find : colorf array -> (colorf array * 'a) list -> 'a * int
+val find : Color.t array -> (Color.t array * 'a) list -> 'a * int
 
-val  order : colorf array list -> (colorf array * 'a) list
-  -> ('a * int) list
+val  order : Color.t array list -> (Color.t array * 'a) list -> ('a * int) list
 
 val corner_list_replacement : unit -> (Cubie.corner * int) list
   (** [corner_list_replacement _] gives the list of the corners
@@ -110,7 +109,7 @@ val edge_list_replacement : unit -> (Cubie.edge * int) list
       the cubie for a solving search*)
 
 val create_rubik : ((Rubik.generator -> int -> unit) -> unit)  ->
-  Cubie.t * (color * color * color * color * color * color)
+  Cubie.t * Display_base.colors
   (** [create_rubik face_iter] is used for the initialization of the rubik
       colors.
       [face_iter] is a function, which given a picking color function,

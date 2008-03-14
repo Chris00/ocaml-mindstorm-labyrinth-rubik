@@ -23,12 +23,13 @@ module D = Display_base
 
 module Motor = Mindstorm.Motor
 
-let conn = let bt =
-  if Array.length Sys.argv < 2 then (
-    printf "%s <bluetooth addr>\n" Sys.argv.(0);
-    exit 1;
-  )
-  else Sys.argv.(1) in Mindstorm.connect_bluetooth bt
+let conn =
+  let bt =
+    if Array.length Sys.argv < 2 then (
+      printf "%s <bluetooth addr>\n" Sys.argv.(0);
+      exit 1;
+    )
+    else Sys.argv.(1) in Mindstorm.connect_bluetooth bt
 
 module Brick =
 struct
@@ -52,24 +53,14 @@ let display_moves x y m =
 let () =
   open_graph "";
   (********* Initialization of the cubie *********)
-  let (cubie, (cU, cL, cF, cR, cB, cD)) =
-    Init_color.create_rubik (M.face_iter) in
-
+  let (cubie, colors) = Init_color.create_rubik (M.face_iter) in
 
   (********* Graphical part *********)
-  let geom = { D.geom with D.xy0 = (10.,20.) } in
-  let colors = {
-    D.color_F = cF;
-    color_B = cB;
-    color_L = cL;
-    color_R = cR;
-    color_U = cU;
-    color_D = cD;
-    color_lines = black
-  } in
+  let geom = { D.geom with D.xy0 = (10.,30.) } in
+  let display c = D.cube ~geom ~colors c in
 
   clear_graph();
-  D.cube ~geom ~colors cubie;
+  display cubie;
   ignore(wait_next_event [Key_pressed]);
 
   (********* Resolution part *********)
@@ -81,7 +72,7 @@ let () =
       ignore(wait_next_event[Button_down]);
     let c_next = Cubie.mul c (Cubie.move (Move.make m)) in
     let moves = m :: moves in
-    D.cube ~geom ~colors c_next;
+    display c_next;
     display_moves 10 10 (List.rev moves);
     M.make m;
     (c_next, moves)
@@ -89,5 +80,5 @@ let () =
 
   let cubie, _ = List.fold_left print_and_do (cubie, []) solution in
 
-  D.cube ~geom ~colors cubie;
+  display cubie;
   ignore(wait_next_event [Key_pressed])
