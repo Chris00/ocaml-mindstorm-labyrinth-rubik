@@ -93,7 +93,7 @@ struct
     else (Robot.event_is idle_hand k;
           cube_is_held := true;
           speed motor_hand ~tach_limit:110 (-30))
-      
+
   let free_rubik k =
     if !cube_is_held then begin
       Robot.event_is hand_push (fun _ -> speed motor_hand 0;  k());
@@ -102,15 +102,22 @@ struct
     end
     else k()
 
-  (** Reset the position of the fighter after having kicked the cube *)
+  let usleep s = ignore(Unix.select [] [] [] s)
+
   let reset_fighter k =
-    Robot.event_is fighter_push (fun _ -> speed motor_fighter 0; k());
+    Robot.event_is fighter_push (fun _ -> speed motor_fighter 0;k());
+    speed motor_fighter (-5)
+
+  (** Reset the position of the fighter after having kicked the cube *)
+  let kick_back k =
+    Robot.event_is fighter_push (fun _ -> speed motor_fighter 0; usleep 0.5;
+      reset_fighter k);
     speed motor_fighter (-8)
 
   let kick k =
     hold_rubik begin fun _ ->
-      Robot.event_is idle_fighter (fun _ -> reset_fighter k);
-      speed motor_fighter ~tach_limit:100 100
+      Robot.event_is idle_fighter (fun _ -> kick_back k);
+      speed motor_fighter ~tach_limit:80 100
     end
 
   (** Turn the platform slowly to adjust it with precision *)
@@ -126,10 +133,10 @@ struct
     let turn () = free_rubik begin fun _ ->
       let tl17 = qt*(-331) in
       if qt > 0 then (
-        Robot.event_is idle_pf (fun _ -> turn_pf_slowly (-tl17) (-12) k);
+        Robot.event_is idle_pf (fun _ -> turn_pf_slowly (-tl17) (-8) k);
         speed motor_pf ~tach_limit:(qt * degree_per_quarter) (-100))
       else (
-        Robot.event_is idle_pf (fun _ -> turn_pf_slowly tl17 12 k);
+        Robot.event_is idle_pf (fun _ -> turn_pf_slowly tl17 8 k);
         speed motor_pf ~tach_limit:(-qt * degree_per_quarter) 90)
     end in
     set_cog (qt > 0) turn
@@ -158,14 +165,14 @@ struct
     end
 
   let turn_rubik_left ~cont =
-    set_cog true (fun _ -> turn_rubik true 450 256 75 (-70) (-20) (10) cont)
+    set_cog true (fun _ -> turn_rubik true 450 249 68 (-70) (-20) (10) cont)
   let turn_rubik_right ~cont =
-    set_cog false (fun _ -> turn_rubik false 450 238 57 (70) (20) (-10) cont)
+    set_cog false (fun _ -> turn_rubik false 450 235 54 (70) 20 (-10) cont)
   let turn_rubik_half ~cont =
-    set_cog true (fun _ -> turn_rubik true 900 437 75 (-70) (-20) (10) cont)
+    set_cog true (fun _ -> turn_rubik true 900 426 64 (-70) (-20) (10) cont)
 
   let () =
-    reset_fighter(fun _ -> free_rubik (end_cont));
+    kick_back (fun _ -> free_rubik (end_cont));
     execute()
 
 end

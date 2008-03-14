@@ -17,6 +17,10 @@
 module type TranslatorT =
 sig
 
+  val display_cube : unit -> unit
+    (** [display_cube()] displays the cube (opens the hand to free the
+        cube. *)
+
   val make : Rubik.generator * int -> unit
     (** [make m] drives the robot to execute the physical movement
         associated to the the move [m].  *)

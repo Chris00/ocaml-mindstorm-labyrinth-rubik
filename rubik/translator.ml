@@ -22,6 +22,8 @@ open Mindstorm
 module type TranslatorT =
 sig
 
+  val display_cube : unit -> unit
+
   val make : Rubik.generator * int -> unit
 
   val face_iter : (Rubik.generator -> int -> unit) -> unit
@@ -36,13 +38,17 @@ module Make (C: sig
                val push_hand_port : Sensor.port
                val push_fighter_port : Sensor.port
                val cog_is_set_left : bool
-
              end) =
 
 struct
   open C
 
   module M = Movement.Make(C)
+
+  let display_cube () =
+    let music () = Sound.play conn "! Startup.rso" in
+    M.free_rubik (fun _ -> music(); M.turn_pf 4 M.end_cont);
+    M.execute()
 
   (** Each face of the cube is represented by a letter (F,R,B,L,U,D)
       This fonction associate an integer between 0 and 5 to this letters,

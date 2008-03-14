@@ -79,6 +79,7 @@ let () =
   in
 
   let cubie, _ = List.fold_left print_and_do (cubie, []) solution in
+  M.display_cube();
 
   display cubie;
   ignore(wait_next_event [Key_pressed])
