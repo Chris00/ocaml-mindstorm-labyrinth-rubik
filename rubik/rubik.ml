@@ -65,9 +65,18 @@ module List = struct
     iter 0 l
 end
 
-(* Sys.is_directory does not exist in OCaml 3.09 *)
-let is_directory d =
-  (Unix.stat d).Unix.st_kind = Unix.S_DIR
+(* Create a directory if it does not exist and make sure it is
+   writable by the current user.  Return [true] if it succeeded and
+   [false] otherwise. *)
+let can_create_directory d =
+  try
+    (* Avoid Sys.is_directory because it not exist in OCaml 3.09 *)
+    let st = Unix.stat d in (* or exceptoin *)
+    st.Unix.st_kind = Unix.S_DIR
+        && (st.Unix.st_perm lsr 7) land 0x1 = 1
+  with Unix.Unix_error (Unix.ENOENT, _, _) ->
+    try Unix.mkdir d 0o700; true        (* dir now created *)
+    with _ -> false                     (* because e.g. insufficient perms *)
 
 let max (i:int) j = if i <= j then j else i
 
@@ -411,10 +420,7 @@ DEFINE INITIALIZE_FILE_MUL(dir, make_mul_table, basename) =
       else begin
         (* Compute and save the table *)
         let mul_table = make_mul_table() in
-        let can_save =
-          try is_directory dir
-          with Sys_error _ -> Unix.mkdir dir 0o700; true in
-        if can_save then
+        if can_create_directory dir then
           let fh = open_out_bin fname in
           output_value fh mul_table;
           close_out fh
@@ -494,10 +500,7 @@ let initialize_file_prun dir file initialize_prun mul =
       else begin
         (* Compute and save the table *)
         let prun_table = initialize_prun mul in
-        let can_save =
-          try is_directory dir
-          with Sys_error _ -> Unix.mkdir dir 0o700; true in
-        if can_save then
+        if can_create_directory dir then
           let fh = open_out_bin fname in
           output_value fh prun_table;
           close_out fh
