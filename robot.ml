@@ -133,12 +133,12 @@ let event meas cond f =
     if c.is_constant then
       (* Fetch the value once only and do not erase other events --
          thus return [false] to allow the execution of subsequent events. *)
-      let v = read m in
+      let v = read meas in
       (fun () -> f v; false)
     else
       (fun () ->
          (* Fetch the value only if the event is triggered. *)
-         let v = read m in
+         let v = read meas in
          if cond v then (
            remove_events c.robot;
            f v;
