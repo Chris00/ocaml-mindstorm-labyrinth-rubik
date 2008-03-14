@@ -168,6 +168,9 @@ let run r =
     | Exit -> () (* considered as an acceptable way to stop. *)
     | Unix.Unix_error(Unix.ENOTCONN, _, _)
     | Unix.Unix_error(Unix.ECONNRESET, _, _) -> failwith "Robot disconnected"
+    | Unix.Unix_error(Unix.EINTR, _, _) ->
+        Printf.eprintf "Robot stopped by signal.\n%!"
+          (* FIXME: maybe we rather want to handle signals ? *)
     | Failure _ as e -> raise e
     | e ->
         Printf.eprintf "Uncaught exception: %s\n%!" (Printexc.to_string e)
