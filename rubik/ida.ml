@@ -36,10 +36,14 @@ struct
   let move_cannot_follow m m' =
     C.Move.commute m m' && C.Move.compare_gen m m' >= 0
 
-    (* Return a list of possible paths (added to the already existing
-       solutions [sols]). *)
+  (* Return a list of possible paths (added to the already existing
+     solutions [sols]). *)
   let rec add_solution sols cost_max  perm last_move path cost_path =
-    if C.in_goal perm then List.rev path :: sols (* sol found *)
+    (* We only return solutions at the max depth.  This is in case we
+       have solutions at depth d at relaunch ar depth d+1: we then
+       only get solutions of depth d+1. *)
+    if C.in_goal perm && cost_path = cost_max
+    then List.rev path :: sols (* sol found *)
     else begin
       let cost_path = cost_path + 1 in
       List.fold_left begin fun sols m ->
