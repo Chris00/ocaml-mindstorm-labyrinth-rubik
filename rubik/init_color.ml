@@ -2,41 +2,34 @@ open Graphics
 open Printf
 open Ppm
 open Rubik
+module D = Display_base
 
 (** Initialize the rubik state taking snapshot of the real rubik!*)
-
-let orange = rgb 255 122 3
 
 module Color =
 struct
   type t = Red | Green | Yellow | White | Orange | Blue
 
-  let color_graphics = function
-    | Red -> Display_base.red
-    | Green -> Display_base.green
-    | Yellow -> Display_base.yellow
-    | White -> Display_base.white
-    | Orange -> Display_base.orange
-    | Blue -> Display_base.blue
+  let all = [Red ; Green ; Yellow ; White ; Orange ; Blue]
+
+  let to_rgb = function
+    | Red -> D.red
+    | Green -> D.green
+    | Yellow -> D.yellow
+    | White -> D.white
+    | Orange -> D.orange
+    | Blue -> D.blue
 
   let rgb_components (c:Graphics.color) =
-    (c lsr 16) land 0xFF,
-    (c lsr 8) land 0xFF,
-    c land 0xFF
+    (c lsr 16) land 0xFF, (c lsr 8) land 0xFF, c land 0xFF
 
-  let min a b =
-    if a > b then b
-    else a
+  let min a b = if (a:int) > b then b else a
 
-  let min3 a b c =
-    min a (min b c)
+  let min3 a b c = min a (min b c)
 
-  let max a b =
-    if a > b then a
-    else b
+  let max a b = if (a:int) > b then a else b
 
-  let max3 a b c =
-    max a (max b c)
+  let max3 a b c = max a (max b c)
 
   (* according to wikipedia [http://en.wikipedia.org/wiki/HSL_color_space]
      we can find the hue from the rbg in this way *)
@@ -54,13 +47,9 @@ struct
     int_of_float (float ((max3 r g b + min3 r g b) / 2) /. 2.55)
 
   let saturation r g b =
-    let l = lightness r g b in
-    if l <= 127 then int_of_float(
-      float (max3 r g b - min3 r g b) /. 2. /. (float l /. 100.)
-    )
-    else int_of_float(
-      float (max3 r g b - min3 r g b) /. 2. /.(1. -. (float l /. 100.))
-    )
+    let diff = float(max3 r g b - min3 r g b) *. 0.5 in
+    let l = float(lightness r g b) /. 100. in
+    truncate(diff /. (if l <= 1.27 then l else 1. -. l))
 
   let name rgb =
     let (r,g,b) = rgb in
@@ -73,13 +62,13 @@ struct
       else if h > 75 && h < 180 then Green
       else Blue
 
-  let to_string = function
-    |Red -> "R"
-    |Green -> "G"
-    |Yellow -> "Y"
-    |White -> "W"
-    |Orange -> "O"
-    |Blue -> "B"
+  let to_char = function
+    | Red -> 'R'
+    | Green -> 'G'
+    | Yellow -> 'Y'
+    | White -> 'W'
+    | Orange -> 'O'
+    | Blue -> 'B'
 
 end
 
@@ -91,7 +80,7 @@ struct
 
   let id (x,y) = x + y * 3
 
-  let rotation (x,y) = 2-y, x
+  let rotation (x,y) = (2-y, x)
 
   let rotate (x,y) orient = match (orient mod 4) with
     | 0 -> (x,y)
@@ -99,7 +88,7 @@ struct
     | 2 -> rotation ( rotation (x,y))
     | _ -> rotation ( rotation ( rotation (x,y)))
 
-  (* array of all representing the upper face *)
+  (* Facelet color arrays for each face *)
   let u = Array.make_matrix 3 3 Color.Red
   let r = Array.make_matrix 3 3 Color.Green
   let f = Array.make_matrix 3 3 Color.Yellow
@@ -107,7 +96,7 @@ struct
   let d = Array.make_matrix 3 3 Color.Blue
   let b = Array.make_matrix 3 3 Color.Orange
 
-  (* Return the face 3x3 matrix *)
+  (* Return the face 3x3 color matrix *)
   let get = function
     | U -> u
     | R -> r
@@ -116,13 +105,7 @@ struct
     | D -> d
     | B -> b
 
-  let color_of face = match face with
-    | U -> u.(1).(1)
-    | R -> r.(1).(1)
-    | F -> f.(1).(1)
-    | L -> l.(1).(1)
-    | D -> d.(1).(1)
-    | B -> b.(1).(1)
+  let color_of face = (get face).(1).(1) (* center facelet *)
 
   (* returns the color of the element [id] of the face [face] *)
   let color_fid (face,id) =
@@ -138,24 +121,19 @@ struct
     | B -> "Back"
 
   let to_string face =
-    let rec ry y return =
-      let rec rx x ret = match x with
-        | 3 -> ret
-        | _ -> rx (x+1) (ret ^ (" " ^ Color.to_string (get face).(x).(2-y))
-                         ^ " -") in
-      match y with
-      | 3 -> return ^ "\n-------------\n-"
-      | _ ->  ry (y+1) (rx 0 (return ^ "\n-------------\n-")) in
-    ry 0 ""
+    let row r =
+      "\n-------------\n|"
+      ^ Array.fold_right (fun f s -> sprintf "%s %c |" s (Color.to_char f)) r ""
+    in
+    (Array.fold_right (fun r s -> s ^ row r) (get face) "")
+    ^ "\n-------------\n"
 end
 
 module Pick =
 struct
-  let abs x =
-    43 + 30 * x
+  let abs x = 43 + 30 * x
 
-  let ord y =
-    23 + 30 * y
+  let ord y = 23 + 30 * y
 
   let pick_point snapshot x0 y0 =
     let rec pick_y y ret =
@@ -199,88 +177,97 @@ struct
                   Array.iter (fun y -> fill_matrix_square x y) [|0;1;2|]
                ) [|0;1;2|]
       (* used for the graphical selection of the color *)
-  let tab_color =
-    [| Color.Red; Color.Green; Color.Yellow;
-       Color.White; Color.Orange; Color.Blue|]
 
-  let tab_c =
-    [|red; green; yellow; white; orange; blue|]
 
-  let convert_color current_color key = match key with
-    | 'r' -> 0
-    | 'g' -> 1
-    | 'y' -> 2
-    | 'w' -> 3
-    | 'o' -> 4
-    | 'b' -> 5
-    | _ -> current_color
+  (** Tells whether [(x,y)] is in the rectangle whose bottom left
+      corner is [(x0,y0)] and width (resp. height) is [w] (resp. [h]). *)
+  let in_rectangle x y (x0,y0, w,h) =
+    x0 <= x && x <= x0 + w && y0 <= y && y <= y0 + h
+
+  (** Draw the rectangle whose bottom left corner is [(x0,y0)] and
+      width (resp. height) is [w] (resp. [h]) with inner [color]. *)
+  let draw_rectangle ?(thick=false) (x0,y0, w,h) color =
+    set_line_width (if thick then 5 else 1);
+    set_color color;
+    fill_rect x0 y0 w h;
+    set_color black;
+    draw_rect x0 y0 w h
+
+  let erase_rectangle ?(thick=false) (x0,y0, w,h) =
+    set_line_width (if thick then 5 else 1);
+    set_color background;
+    fill_rect x0 y0 w h
+
+  let facelets_coord =
+    List.fold_left begin fun c i ->
+      List.fold_left (fun c j -> (i,j) :: c) c [0;1;2]
+    end [] [0;1;2]
+
+  let all_colors =
+    fst(List.fold_left (fun (l, i) c -> (i,c) :: l, i+1) ([],0) Color.all)
 
   let man_take_face face orient =
     let side = 50 in
-    (* draws square! [x] [y] are the coordinate of the left bottom corner
-       and an [c] is an int representinf the color. (cf tab_c) *)
-    let ds x y c =
-      set_color tab_c.(c);
-      fill_rect (side*x) (side*(y+1)) side side;
-      set_color black;
-      draw_rect (side*x) (side*(y+1)) side side in
+    let x0 = side
+    and y0 = side + 20 in
+    (* State *)
+    let current_color = ref Color.Red in
+    let current_color_rect = ref (-1,-1,0,0) in
+    let not_quit = ref true in
 
-    let ord_sq (x,y) =
-      let i = x / side in
-      let j = y / side in
-      i , (j-1) in
+    let tmp_matrix = Array.make_matrix 3 3 !current_color in
 
-    let tmp_matrix = Array.make_matrix 3 3 0 in
-
-    open_graph (sprintf "%ix%i" (3*side) (4*side));
-    set_color red;
-    fill_rect 0 side (3*side) (3*side);
-    set_color black;
-    for i = 0 to 2
-    do
-      for j = 1 to 3
-      do
-        draw_rect (i*side) (j*side) side side;
-      done;
+    open_graph "";
+    let make_rect i j = (x0 + i * side, y0 + j * side, side, side)
+    and set_facelet_color i j r () =
+      draw_rectangle r (Color.to_rgb !current_color);
+      tmp_matrix.(i).(j) <- !current_color  in
+    let quit_text = "Pick next face" in
+    let (w,h) = text_size quit_text in
+    let quit_rect = (x0, y0 - 30 - h, w + 10, h + 10) in
+    let draw_quit () =
+      draw_rectangle quit_rect 0xcfdedd;
+      moveto (x0 + 5) (y0 - 25 - h);
+      draw_string quit_text in
+    let color_rect i =
+      let d = 3 * (side / 2) in
+      (x0 + 4 * side + (i / 3) * d, y0 + (i mod 3) * d, side, side)
+    and change_color rect c () =
+      erase_rectangle !current_color_rect ~thick:true;
+      draw_rectangle !current_color_rect (Color.to_rgb !current_color);
+      current_color := c;
+      current_color_rect := rect;
+      draw_rectangle rect (Color.to_rgb c) ~thick:true in
+    (* [(rectangle, associated action)] *)
+    let buttons =
+      (quit_rect, (fun () -> not_quit := false))
+      :: List.map (fun (i,c) ->
+                     let r = color_rect i in (r, change_color r c)
+                  ) all_colors
+      @ List.map (fun (i,j) ->
+                    let r = make_rect i j in (r, set_facelet_color i j r)
+                 ) facelets_coord in
+    (* Start graphical interaction *)
+    List.iter (fun (r,f) -> f()) buttons; (* Draw all buttons *)
+    draw_quit();
+    not_quit := true;
+    while !not_quit do
+      let st = wait_next_event [Button_down; Key_pressed] in
+      if st.button then
+        List.iter (fun (r,f) ->
+                     if in_rectangle st.mouse_x st.mouse_y r then f()
+                  ) buttons
     done;
-    draw_rect (side/3) (side/3) (2*side + side/3) (side/3);
-    moveto (2*side/3) (side/3);
-    draw_string ("Pick next face");
-    let rec color_change new_color (i,j)  =
-      ds i j new_color;
-      tmp_matrix.(i).(j) <- new_color;
-      next_event ()
-    and next_event _ =
-      let status = ref (wait_next_event [Button_down; Key_pressed]) in
-      while((!status).mouse_y >= 4 * side || (!status).mouse_x >= 3 * side)
-      do
-        status := wait_next_event [Button_down; Key_pressed]
-      done;
-      if (!status).mouse_y >= side (* the user want to change a color *)
-      then
-        let (x,y) = ord_sq ((!status).mouse_x,(!status).mouse_y) in
-        if not (!status).button
-        then
-          begin
-            color_change (convert_color tmp_matrix.(x).(y) (!status).key)
-            (ord_sq ((!status).mouse_x,(!status).mouse_y))
-          end
-        else
-          color_change ((tmp_matrix.(x).(y) + 1) mod 6) (x,y)
-    in next_event ();
     let f = Face.get face in
-    for x = 0 to 2
-    do
-      for y = 0 to 2
-      do
+    for x = 0 to 2 do
+      for y = 0 to 2 do
         let (i,j) = Face.rotate (x,y) orient in
-        f.(i).(j) <- tab_color.(tmp_matrix.(x).(y))
+        f.(i).(j) <- tmp_matrix.(x).(y)
       done;
     done;
-    printf "%s %i %!\n" (Face.name face) orient;
-    printf "%s%!\n" (Face.to_string face)
+    printf "%s (orient: %i)%s\n%!" (Face.name face) orient (Face.to_string face)
    (*  close_graph () *)
-
+  ;;
 
   let take_face face orient =
     let webcam = Snapshot.start () in
@@ -424,12 +411,12 @@ let create_rubik face_iter =
   let elo = List.map (fun (a,i) -> (a, (i = 1))) edge_list_ordered in
   let cubie = Cubie.make corner_list_ordered elo in
   (cubie,
-   { Display_base.color_F = Color.color_graphics(Face.color_of F);
-     color_B = Color.color_graphics(Face.color_of B);
-     color_L = Color.color_graphics(Face.color_of L);
-     color_R = Color.color_graphics(Face.color_of R);
-     color_U = Color.color_graphics(Face.color_of U);
-     color_D = Color.color_graphics(Face.color_of D);
+   { D.color_F = Color.to_rgb(Face.color_of F);
+     color_B = Color.to_rgb(Face.color_of B);
+     color_L = Color.to_rgb(Face.color_of L);
+     color_R = Color.to_rgb(Face.color_of R);
+     color_U = Color.to_rgb(Face.color_of U);
+     color_D = Color.to_rgb(Face.color_of D);
      color_lines = black }
   )
 
@@ -445,12 +432,12 @@ let () =
   let x0 = 10
   and y0 = 10
   and len_sq = 30 in
-  let colors = (Color.color_graphics (Face.color_of U),
-                Color.color_graphics (Face.color_of L),
-                Color.color_graphics (Face.color_of F),
-                Color.color_graphics (Face.color_of R),
-                Color.color_graphics (Face.color_of B),
-                Color.color_graphics (Face.color_of D)) in
+  let colors = (Color.to_rgb (Face.color_of U),
+                Color.to_rgb (Face.color_of L),
+                Color.to_rgb (Face.color_of F),
+                Color.to_rgb (Face.color_of R),
+                Color.to_rgb (Face.color_of B),
+                Color.to_rgb (Face.color_of D)) in
   open_graph ("");
   printf "%s\n" (Face.to_string U);
   printf "%s\n" (Face.to_string L);

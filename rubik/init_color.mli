@@ -17,21 +17,21 @@ sig
     (** [name rgb] returns form the rgb components [rgb],
         the name of the color ([Red | Green | Yellow | White | Orange | Blue]*)
 
-  val to_string : t -> string
-    (** [to_string] returns the first letter of the name of
-        the color (ie for [Blue] the function returns [B] *)
+  val to_char : t -> char
+    (** [to_char] returns the first letter of the name of the color
+        (i.e. for [Blue] the function returns [B]).  *)
 end
 
 module Face :
   (** Abstact a face of a rubik.
-    Each facelets of a face is numbered in this way :
-    -------------
-    | 0 | 1 | 2 |
-    -------------
-    | 3 | 4 | 5 |
-    -------------
-    | 6 | 7 | 8 |
-    -------------
+      Each facelets of a face is numbered in this way :
+      -------------
+      | 0 | 1 | 2 |
+      -------------
+      | 3 | 4 | 5 |
+      -------------
+      | 6 | 7 | 8 |
+      -------------
   *)
 sig
   type t
