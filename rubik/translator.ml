@@ -22,7 +22,7 @@ open Mindstorm
 module type TranslatorT =
 sig
 
-  val display_cube : unit -> unit
+  val show_cube : unit -> unit
 
   val make : Rubik.generator * int -> unit
 
@@ -45,7 +45,7 @@ struct
 
   module M = Movement.Make(C)
 
-  let display_cube () =
+  let show_cube () =
     let music () = Sound.play conn "! Startup.rso" in
     M.free_rubik (fun _ -> music(); M.turn_pf 4 M.end_cont);
     M.execute()

@@ -17,9 +17,9 @@
 module type TranslatorT =
 sig
 
-  val display_cube : unit -> unit
-    (** [display_cube()] displays the cube (opens the hand to free the
-        cube. *)
+  val show_cube : unit -> unit
+    (** [show_cube()] opens the "hand" to free the cube so that
+        everybody can see it. *)
 
   val make : Rubik.generator * int -> unit
     (** [make m] drives the robot to execute the physical movement
@@ -31,7 +31,7 @@ sig
         face [g], which is in the position [i] (see the documentation
         of {!Init_color} for its meaning).  Here we choose the letters
         associated to faces (see the documentation of the fonction
-        'transform_gen') so that the initial state is correct after
+        [transform_gen]) so that the initial state is correct after
         all snapshot.=?? *)
 end
 
@@ -50,5 +50,5 @@ module Make(C: sig
                 (** The port of the fighter switch. *)
               val cog_is_set_left : bool
                 (** True if cogs are placed to turn platform in clockwise
-                    False if cogs are placed to turn plaftform in clockwis. *)
+                    False if cogs are placed to turn plaftform in clockwise. *)
             end): TranslatorT
