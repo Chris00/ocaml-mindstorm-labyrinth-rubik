@@ -32,7 +32,9 @@ type meas_common = {
 }
 and t = {
   mutable meas : meas_common list;
-  (* Measure functions (that need updating) associated to the robot. *)
+  (* Measures associated to the robot (see [meas] below).  These
+     measures will need updating if their value is requested (because,
+     for example, they are bound to an event). *)
   mutable events : (unit -> bool) list;
   (* conditions-callbacks to execute (see [event] below). *)
   mutable at_exit : (unit -> unit) list;
@@ -51,10 +53,8 @@ let make () = { meas = [];  events = [];  at_exit = [] }
 let stop r =
   raise Exit (* quit the event loop and turn off sensors -- see [run]. *)
 
-let remove_events r =
-  List.iter (fun m -> m.is_needed <- false) r.meas;
-  r.events <- []
-
+(* Declaring measures
+ ***********************************************************************)
 
 let meas r get =
   let rec meas = { value = None; (* no value yet *)
@@ -99,23 +99,30 @@ let ultrasonic conn port r =
   r.at_exit <- turn_off :: r.at_exit;
   meas r (fun () -> Mindstorm.Sensor.Ultrasonic.get u `Byte0)
 
-
 (* This measure always returns [true]. *)
 let always r =
   { value = Some true;
     common = { robot = r;
                get_value = (fun () -> ());
                is_needed = false; (* does not matter *)
-               is_up_to_date = true; (* => do not add it to [r.meas] *)
+               is_up_to_date = true; (* no need not add it to [r.meas] *)
                is_constant = true;
              }
   }
 
+(* Declaring events
+ ***********************************************************************)
+
+(* Read the value on demand. *)
 let read m =
   let c = m.common in
   if not c.is_up_to_date then c.get_value(); (* => up to date *)
   match m.value with Some v -> v | None -> assert false
 ;;
+
+let remove_events r =
+  List.iter (fun m -> m.is_needed <- false) r.meas;
+  r.events <- []
 
 let event meas cond f =
   let c = meas.common in
@@ -126,17 +133,17 @@ let event meas cond f =
     if c.is_constant then
       (* Fetch the value once only and do not erase other events --
          thus return [false] to allow the execution of subsequent events. *)
-      let v = match meas.value with Some v -> v | None -> assert false in
+      let v = read m in
       (fun () -> f v; false)
     else
       (fun () ->
-         (* Fetch the value once, so can be updated (by a different
-            thread) without harm during the exec of this callback. *)
-         let v = match meas.value with Some v -> v | None -> assert false in
+         (* Fetch the value only if the event is triggered. *)
+         let v = read m in
          if cond v then (
            remove_events c.robot;
            f v;
-           true)
+           true (* do not process further events *)
+         )
          else false)
   in
   c.robot.events <- exec :: c.robot.events
@@ -152,12 +159,10 @@ let rec exec_first = function
 let run r =
   try
     while true do
-      List.iter (fun m ->
-                   if m.is_needed then m.get_value() (* => up to date *)
-                   else m.is_up_to_date <- false
-                ) r.meas;
+      (* New loop => none of the measures is up_to_date anymore. *)
+      List.iter (fun m -> m.is_up_to_date <- false) r.meas;
       if r.events = [] then
-        failwith "Robot.run: no events (this would loop indefinitely)";
+        failwith "Robot.run: no events declared (avoid infinite loop)";
       exec_first(List.rev r.events)
 
     done
