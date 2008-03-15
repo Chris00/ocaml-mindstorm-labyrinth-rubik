@@ -163,8 +163,13 @@ let run r =
       List.iter (fun m -> m.is_up_to_date <- false) r.meas;
       if r.events = [] then
         failwith "Robot.run: no events declared (avoid infinite loop)";
-      exec_first(List.rev r.events)
-
+      try
+        exec_first(List.rev r.events)
+      with Unix.Unix_error(Unix.EINTR, f, _) ->
+        (* Often happens with an important effort draining the battery
+           down. *)
+        Printf.eprintf "Communication (%s) stopped by signal, \
+		trying to recover...\n%!" f
     done
   with e ->
     (* Turn off sensors we know about (whenever possible). *)
@@ -173,9 +178,6 @@ let run r =
     | Exit -> () (* considered as an acceptable way to stop. *)
     | Unix.Unix_error(Unix.ENOTCONN, _, _)
     | Unix.Unix_error(Unix.ECONNRESET, _, _) -> failwith "Robot disconnected"
-    | Unix.Unix_error(Unix.EINTR, _, _) ->
-        Printf.eprintf "Robot stopped by signal.\n%!"
-          (* FIXME: maybe we rather want to handle signals ? *)
     | Failure _ as e -> raise e
     | e ->
         Printf.eprintf "Uncaught exception: %s\n%!" (Printexc.to_string e)

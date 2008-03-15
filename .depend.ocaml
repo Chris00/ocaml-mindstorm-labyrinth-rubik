@@ -18,6 +18,8 @@ labyrinth/solver.cmo: robot.cmi labyrinth/solver.cmi
 labyrinth/solver.cmx: robot.cmx labyrinth/solver.cmi 
 rubik/calibration.cmo: rubik/calibration.cmi 
 rubik/calibration.cmx: rubik/calibration.cmi 
+rubik/display_base.cmo: rubik/display_base.cmi 
+rubik/display_base.cmx: rubik/display_base.cmi 
 rubik/display.cmo: rubik/display.cmi 
 rubik/display.cmx: rubik/display.cmi 
 rubik/init_color.cmo: rubik/init_color.cmi 
@@ -28,3 +30,5 @@ rubik/ppm.cmo: rubik/ppm.cmi
 rubik/ppm.cmx: rubik/ppm.cmi 
 rubik/priority_queue.cmo: rubik/priority_queue.cmi 
 rubik/priority_queue.cmx: rubik/priority_queue.cmi 
+rubik/solver.cmo: rubik/solver.cmi 
+rubik/solver.cmx: rubik/solver.cmi 
