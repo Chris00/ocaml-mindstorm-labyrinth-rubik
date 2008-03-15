@@ -105,14 +105,17 @@ struct
   let usleep s = ignore(Unix.select [] [] [] s)
 
   let reset_fighter k =
-    Robot.event_is fighter_push (fun _ -> speed motor_fighter 0;k());
+    Robot.event_is fighter_push (fun _ -> speed motor_fighter 0; k());
     speed motor_fighter (-5)
 
   (** Reset the position of the fighter after having kicked the cube *)
   let kick_back k =
-    Robot.event_is fighter_push (fun _ -> speed motor_fighter 0; usleep 0.5;
-      reset_fighter k);
-    speed motor_fighter (-8)
+    Robot.event_is fighter_push begin fun _ ->
+      speed motor_fighter 0;
+      usleep 0.3; (* let the bump happen before measuring again *)
+      reset_fighter k
+    end;
+    speed motor_fighter (-25)
 
   let kick k =
     hold_rubik begin fun _ ->

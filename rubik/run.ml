@@ -51,7 +51,7 @@ let display_moves x y m =
   draw_string (String.concat " " m)
 
 let () =
-  open_graph "";
+  open_graph " 700x500-300+30";
   (********* Initialization of the cubie *********)
   let (cubie, colors) = Init_color.create_rubik (M.face_iter) in
 

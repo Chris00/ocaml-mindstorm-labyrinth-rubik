@@ -133,7 +133,7 @@ struct
 
   let face_iter f =
     M.free_rubik(
-      fun _ -> f L 3;M.kick(
+      fun _ -> f L 3; M.kick(
         fun _ -> M.free_rubik(
           fun _ -> f B 3; M.kick(
             fun _ -> M.free_rubik(
