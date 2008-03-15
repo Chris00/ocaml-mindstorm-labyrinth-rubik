@@ -222,7 +222,7 @@ struct
     and set_facelet_color i j r () =
       draw_rectangle r (Color.to_rgb !current_color);
       tmp_matrix.(i).(j) <- !current_color  in
-    let quit_text = "Pick next face" in
+    let quit_text = "Face suivante" in
     let (w,h) = text_size quit_text in
     let quit_rect = (x0, y0 - 30 - h, w + 10, h + 10) in
     let draw_quit () =
