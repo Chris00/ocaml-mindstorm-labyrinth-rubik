@@ -19,6 +19,8 @@
    MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the file
    LICENSE for more details. *)
 
+open Printf
+
 type meas_common = {
   robot : t; (* robot to which the measure is associated *)
   get_value : unit -> unit; (* how to get a new value *)
@@ -168,8 +170,7 @@ let run r =
       with Unix.Unix_error(Unix.EINTR, f, _) ->
         (* Often happens with an important effort draining the battery
            down. *)
-        Printf.eprintf "Communication (%s) stopped by signal, \
-		trying to recover...\n%!" f
+        eprintf "Communication (%s) stopped by signal, ignoring...\n%!" f
     done
   with e ->
     (* Turn off sensors we know about (whenever possible). *)
@@ -180,7 +181,7 @@ let run r =
     | Unix.Unix_error(Unix.ECONNRESET, _, _) -> failwith "Robot disconnected"
     | Failure _ as e -> raise e
     | e ->
-        Printf.eprintf "Uncaught exception: %s\n%!" (Printexc.to_string e)
+        eprintf "Uncaught exception: %s\n%!" (Printexc.to_string e)
 
 
 
