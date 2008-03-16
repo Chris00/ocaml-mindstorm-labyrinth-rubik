@@ -217,7 +217,8 @@ struct
 
     let tmp_matrix = Array.make_matrix 3 3 !current_color in
 
-    open_graph "";
+    clear_graph();
+    set_window_title "Rubik: enter cube colors";
     let make_rect i j = (x0 + i * side, y0 + j * side, side, side)
     and set_facelet_color i j r () =
       draw_rectangle r (Color.to_rgb !current_color);
@@ -247,9 +248,14 @@ struct
       @ List.map (fun (i,j) ->
                     let r = make_rect i j in (r, set_facelet_color i j r)
                  ) facelets_coord in
-    (* Start graphical interaction *)
-    List.iter (fun (r,f) -> f()) buttons; (* Draw all buttons *)
+    (* Draw all buttons.  FIXME: on windows the initial state does not
+       always shows up properly.  Is it an interaction with the Unix
+       module connecting on COMxx ??? *)
+    auto_synchronize false;
+    List.iter (fun (r,f) -> f()) buttons;
     draw_quit();
+    auto_synchronize true;
+    (* Start graphical interaction *)
     not_quit := true;
     while !not_quit do
       let st = wait_next_event [Button_down; Key_pressed] in
