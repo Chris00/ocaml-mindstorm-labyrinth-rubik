@@ -55,9 +55,10 @@ let make () = { meas = [];  events = [];  at_exit = [] }
 let stop r =
   raise Exit (* quit the event loop and turn off sensors -- see [run]. *)
 
-(* Declaring measures
+(* Declaring & reading measures
  ***********************************************************************)
 
+(* New measure *)
 let meas r get =
   let rec meas = { value = None; (* no value yet *)
                    common = meas_common }
@@ -72,6 +73,45 @@ let meas r get =
     meas_common.is_up_to_date <- true in
   r.meas <- meas_common :: r.meas;
   meas
+
+(* Read the value on demand. *)
+let single_read m =
+  try
+    let c = m.common in
+    if not c.is_up_to_date then c.get_value(); (* => up to date *)
+    m.value                                    (* may be None if unavailable *)
+  with _ ->
+    None
+;;
+
+let map f m =
+  let c = m.common in
+  let r = c.robot in
+  let rec meas = { value = None;
+                   common = meas_common }
+  and meas_common = { robot = r;
+                      get_value = get_value;
+                      is_needed = false;
+                      is_up_to_date = false;
+                      is_constant = c.is_constant;
+                    }
+  and get_value() =
+    (* Fetch the value of [m] and transform it. *)
+    meas.value <- (match single_read m with
+                   | Some v -> Some(f v)
+                   | None -> None);
+    meas_common.is_up_to_date <- true  in
+  if not c.is_constant then r.meas <- meas_common :: r.meas;
+  meas
+;;
+
+let rec read_loop retry m =
+  match single_read m with
+  | Some _ as v -> v
+  | None -> if retry > 0 then read_loop (retry - 1) m else None
+
+let read ?(retry=3) m = read_loop retry m
+
 
 let touch conn port r =
   Mindstorm.Sensor.set conn port `Switch `Bool; (* Transition_cnt?? *)
@@ -115,18 +155,11 @@ let always r =
 (* Declaring events
  ***********************************************************************)
 
-(* Read the value on demand. *)
-let read m =
-  let c = m.common in
-  if not c.is_up_to_date then c.get_value(); (* => up to date *)
-  match m.value with Some v -> v | None -> assert false
-;;
-
 let remove_events r =
   List.iter (fun m -> m.is_needed <- false) r.meas;
   r.events <- []
 
-let event meas cond f =
+let event ?retry meas cond f =
   let c = meas.common in
   c.is_needed <- true;
   (* [exec] returns [true] if the condition succeeded and executes the
@@ -135,12 +168,12 @@ let event meas cond f =
     if c.is_constant then
       (* Fetch the value once only and do not erase other events --
          thus return [false] to allow the execution of subsequent events. *)
-      let v = read meas in
+      let v = read ?retry meas in
       (fun () -> f v; false)
     else
       (fun () ->
          (* Fetch the value only if the event is triggered. *)
-         let v = read meas in
+         let v = read ?retry meas in
          if cond v then (
            remove_events c.robot;
            f v;
@@ -151,7 +184,9 @@ let event meas cond f =
   c.robot.events <- exec :: c.robot.events
 ;;
 
-let event_is m f = event m (fun b -> b) (fun _ -> f())
+
+let event_is ?retry m f =
+  event ?retry m (function Some true -> true | _ -> false) (fun _ -> f())
 
 
 let rec exec_first = function
@@ -168,9 +203,10 @@ let run r =
       try
         exec_first(List.rev r.events)
       with Unix.Unix_error(Unix.EINTR, f, _) ->
-        (* Often happens with an important effort draining the battery
-           down. *)
-        eprintf "Communication (%s) stopped by signal, ignoring...\n%!" f
+        (* Often happens with an important effort (temporarily)
+           draining the battery down. *)
+        eprintf "Communication (%s) stopped by signal, \
+		trying to continue...\n%!" f
     done
   with e ->
     (* Turn off sensors we know about (whenever possible). *)

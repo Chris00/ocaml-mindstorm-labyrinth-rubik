@@ -43,10 +43,17 @@ type 'a meas
 
 val meas : t -> (unit -> 'a) -> 'a meas
   (** [meas r get] define a new measure for the robot [r], [get()]
-      being executed when this measure is needed by [r].  A measure
-      can be bound to many events; in fact, you should try to reuse
-      measures as much as possible to avoid querying the robot several
-      times for the same information. *)
+      being executed when this measure is needed by [r].  If [get()]
+      raises an exception, it is interpreted as failure to get the
+      data.  A measure can be bound to many events; in fact, you
+      should try to reuse measures as much as possible to avoid
+      querying the robot several times for the same information. *)
+
+val map : ('a -> 'b) -> 'a meas -> 'b meas
+  (** [map f m] returns a new measure [m'] whose values are [f x]
+      where [x] is the value of [m].  The main advantage of this is
+      that querying [m'] does not require to fetch again the value
+      from the robot.  *)
 
 val touch : 'a Mindstorm.conn -> Mindstorm.Sensor.port ->
   t -> bool meas
@@ -94,20 +101,34 @@ val always : t -> bool meas
       "event loop".  This can be used, for example, to repeatedly
       collect data until another event takes place.  *)
 
-val read : 'a meas -> 'a
+val read : ?retry:int -> 'a meas -> 'a option
   (** [read m] returns the current (up to date) value of the measure
-      [m]. *)
+      [m].  If the reading fails after [retry] times, return
+      [None].
+
+      @param retry number of times to retry if a reading fails.
+      [0] means not to rety -- hence try only once to read the value.
+      Default: [3]. *)
 
 
 (** {2 Events} *)
 
-val event : 'a meas -> ('a -> bool) -> ('a -> unit) -> unit
+val event : ?retry:int ->
+  'a meas -> ('a option -> bool) -> ('a option -> unit) -> unit
   (** [event m cond f] schedules [f v] to be executed when the value
       [v] of the measure [m] satisfies [cond v].  The events are tried
       in the order they are registered.  This first condition that is
       [true] erases all other events and executes its associated
-      callback. *)
+      callback (with the exception of the {!Robot.always} measures --
+      and its derived measures with [map]).
 
-val event_is : bool meas -> (unit -> unit) -> unit
-  (** [event_is m f] is a useful shortcut for
-      [event m (fun b -> b) (fun _ -> f())]. *)
+      @param retry number of times to retry before returning [None] to
+      [cond] and [f] to indicate an unavailable value.  *)
+
+val event_is : ?retry:int -> bool meas -> (unit -> unit) -> unit
+  (** [event_is m f] is a useful shortcut that triggers the action [f]
+      if the value of [m] is [Some true] and does noting otherwise
+      (i.e. when the value is [Some false] or [None]).
+
+      @param retry number of times to retry before returning [None] to
+      [cond] and [f] to indicate an unavailable value. *)
