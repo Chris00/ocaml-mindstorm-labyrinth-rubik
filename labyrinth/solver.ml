@@ -172,9 +172,10 @@ struct
       ultrasonic sencor is less than or equal to [wall_dist]. *)
   let wall_dist = 30
 
-  let is_crossing a = a < 25
-  let is_path a = a <= 35 && a >= 25
-  let is_floor a = a > 35
+  (* FIXME: better react when the data is not available *)
+  let is_crossing = function Some a -> a < 25 | None -> false
+  let is_path = function Some a -> a <= 35 && a >= 25 | None -> false
+  let is_floor = function Some a -> a > 35 | None -> false
 
   let r = Robot.make()
 
@@ -213,8 +214,9 @@ struct
 
   (** [is_wall()] returns true if there is a wall in front of the robot. *)
   let is_wall () =
-    let v = Robot.read ultra in
-    v <= wall_dist
+    match Robot.read ultra with
+    | Some v -> v <= wall_dist
+    | None -> false (* FIXME: should leave the wall in an unknown state *)
 
   (** [set_wall dir] looks front and updates the wall in the direction [dir]. *)
   let set_wall dir =
