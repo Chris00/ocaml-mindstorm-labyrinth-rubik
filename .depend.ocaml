@@ -14,6 +14,8 @@ labyrinth/display.cmo: labyrinth/display.cmi
 labyrinth/display.cmx: labyrinth/display.cmi 
 labyrinth/labyrinth.cmo: labyrinth/labyrinth.cmi 
 labyrinth/labyrinth.cmx: labyrinth/labyrinth.cmi 
+labyrinth/solver.cmo: robot.cmi labyrinth/solver.cmi 
+labyrinth/solver.cmx: robot.cmx labyrinth/solver.cmi 
 rubik/calibration.cmo: rubik/calibration.cmi 
 rubik/calibration.cmx: rubik/calibration.cmi 
 rubik/display_base.cmo: rubik/display_base.cmi 

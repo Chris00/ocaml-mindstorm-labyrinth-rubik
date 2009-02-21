@@ -1,17 +1,18 @@
 # Makefile.ocaml                                       -*-makefile-*-
 
-PP	   ?=
-OCAMLC     ?= ocamlc
-OCAMLOPT   ?= ocamlopt
-OCAMLDEP   ?= ocamldep
-OCAMLDOC   ?= ocamldoc
 OCAMLFIND  ?= ocamlfind
+PP	   ?=
+OCAMLC     ?= $(OCAMLFIND) ocamlc
+OCAMLOPT   ?= $(OCAMLFIND) ocamlopt
+OCAMLDEP   ?= $(OCAMLFIND) ocamldep
+OCAMLDOC   ?= $(OCAMLFIND) ocamldoc
 OCAMLTAGS  ?= ocamltags
 
 TAR	?= tar
 CD	?= cd
 # the "--" makes it possible to have an empty list after without warning
 RM	?= rm -f --
+MKDIR	?= mkdir
 
 # The location of OCaml's library files.
 OCAMLLIBDIR ?= $(shell $(OCAMLC) -where)

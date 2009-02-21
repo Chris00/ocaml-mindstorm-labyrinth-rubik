@@ -1,16 +1,16 @@
 # Compile in -custom mode so there is no problem with finding the
 # shared library dllmindstorm.so
-MINDSTORM_PATH = ../../mindstorm
+PACKAGES = -package mindstorm,bigarray
 DOC_DIR = doc
 
-OCAMLC_FLAGS = -g -dtypes -dllpath .. -custom -I $(MINDSTORM_PATH) -I ..
-OCAMLOPT_FLAGS = -dtypes -I $(MINDSTORM_PATH) -I ..
+OCAMLC_FLAGS = -g -dtypes -dllpath .. -custom $(PACKAGES) -I ..
+OCAMLOPT_FLAGS = -dtypes $(PACKAGES) -I ..
 PP = $(CAMLP4) $(D_OS) #Camlp4MacroParser.cmo
 
 INTERFACES=$(wildcard *.mli)
 PROGRAM=run.ml
-LIBS_CMA=unix.cma bigarray.cma mindstorm.cma robot.cma 
-LIBS_CMXA=$(patsubst %cmo,%.cmx, $(patsubst %.cma,%.cmxa, $(LIBS_CMA)))
+LIBS_CMA= -linkpkg robot.cma 
+LIBS_CMXA=-linkpkg $(patsubst %cmo,%.cmx, $(patsubst %.cma,%.cmxa, $(LIBS_CMA)))
 
 .PHONY: all byte native
 all: byte native
@@ -64,10 +64,11 @@ test_snapshot.exe : LIBS_CMA+=graphics.cma
 .PHONY: doc
 doc: $(INTERFACES:.mli=.cmi)
 	-$(MKDIR) $(DOC_DIR)
-	$(OCAMLDOC) -d $(DOC_DIR) -colorize-code -stars -html \
-	  $(INTERFACES) -I $(MINDSTORM_PATH)
+	$(OCAMLDOC) -d $(DOC_DIR) -colorize-code -stars -html $(PACKAGES) \
+	  $(INTERFACES)
 
 # Define the OS type for the Camlp4 preprocessor,...
+../make_os_type.exe: LIBS_CMA = -linkpkg
 ../.os_type: ../make_os_type.exe
 	"$<" > $@
 include ../.os_type

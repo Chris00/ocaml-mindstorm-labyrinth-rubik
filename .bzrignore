@@ -1,0 +1,11 @@
+# .bzrignore							-*-conf-*-
+*.annot
+*.cmi
+*.cmo
+*.cma
+*.cmx
+*.cmxa
+*.exe
+*.com
+.os_type
+doc/

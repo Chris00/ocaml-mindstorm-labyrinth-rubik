@@ -49,7 +49,7 @@ sig
         @raise Invalid_Argument if [i < 1] or [i > 3]. *)
 
   val generator : t -> generator * int
-    (** [generator] is the inverse function of {!Rubik.Move.make}. *)
+    (** [generator] is the inverse function of {!Rubik.MoveT.make}. *)
 
   val all : t list
     (** [all] returns the array of all possible moves. *)

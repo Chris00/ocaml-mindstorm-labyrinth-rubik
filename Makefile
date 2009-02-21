@@ -1,15 +1,13 @@
 # Compile in -custom mode so there is no problem with finding the
 # shared library dllmindstorm.so
-MINDSTORM_PATH = ../mindstorm
+PACKAGES = -package mindstorm,threads
 DOC_DIR=doc
 
-OCAMLC_FLAGS = -thread -g -dtypes -custom -I $(MINDSTORM_PATH)
-OCAMLOPT_FLAGS = -thread -dtypes -I $(MINDSTORM_PATH)
+OCAMLC_FLAGS = -thread -g -dtypes -custom $(PACKAGES)
+OCAMLOPT_FLAGS = -thread -dtypes $(PACKAGES)
 
-INTERFACES=$(wildcard *.mli) \
-  $(wildcard labyrinth/*.mli) $(wildcard rubik/*.mli)
 TESTS=$(wildcard *-*.ml)
-LIBS_CMA=unix.cma mindstorm.cma threads.cma
+LIBS_CMA = -linkpkg
 LIBS_CMXA=$(LIBS_CMA:.cma=.cmxa) robot.cmx
 
 .PHONY: all byte native tests tests-byte test-native
@@ -34,11 +32,16 @@ robot.cmxa: robot.cmx
 
 
 # Generate HTML documentation
+MAKE_DOC = $(OCAMLDOC) -colorize-code -stars -html $(PACKAGES)
 .PHONY: doc
 doc: $(INTERFACES:.mli=.cmi)
 	-$(MKDIR) $(DOC_DIR)
-	$(OCAMLDOC) -d $(DOC_DIR) -colorize-code -stars -html \
-	  $(INTERFACES) -I $(MINDSTORM_PATH) -I labyrinth/ -I rubik/
+	$(MAKE_DOC) -d $(DOC_DIR) $(wildcard *.mli)
+	-$(MKDIR) $(DOC_DIR)/labyrinth
+	$(MAKE_DOC) -d $(DOC_DIR)/labyrinth -I labyrinth \
+	  $(wildcard labyrinth/*.mli)
+	-$(MKDIR) $(DOC_DIR)/rubik
+	$(MAKE_DOC) -d $(DOC_DIR)/rubik -I rubik $(wildcard rubik/*.mli)
 
 # Add subdirectories (necessary to compile the doc of all modules)
 .depend.ocaml: $(wildcard labyrinth/*.ml) $(wildcard labyrinth/*.mli)
