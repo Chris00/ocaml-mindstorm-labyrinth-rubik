@@ -66,6 +66,10 @@ let () =
   (********* Resolution part *********)
   let solution = Solver.find_first cubie in
 
+  (* Print the solution in gray so on sees the evolution of moves *)
+  set_color (rgb 180 180 180);
+  display_moves 10 10 solution;
+
   let print_and_do (c, moves) m =
     let status = wait_next_event[Poll; Button_down] in
     if status.button then
