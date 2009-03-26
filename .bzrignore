@@ -1,4 +1,4 @@
-# .bzrignore							-*-conf-*-
+# .bzrignore						-*-conf-unix-*-
 *.annot
 *.cmi
 *.cmo
@@ -9,3 +9,4 @@
 *.com
 .os_type
 doc/
+auto
