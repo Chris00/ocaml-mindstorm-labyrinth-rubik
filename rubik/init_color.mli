@@ -109,12 +109,15 @@ val edge_list_replacement : unit -> (Cubie.edge * int) list
       the cubie for a solving search*)
 
 val create_rubik : ((Rubik.generator -> int -> unit) -> unit)  ->
+  (unit -> unit) ->
   Cubie.t * Display_base.colors
-  (** [create_rubik face_iter] is used for the initialization of the rubik
-      colors.
+  (** [create_rubik face_iter inverse_face_iter] is used for the
+      initialization of the rubik colors.
       [face_iter] is a function, which given a picking color function,
       moves the rubik and execute the function giving the specification of
       the face and the rotation.
       It returns the cubie and also the color in this order :
       Up, Left, Front, Right, Back, Down.
-  *)
+      [inverse_face_iter] is a function, which used after [face_iter]
+      put the cube in its initial position. This function is used if the
+      user makes a mistake during the description of the cube.*)

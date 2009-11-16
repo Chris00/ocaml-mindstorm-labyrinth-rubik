@@ -33,6 +33,12 @@ sig
         associated to faces (see the documentation of the fonction
         [transform_gen]) so that the initial state is correct after
         all snapshot.=?? *)
+
+  val return_face_init : unit -> unit
+    (** [return_face_init] is the inverse of [face_iter]. [return_face_init]
+        called after a call of [face_iter] puts the cube in its initial 
+        position. *)
+
 end
 
 module Make(C: sig

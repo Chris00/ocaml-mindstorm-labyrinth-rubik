@@ -4,6 +4,8 @@ open Ppm
 open Rubik
 module D = Display_base
 
+exception Bad_Encoding
+
 (** Initialize the rubik state taking snapshot of the real rubik!*)
 
 module Color =
@@ -90,11 +92,11 @@ struct
 
   (* Facelet color arrays for each face *)
   let u = Array.make_matrix 3 3 Color.Red
-  let r = Array.make_matrix 3 3 Color.Green
-  let f = Array.make_matrix 3 3 Color.Yellow
-  let l = Array.make_matrix 3 3 Color.White
-  let d = Array.make_matrix 3 3 Color.Blue
-  let b = Array.make_matrix 3 3 Color.Orange
+  let r = Array.make_matrix 3 3 Color.Red
+  let f = Array.make_matrix 3 3 Color.Red
+  let l = Array.make_matrix 3 3 Color.Red
+  let d = Array.make_matrix 3 3 Color.Red
+  let b = Array.make_matrix 3 3 Color.Red
 
   (* Return the face 3x3 color matrix *)
   let get = function
@@ -215,14 +217,21 @@ struct
     let current_color_rect = ref (-1,-1,0,0) in
     let not_quit = ref true in
 
-    let tmp_matrix = Array.make_matrix 3 3 !current_color in
+    let oriented_mface = Array.make_matrix 3 3 Color.Red in
+    let mface = Face.get face in
+    for x = 0 to 2 do
+      for y = 0 to 2 do
+        let (i,j) = Face.rotate (x,y) orient in
+        oriented_mface.(x).(y) <- mface.(i).(j)
+      done;
+    done;
 
     clear_graph();
     set_window_title "Rubik: enter cube colors";
     let make_rect i j = (x0 + i * side, y0 + j * side, side, side)
     and set_facelet_color i j r () =
       draw_rectangle r (Color.to_rgb !current_color);
-      tmp_matrix.(i).(j) <- !current_color  in
+      oriented_mface.(i).(j) <- !current_color  in
     let quit_text = "Face suivante" in
     let (w,h) = text_size quit_text in
     let quit_rect = (x0, y0 - 30 - h, w + 10, h + 10) in
@@ -240,19 +249,24 @@ struct
       current_color_rect := rect;
       draw_rectangle rect (Color.to_rgb c) ~thick:true in
     (* [(rectangle, associated action)] *)
-    let buttons =
+    let buttons init =
       (quit_rect, (fun () -> not_quit := false))
       :: List.map (fun (i,c) ->
                      let r = color_rect i in (r, change_color r c)
                   ) all_colors
       @ List.map (fun (i,j) ->
-                    let r = make_rect i j in (r, set_facelet_color i j r)
+                    let r = make_rect i j in (r,
+                           ( if init then
+                               (fun () -> draw_rectangle r
+                                  (Color.to_rgb oriented_mface.(i).(j)))
+                             else (set_facelet_color i j r)))
                  ) facelets_coord in
     (* Draw all buttons.  FIXME: on windows the initial state does not
        always shows up properly.  Is it an interaction with the Unix
        module connecting on COMxx ??? *)
     auto_synchronize false;
-    List.iter (fun (r,f) -> f()) buttons;
+    (* draw the face for the first time *)
+    List.iter (fun (r,f) -> f()) (buttons true);
     draw_quit();
     auto_synchronize true;
     (* Start graphical interaction *)
@@ -262,13 +276,12 @@ struct
       if st.button then
         List.iter (fun (r,f) ->
                      if in_rectangle st.mouse_x st.mouse_y r then f()
-                  ) buttons
+                  ) (buttons false)
     done;
-    let f = Face.get face in
     for x = 0 to 2 do
       for y = 0 to 2 do
         let (i,j) = Face.rotate (x,y) orient in
-        f.(i).(j) <- tmp_matrix.(x).(y)
+        mface.(i).(j) <- oriented_mface.(x).(y)
       done;
     done;
     printf "%s (orient: %i)%s\n%!" (Face.name face) orient (Face.to_string face)
@@ -373,7 +386,7 @@ let find tf new_position =
   (* finds the corner or the edge in the list [new_position] where fit the
      element [tf] *)
   let rec iter np_l = match np_l with
-    |[] -> failwith "No place find for a corner/edge"
+    |[] -> raise Bad_Encoding
     |(el_color, el_return) :: li ->
        let orient = find_orientation tf el_color in
        if orient = 0 || orient = 1 || orient = 2 then el_return, orient
@@ -410,7 +423,7 @@ let edge_list_replacement _ =
                                    (edge_def edge)) edge_list in
   order edge_to_find edge_new_position
 
-let create_rubik face_iter =
+let try_create_rubik face_iter =
   face_iter (Pick.man_take_face);
   let corner_list_ordered = corner_list_replacement () in
   let edge_list_ordered = edge_list_replacement () in
@@ -425,6 +438,20 @@ let create_rubik face_iter =
      color_D = Color.to_rgb(Face.color_of D);
      color_lines = black }
   )
+
+let rec create_rubik face_iter return_face_init =
+  try
+    try_create_rubik face_iter
+  with
+  | _ ->
+      (
+        clear_graph();
+        let error_text = "Erreur d'encodage, veuillez corriger" in
+        draw_string error_text;
+        ignore(wait_next_event [Key_pressed]);
+        return_face_init ();
+        create_rubik face_iter return_face_init
+      )
 
 (*
 let () =

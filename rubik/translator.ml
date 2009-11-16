@@ -28,6 +28,8 @@ sig
 
   val face_iter : (Rubik.generator -> int -> unit) -> unit
 
+  val return_face_init : unit -> unit
+
 end
 
 module Make (C: sig
@@ -146,6 +148,15 @@ struct
                           fun _ -> M.kick(
                             fun _ -> M.free_rubik(
                               fun _ -> f U 0; M.end_cont())))))))))))));
+    M.execute()
+
+
+  let return_face_init () =
+    M.free_rubik( fun _ ->
+      M.turn_pf (-1) ( fun _ ->
+        M.kick( fun _ ->
+          M.free_rubik( fun _ ->
+            M.turn_pf (-1) (fun _ -> M.end_cont())))));
     M.execute()
 
 end

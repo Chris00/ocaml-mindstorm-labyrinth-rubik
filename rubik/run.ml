@@ -53,7 +53,7 @@ let display_moves x y m =
 let () =
   open_graph " 700x500-300+30";
   (********* Initialization of the cubie *********)
-  let (cubie, colors) = Init_color.create_rubik (M.face_iter) in
+  let cubie, colors = Init_color.create_rubik M.face_iter M.return_face_init in
 
   (********* Graphical part *********)
   let geom = { D.geom with D.xy0 = (10.,30.) } in
