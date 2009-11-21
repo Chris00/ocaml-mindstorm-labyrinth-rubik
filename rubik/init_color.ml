@@ -427,7 +427,7 @@ let try_create_rubik face_iter =
   face_iter (Pick.man_take_face);
   let corner_list_ordered = corner_list_replacement () in
   let edge_list_ordered = edge_list_replacement () in
-  let elo = List.map (fun (a,i) -> (a, (i = 1))) edge_list_ordered in
+  let elo = List.map (fun (a,i) -> (a, i = 1)) edge_list_ordered in
   let cubie = Cubie.make corner_list_ordered elo in
   (cubie,
    { D.color_F = Color.to_rgb(Face.color_of F);
@@ -442,16 +442,13 @@ let try_create_rubik face_iter =
 let rec create_rubik face_iter return_face_init =
   try
     try_create_rubik face_iter
-  with
-  | _ ->
-      (
+  with Invalid_argument _ ->
         clear_graph();
         let error_text = "Erreur d'encodage, veuillez corriger" in
         draw_string error_text;
         ignore(wait_next_event [Key_pressed]);
         return_face_init ();
         create_rubik face_iter return_face_init
-      )
 
 (*
 let () =

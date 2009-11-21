@@ -145,7 +145,7 @@ sig
         FR, FL, BL, BR.
 
         @raise Invalid_argument if the data does not describe a valid
-        permuation of the cube.  *)
+        permutation of the cube.  *)
 
   val corner : t -> corner -> corner * int
     (** [corner cube c] returns the corner and its (change of)

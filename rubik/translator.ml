@@ -153,10 +153,10 @@ struct
 
   let return_face_init () =
     M.free_rubik( fun _ ->
-      M.turn_pf (-1) ( fun _ ->
+      M.turn_pf (3) ( fun _ ->
         M.kick( fun _ ->
           M.free_rubik( fun _ ->
-            M.turn_pf (-1) (fun _ -> M.end_cont())))));
+            M.turn_pf (3) (fun _ -> M.end_cont())))));
     M.execute()
 
 end
