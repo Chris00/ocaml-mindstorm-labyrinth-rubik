@@ -172,7 +172,13 @@ struct
   let turn_rubik_right ~cont =
     set_cog false (fun _ -> turn_rubik false 450 235 54 (70) 20 (-10) cont)
   let turn_rubik_half ~cont =
-    set_cog true (fun _ -> turn_rubik true 900 426 64 (-70) (-20) (10) cont)
+    let left = true in
+    set_cog left (fun _ ->
+                    if left then
+                      turn_rubik true 900 426 64 (-70) (-20) (10) cont
+                    else
+                      turn_rubik false 900 407 57 70 20 (-10) cont
+                 )
 
   let () =
     kick_back (fun _ -> free_rubik (end_cont));
