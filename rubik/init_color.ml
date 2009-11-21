@@ -442,7 +442,7 @@ let try_create_rubik face_iter =
 let rec create_rubik face_iter return_face_init =
   try
     try_create_rubik face_iter
-  with Invalid_argument _ ->
+  with Invalid_argument _ | Bad_Encoding ->
         clear_graph();
         let error_text = "Erreur d'encodage, veuillez corriger" in
         draw_string error_text;
