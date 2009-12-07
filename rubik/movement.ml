@@ -19,6 +19,7 @@
 
 
 open Mindstorm
+open Random
 
 (** We parametrise the solver by the connections to the ports (so as to
     change them easily) *)
@@ -170,14 +171,15 @@ struct
   let turn_rubik_left ~cont =
     set_cog true (fun _ -> turn_rubik true 450 249 68 (-70) (-20) (10) cont)
   let turn_rubik_right ~cont =
-    set_cog false (fun _ -> turn_rubik false 450 235 54 (70) 20 (-10) cont)
+    set_cog false (fun _ -> turn_rubik false 450 225 39 (70) 20 (-10) cont)
+      (* Last values : turn_rubik false 450 235 54 (70) 20 (-10) cont *)
   let turn_rubik_half ~cont =
-    let left = true in
+    let left = Random.bool() in
     set_cog left (fun _ ->
                     if left then
                       turn_rubik true 900 426 64 (-70) (-20) (10) cont
                     else
-                      turn_rubik false 900 407 57 70 20 (-10) cont
+                      turn_rubik false 900 419 57 70 20 (-10) cont
                  )
 
   let () =
