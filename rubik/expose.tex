@@ -91,15 +91,15 @@
 
 \title{Atelier de robotique}
 \subtitle{%Comment sortir d'un labyrinthe ?\\
-  Comment résoudre le Rubik's cube ?}
-\author[Institut de Mathématique]{%
+  Comment rÃ©soudre le Rubik's cube ?}
+\author[Institut de MathÃ©matique]{%
   Marc \textsc{Ducobu}
   \and Dany \textsc{Maslowski}
   \and Julie \textsc{De Pril}
   \and Christophe~\textsc{Troestler}}
 %\date{PDS, mars 2008}
 \date{PDS, \today}
-\institute[UMONS]{Université de Mons\\[3pt]
+\institute[UMONS]{UniversitÃ© de Mons\\[3pt]
   %\pgfuseimage{UMH-logo}\qquad\pgfuseimage{Acad-logo}%
   %\includegraphics[width=10mm]{Acad-logoumh}\qquad
   %\includegraphics[width=10mm]{Acad-logo+txt}
@@ -120,11 +120,11 @@
   \tableofcontents[subsectionstyle=hide]
 \end{frame}
 
-% Besoin d'un slide préliminaire pour expliquer ce qu'est un Rubik's
-% cube et comment ça marche?
+% Besoin d'un slide prÃ©liminaire pour expliquer ce qu'est un Rubik's
+% cube et comment Ã§a marche?
 
 
-\section{Préliminaires}
+\section{PrÃ©liminaires}
 \begin{frame} \frametitle{Appellation des faces du Rubik's cube}
   % dessin d'un Rubik's cube avec le nom des faces (F,B,U,D,L,R)
   \begin{tikzpicture}[x=3ex,y=3ex]
@@ -143,8 +143,8 @@
   \end{tikzpicture}
   \hfil
   \begin{minipage}[b]{0.4\linewidth}
-    Rubik's cube en «~position de base~», appelé le Rubik's cube
-    \textit{identité}, noté $\id$.
+    Rubik's cube en Â«~position de base~Â», appelÃ© le Rubik's cube
+    \textit{identitÃ©}, notÃ© $\id$.
 
     \onslide<2->{%
     \begin{align*}
@@ -186,10 +186,10 @@
     \end{tikzpicture}
     \par\vspace{1ex}
 
-    $F ={}$faire tourner la face $F$ de 90°.
+    $F ={}$faire tourner la face $F$ de 90Â°.
 
     \begin{block}{}
-      Tourner une face d'un multiple de 90° degrés est appelé un
+      Tourner une face d'un multiple de 90Â° degrÃ©s est appelÃ© un
       \textit{mouvement}.
     \end{block}
   \end{minipage}
@@ -222,8 +222,8 @@
     \end{tikzpicture}
 
   \end{minipage}
-  \note{ Quand on tourne une face de 360°, c'est comme si l'on avait
-    rien fait. En effet, nous retrouvons le Rubik's cube de départ.  }
+  \note{ Quand on tourne une face de 360Â°, c'est comme si l'on avait
+    rien fait. En effet, nous retrouvons le Rubik's cube de dÃ©part.  }
 \end{frame}
 
 \begin{frame} \frametitle{Mouvements de base}
@@ -232,7 +232,7 @@
     $F, F^2, F^3, B, B^2, B^3, L, L^2, L^3, R, R^2, R^3, U, U^2, U^3,
     D, D^2, D^3$
   \end{block}
-  où $X^i$ signifie \og tourner la face $X$ de $i$ fois 90°
+  oÃ¹ $X^i$ signifie \og tourner la face $X$ de $i$ fois 90Â°
   dans le sens horloger\fg.
 
   \begin{center}
@@ -262,7 +262,7 @@
   \end{tikzpicture}
   \hfil
   \begin{minipage}[b]{0.48\linewidth}
-    cube${}\leftrightarrow{}$séquence mouvements
+    cube${}\leftrightarrow{}$sÃ©quence mouvements
     \par\vspace*{2ex}
 
     \noindent\hspace*{4em}
@@ -278,7 +278,7 @@
     \onslide<3->{%
       \begin{scope}[yshift=-16ex]
         \input{expose-F1R2.tex}
-        \node[right] at (13, 4.5) {$\id * F * R²$};
+        \node[right] at (13, 4.5) {$\id * F * RÂ²$};
       \end{scope}
     }
     \end{tikzpicture}
@@ -288,7 +288,7 @@
   \onslide<4->%
   \begin{minipage}{0.9\linewidth}% do not hide the UMH logo
     \begin{block}{Notation}
-      $g * X$ est le cube résultant du cube $g$ auquel on a appliqué le
+      $g * X$ est le cube rÃ©sultant du cube $g$ auquel on a appliquÃ© le
       mouvement $X$.
     \end{block}
   \end{minipage}
@@ -301,7 +301,7 @@
   \begin{definition}
     $\G ={}$l'ensemble de toutes les configurations possibles du
     Rubik's cube i.e.\ toutes les configurations obtenues en
-    appliquant une séquence quelconque de mouvements à $\id$.
+    appliquant une sÃ©quence quelconque de mouvements Ã  $\id$.
   \end{definition}
  
   \begin{align*}
@@ -315,7 +315,7 @@
  
   \onslide<2->%
   \vspace*{3ex}%
-  Nombre d'éléments de $\G = 43.252.003.274.489.856.000
+  Nombre d'Ã©lÃ©ments de $\G = 43.252.003.274.489.856.000
   \approx 43 \cdot 10^{18}$
 \end{frame}
 
@@ -425,7 +425,7 @@
   Qu'est-ce que l'inverse de $x \in \IR$?
  }
 \onslide<2->{%
- \begin{block}{Définition}
+ \begin{block}{DÃ©finition}
    Soit $x \in \IR$.
    On dit que $y$ est l'\textit{inverse} de $x$ si $x \cdot y = 1$.
  \end{block}
@@ -433,7 +433,7 @@
 \par\vspace*{2ex}
 \onslide<3->{Analogie avec les mouvements:}
 \onslide<4->{%
-  \begin{block}{Définition}
+  \begin{block}{DÃ©finition}
     Soit $X$ un mouvement de base.
     Nous dirons que $Y$ est le mouvement \textit{inverse} de $X$
     si $X * Y = \id$.
@@ -447,19 +447,19 @@
 \end{frame}
 
 
-\section{Le problème}
-\begin{frame} \frametitle{Le problème}
+\section{Le problÃ¨me}
+\begin{frame} \frametitle{Le problÃ¨me}
 
   \begin{minipage}[t]{0.43\linewidth}
-    \begin{block}{Première formulation}
-      Étant donné un cube $g$, le remettre en \og position de base\fg.
+    \begin{block}{PremiÃ¨re formulation}
+      Ã‰tant donnÃ© un cube $g$, le remettre en \og position de base\fg.
     \end{block}
   \end{minipage}
   \hfill
   \onslide<5->{%
     \begin{minipage}[t]{0.47\linewidth}
-      \begin{block}{Formulation mathématique}
-        Étant donné  $g \in \G$, trouver des mouvements de base $X_1,
+      \begin{block}{Formulation mathÃ©matique}
+        Ã‰tant donnÃ©  $g \in \G$, trouver des mouvements de base $X_1,
         \dotsc, X_n$ tels que $g * X_1 * \cdots * X_n = \id$.
       \end{block}
     \end{minipage}
@@ -493,13 +493,13 @@
   \end{center}
 \end{frame}
 
-\section{Idée de l'algorithme}
-\begin{frame} \frametitle{Idée de l'algorithme}
+\section{IdÃ©e de l'algorithme}
+\begin{frame} \frametitle{IdÃ©e de l'algorithme}
   \begin{block}{}
-    Comment trouver la séquence de mouvements pour résoudre un cube~$g$ ?
+    Comment trouver la sÃ©quence de mouvements pour rÃ©soudre un cube~$g$ ?
   \end{block}
 
-  Pas à pas :
+  Pas Ã  pas :
   \par\vspace*{-2ex}
   \begin{center}
     \begin{tikzpicture}[x=1ex,y=1ex]
@@ -525,19 +525,19 @@
         \node[right] at (7.5, 2) {$g * D^3$};
       \end{scope}
       \node[right] at (-20,-18.5) {%
-        $\underbrace{\hspace*{52ex}}_{\text{18 configurations à examiner}}$
+        $\underbrace{\hspace*{52ex}}_{\text{18 configurations Ã  examiner}}$
       };
     \end{tikzpicture}
   \end{center}
 
   \vspace*{-1ex}
-  Trouvé l'identité ?
+  TrouvÃ© l'identitÃ© ?
 \end{frame}
 
-\begin{frame} \frametitle{Idée de l'algorithme (suite)}
+\begin{frame} \frametitle{IdÃ©e de l'algorithme (suite)}
 
   \begin{block}{}
-    Trouvé l'identité ?
+    TrouvÃ© l'identitÃ© ?
     \begin{itemize}
     \item<2-> \textit{Oui} : on a fini
     \item<3-> \textit{Non} : on recommence !
@@ -585,16 +585,16 @@
         \node[below] at (4.5,-6.5) {\hbox to 10ex{\dotfill}};
       \end{scope}
       \node[right] at (-25,-28) {%
-        $\underbrace{\hspace*{36ex}}_{18 \times 18 = 324 \text{ configurations à examiner}}$
+        $\underbrace{\hspace*{36ex}}_{18 \times 18 = 324 \text{ configurations Ã  examiner}}$
       };
     \end{tikzpicture}
   \end{center}
 
-  Trouvé l'identité ?
+  TrouvÃ© l'identitÃ© ?
 \end{frame}
 
 
-\begin{frame} \frametitle{Idée de l'algorithme (suite)}
+\begin{frame} \frametitle{IdÃ©e de l'algorithme (suite)}
 
   \begin{minipage}{0.5\linewidth}
     \begin{math}
@@ -619,18 +619,18 @@
   \hfill
   \onslide<2->%
   \begin{minipage}{0.45\linewidth}
-    \begin{block}{Ingrédients}
+    \begin{block}{IngrÃ©dients}
       \begin{itemize}
-      \item<2-> Sous problèmes
+      \item<2-> Sous problÃ¨mes
       \item<3-> Multiplication rapide
-      \item<4-> Recherche «~informée~» \& \emph{pruning}
-      \item<5-> Réductions par symétries
+      \item<4-> Recherche Â«~informÃ©e~Â» \& \emph{pruning}
+      \item<5-> RÃ©ductions par symÃ©tries
       \end{itemize}
     \end{block}
   \end{minipage}
 \end{frame}
 
-\section{Références}
+\section{RÃ©fÃ©rences}
 \begin{frame} \frametitle{Bibliographie}
   \begin{thebibliography}{}
 
@@ -641,6 +641,11 @@
 
   \bibitem{} Herbert Kociemba, Cube Explorer pages,
     \url{http://kociemba.org/cube.htm}
+
+  \bibitem{} Tomas Rokicki, Herbert Kociemba, Morley Davidson, John
+    Dethridge,
+    Every position of Rubik's Cubeâ„¢ can be solved in twenty moves or less. 
+    \url{http://www.cube20.org/}
   \end{thebibliography}
 \end{frame}
 
