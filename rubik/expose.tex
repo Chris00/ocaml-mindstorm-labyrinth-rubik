@@ -1,8 +1,9 @@
 %\documentclass[handout,compress]{beamer}
 \documentclass[compress]{beamer}
 
-\usepackage[latin1]{inputenc}
+\usepackage[utf8]{inputenc}
 \usepackage[francais]{babel}
+\usepackage[T1]{fontenc}
 \usepackage{textcomp}
 \usepackage{times,mathptmx,bbm}
 \usepackage{graphicx,tikz}
@@ -93,17 +94,16 @@
 \subtitle{%Comment sortir d'un labyrinthe ?\\
   Comment résoudre le Rubik's cube ?}
 \author[Institut de Mathématique]{%
-  Marc \textsc{Ducobu}
-  \and Dany \textsc{Maslowski}
-  \and Julie \textsc{De Pril}
-  \and Christophe~\textsc{Troestler}}
+  % Marc \textsc{Ducobu}
+  % \and Dany \textsc{Maslowski}
+  % \and Julie \textsc{De Pril}
+  % \and Christophe~\textsc{Troestler}
+  Étudiants de master en mathématique
+}
 %\date{PDS, mars 2008}
-\date{PDS, \today}
-\institute[UMONS]{Université de Mons\\[3pt]
-  %\pgfuseimage{UMH-logo}\qquad\pgfuseimage{Acad-logo}%
-  %\includegraphics[width=10mm]{Acad-logoumh}\qquad
-  %\includegraphics[width=10mm]{Acad-logo+txt}
-  \includegraphics[width=20mm]{UMONS+txt}
+\date{Printemps des Sciences}
+\institute[UMONS]{%
+  \includegraphics[width=24mm]{UMONS+txt}
 }
 %\logo{\pgfuseimage{UMH-logo}}
 
@@ -278,7 +278,7 @@
     \onslide<3->{%
       \begin{scope}[yshift=-16ex]
         \input{expose-F1R2.tex}
-        \node[right] at (13, 4.5) {$\id * F * R²$};
+        \node[right] at (13, 4.5) {$\id * F * R^2$};
       \end{scope}
     }
     \end{tikzpicture}
@@ -653,4 +653,5 @@
 %%% Local Variables:
 %%% mode: latex
 %%% TeX-master: t
+%%% coding: utf-8
 %%% End:
